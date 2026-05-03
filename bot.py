@@ -20,12 +20,13 @@ IZIN_VERILEN_KULLANICI = int(os.environ.get("IZIN_VERILEN_KULLANICI_ID", "0"))
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 Merhaba! Ben *harcama_takip_rota_bot*'um.\n\n"
-        "🎙️ Sesli mesaj gönderin veya yazın:\n"
-        "Örnek: 'Sigara aldım, 110 lira'\n"
-        "Örnek: 'Ankraj hammaddesi 2500 TL'\n\n"
-        "📊 Harcamalarınız otomatik olarak Google Sheets'e kaydedilecek.\n\n"
-        "🏷️ *Kişisel kategoriler:* Market, Sigara/İçecek, Kafe/Restoran, Ulaşım, Sağlık, Giyim, Fatura\n"
-        "🏭 *İşletme kategorileri:* Hammadde, Nakliye, Personel, Yakıt/Araç, Elektrik/Su, Kira, Makine",
+        "🎙️ *Tek harcama:*\n"
+        "'Sigara aldım 110 lira'\n"
+        "'2 Mayıs tarihinde market 300 TL'\n\n"
+        "📋 *Toplu giriş:*\n"
+        "'1 Nisan market 250 TL, 3 Nisan akaryakıt 500 TL, 5 Nisan ankraj hammaddesi 2500 TL'\n\n"
+        "📅 Tarih belirtirsen o tarihe, belirtmezsen bugüne kaydeder.\n"
+        "📊 Harcamalar otomatik olarak Google Sheets'e kaydedilir.",
         parse_mode="Markdown"
     )
 
@@ -52,7 +53,7 @@ async def sesli_mesaj_isle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         await update.message.reply_text(f"📝 Anlaşılan: *{metin}*", parse_mode="Markdown")
-        await _harcamayi_isle(update, metin)
+        await _harcamalari_isle(update, metin)
 
     except Exception as e:
         logger.error(f"Ses işleme hatası: {e}")
@@ -69,42 +70,70 @@ async def yazili_mesaj_isle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if metin.startswith("/"):
         return
 
-    await _harcamayi_isle(update, metin)
+    await _harcamalari_isle(update, metin)
 
 
-async def _harcamayi_isle(update: Update, metin: str):
+async def _harcamalari_isle(update: Update, metin: str):
     try:
-        await update.message.reply_text("🤖 Harcama analiz ediliyor...")
-        harcama = await metni_parse_et(metin)
+        await update.message.reply_text("🤖 Harcamalar analiz ediliyor...")
+        harcama_listesi = await metni_parse_et(metin)
 
-        if not harcama:
+        if not harcama_listesi:
             await update.message.reply_text(
-                "❓ Harcama anlaşılamadı.\n"
-                "Örnek: 'Market alışverişi 250 lira' veya 'Nakliye ücreti 750 TL işletme'"
+                "❓ Harcama anlaşılamadı.\n\n"
+                "Tek örnek: 'Market 250 lira'\n"
+                "Tarihli örnek: '2 Mayıs market 300 TL'\n"
+                "Toplu örnek: '1 Nisan sigara 110 TL, 3 Nisan akaryakıt 500 TL'"
             )
             return
 
-        simdi = datetime.now()
-        harcama["tarih"] = simdi.strftime("%d.%m.%Y")
-        harcama["saat"] = simdi.strftime("%H:%M")
+        toplam_adet = len(harcama_listesi)
+        basarili = 0
+        basarisiz = 0
+        ozet_satirlar = []
 
-        tip_emoji = "🏭" if harcama.get("tip") == "isletme" else "👤"
+        for harcama in harcama_listesi:
+            # Saat: bugünün harcamasıysa şimdiki saat, geçmişse "—"
+            bugun_str = datetime.now().strftime("%d.%m.%Y")
+            if harcama.get("tarih") == bugun_str:
+                harcama["saat"] = datetime.now().strftime("%H:%M")
+            else:
+                harcama["saat"] = "—"
 
-        await update.message.reply_text(
-            f"✅ Kaydediliyor...\n"
-            f"📌 Açıklama: {harcama['aciklama']}\n"
-            f"💰 Tutar: {harcama['tutar']} ₺\n"
-            f"🏷️ Kategori: {harcama['kategori']}\n"
-            f"{tip_emoji} Tip: {'İşletme' if harcama.get('tip') == 'isletme' else 'Kişisel'}\n"
-            f"📅 Tarih: {harcama['tarih']} {harcama['saat']}"
-        )
+            tip_emoji = "🏭" if harcama.get("tip") == "isletme" else "👤"
+            ozet_satirlar.append(
+                f"{tip_emoji} {harcama['tarih']} | {harcama['aciklama']} | "
+                f"{harcama['tutar']} ₺ | {harcama['kategori']}"
+            )
 
-        basari = await harcamayi_kaydet(harcama)
+            sonuc = await harcamayi_kaydet(harcama)
+            if sonuc:
+                basarili += 1
+            else:
+                basarisiz += 1
 
-        if basari:
-            await update.message.reply_text("✅ Google Sheets'e başarıyla kaydedildi!")
+        # Sonuç mesajı
+        if toplam_adet == 1:
+            h = harcama_listesi[0]
+            tip_emoji = "🏭" if h.get("tip") == "isletme" else "👤"
+            mesaj = (
+                f"✅ Kaydedildi!\n\n"
+                f"📌 {h['aciklama']}\n"
+                f"💰 {h['tutar']} ₺\n"
+                f"🏷️ {h['kategori']}\n"
+                f"{tip_emoji} {'İşletme' if h.get('tip') == 'isletme' else 'Kişisel'}\n"
+                f"📅 {h['tarih']}"
+            )
         else:
-            await update.message.reply_text("❌ Sheets'e kaydedilemedi, tekrar deneyin.")
+            ozet_metni = "\n".join(ozet_satirlar)
+            mesaj = (
+                f"✅ *{basarili}/{toplam_adet} harcama kaydedildi!*\n\n"
+                f"{ozet_metni}"
+            )
+            if basarisiz > 0:
+                mesaj += f"\n\n⚠️ {basarisiz} harcama kaydedilemedi."
+
+        await update.message.reply_text(mesaj, parse_mode="Markdown")
 
     except Exception as e:
         logger.error(f"Harcama işleme hatası: {e}")

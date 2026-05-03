@@ -25,8 +25,16 @@ def _sheets_baglantisi():
     return service.spreadsheets()
 
 
-def _sayfa_adi_olustur(yil: int, ay: int) -> str:
-    return f"{AYLAR_TR[ay]} {yil}"
+def _tarih_parse(tarih_str: str) -> datetime:
+    """DD.MM.YYYY formatını datetime'a çevirir"""
+    try:
+        return datetime.strptime(tarih_str, "%d.%m.%Y")
+    except:
+        return datetime.now()
+
+
+def _sayfa_adi_olustur(dt: datetime) -> str:
+    return f"{AYLAR_TR[dt.month]} {dt.year}"
 
 
 def _sayfa_var_mi(sheets, sayfa_adi: str) -> bool:
@@ -47,8 +55,6 @@ def _sayfa_id_al(sheets, sayfa_adi: str) -> int:
 
 
 def _sayfa_olustur(sheets, sayfa_adi: str):
-    """Yeni ay sayfası oluşturur, başlık satırı + format uygular"""
-    # Sayfa ekle
     body = {
         "requests": [{
             "addSheet": {
@@ -61,7 +67,6 @@ def _sayfa_olustur(sheets, sayfa_adi: str):
     }
     sheets.batchUpdate(spreadsheetId=SHEETS_ID, body=body).execute()
 
-    # Başlık satırı yaz
     baslik = [["Tarih", "Gün", "Saat", "Açıklama", "Kategori", "Tip", "Tutar (₺)", "Notlar"]]
     sheets.values().update(
         spreadsheetId=SHEETS_ID,
@@ -70,17 +75,12 @@ def _sayfa_olustur(sheets, sayfa_adi: str):
         body={"values": baslik}
     ).execute()
 
-    # Başlık formatı: koyu mavi arka plan, beyaz kalın yazı
     sayfa_id = _sayfa_id_al(sheets, sayfa_adi)
     format_body = {
         "requests": [
             {
                 "repeatCell": {
-                    "range": {
-                        "sheetId": sayfa_id,
-                        "startRowIndex": 0,
-                        "endRowIndex": 1
-                    },
+                    "range": {"sheetId": sayfa_id, "startRowIndex": 0, "endRowIndex": 1},
                     "cell": {
                         "userEnteredFormat": {
                             "backgroundColor": {"red": 0.13, "green": 0.37, "blue": 0.64},
@@ -96,7 +96,6 @@ def _sayfa_olustur(sheets, sayfa_adi: str):
                 }
             },
             {
-                # Tutar sütununu (G) para formatı yap
                 "repeatCell": {
                     "range": {
                         "sheetId": sayfa_id,
@@ -106,10 +105,7 @@ def _sayfa_olustur(sheets, sayfa_adi: str):
                     },
                     "cell": {
                         "userEnteredFormat": {
-                            "numberFormat": {
-                                "type": "NUMBER",
-                                "pattern": "#,##0.00"
-                            }
+                            "numberFormat": {"type": "NUMBER", "pattern": "#,##0.00"}
                         }
                     },
                     "fields": "userEnteredFormat.numberFormat"
@@ -122,25 +118,30 @@ def _sayfa_olustur(sheets, sayfa_adi: str):
 
 async def harcamayi_kaydet(harcama: dict) -> bool:
     """
-    Harcamayı ilgili ay sayfasına kaydeder.
+    Tek bir harcamayı, harcamanın kendi tarihine göre ilgili ay sayfasına kaydeder.
     harcama: {aciklama, tutar, kategori, tip, tarih, saat}
+    tarih: DD.MM.YYYY formatında — hangi aya ait olduğunu bu belirler
     """
     try:
         sheets = _sheets_baglantisi()
-        simdi = datetime.now()
-        sayfa_adi = _sayfa_adi_olustur(simdi.year, simdi.month)
 
-        # Sayfa yoksa oluştur
+        # Harcamanın tarihine göre sayfa belirle
+        harcama_dt = _tarih_parse(harcama["tarih"])
+        sayfa_adi = _sayfa_adi_olustur(harcama_dt)
+
         if not _sayfa_var_mi(sheets, sayfa_adi):
             _sayfa_olustur(sheets, sayfa_adi)
 
-        gun_adi = GUNLER_TR[simdi.weekday()]
+        gun_adi = GUNLER_TR[harcama_dt.weekday()]
         tip_tr = "İşletme" if harcama.get("tip") == "isletme" else "Kişisel"
+
+        # Saat: eğer geçmişe ait bir tarihse saat bilgisi olmayabilir
+        saat = harcama.get("saat", "—")
 
         yeni_satir = [[
             harcama["tarih"],
             gun_adi,
-            harcama["saat"],
+            saat,
             harcama["aciklama"],
             harcama["kategori"],
             tip_tr,
@@ -156,8 +157,7 @@ async def harcamayi_kaydet(harcama: dict) -> bool:
             body={"values": yeni_satir}
         ).execute()
 
-        # Özet sayfasını güncelle
-        _ozet_guncelle(sheets, simdi, float(harcama["tutar"]), harcama.get("tip", "kisisel"))
+        _ozet_guncelle(sheets, harcama_dt, float(harcama["tutar"]), harcama.get("tip", "kisisel"))
 
         return True
 
@@ -166,8 +166,7 @@ async def harcamayi_kaydet(harcama: dict) -> bool:
         return False
 
 
-def _ozet_guncelle(sheets, simdi: datetime, tutar: float, tip: str):
-    """📊 Özet sayfasındaki aylık toplamları günceller"""
+def _ozet_guncelle(sheets, harcama_dt: datetime, tutar: float, tip: str):
     try:
         ozet_sayfa = "📊 Özet"
 
@@ -180,7 +179,7 @@ def _ozet_guncelle(sheets, simdi: datetime, tutar: float, tip: str):
         ).execute()
         satirlar = result.get("values", [])
 
-        ay_adi = _sayfa_adi_olustur(simdi.year, simdi.month)
+        ay_adi = _sayfa_adi_olustur(harcama_dt)
         ay_bulundu = False
 
         for i, satir in enumerate(satirlar):
@@ -219,7 +218,6 @@ def _ozet_guncelle(sheets, simdi: datetime, tutar: float, tip: str):
 
 
 def _ozet_sayfasi_olustur(sheets, sayfa_adi: str):
-    """Ana özet sayfasını oluşturur"""
     body = {
         "requests": [{
             "addSheet": {
@@ -245,11 +243,7 @@ def _ozet_sayfasi_olustur(sheets, sayfa_adi: str):
     format_body = {
         "requests": [{
             "repeatCell": {
-                "range": {
-                    "sheetId": sayfa_id,
-                    "startRowIndex": 0,
-                    "endRowIndex": 1
-                },
+                "range": {"sheetId": sayfa_id, "startRowIndex": 0, "endRowIndex": 1},
                 "cell": {
                     "userEnteredFormat": {
                         "backgroundColor": {"red": 0.13, "green": 0.37, "blue": 0.64},
