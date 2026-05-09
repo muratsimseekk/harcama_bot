@@ -17,6 +17,12 @@ AYLAR_TR = {
 
 GUNLER_TR = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 
+TIP_ETIKETI = {
+    "kisisel": "Kişisel",
+    "isletme": "İşletme",
+    "yatirim": "Yatırım"
+}
+
 
 def _sheets_baglantisi():
     credentials_bilgi = json.loads(CREDENTIALS_JSON)
@@ -26,7 +32,6 @@ def _sheets_baglantisi():
 
 
 def _tarih_parse(tarih_str: str) -> datetime:
-    """DD.MM.YYYY formatını datetime'a çevirir"""
     try:
         return datetime.strptime(tarih_str, "%d.%m.%Y")
     except:
@@ -76,6 +81,8 @@ def _sayfa_olustur(sheets, sayfa_adi: str):
     ).execute()
 
     sayfa_id = _sayfa_id_al(sheets, sayfa_adi)
+
+    # Başlık rengi: tip'e göre farklı renk yok, tek renk yeterli
     format_body = {
         "requests": [
             {
@@ -86,8 +93,7 @@ def _sayfa_olustur(sheets, sayfa_adi: str):
                             "backgroundColor": {"red": 0.13, "green": 0.37, "blue": 0.64},
                             "textFormat": {
                                 "foregroundColor": {"red": 1.0, "green": 1.0, "blue": 1.0},
-                                "bold": True,
-                                "fontSize": 11
+                                "bold": True, "fontSize": 11
                             },
                             "horizontalAlignment": "CENTER"
                         }
@@ -118,14 +124,11 @@ def _sayfa_olustur(sheets, sayfa_adi: str):
 
 async def harcamayi_kaydet(harcama: dict) -> bool:
     """
-    Tek bir harcamayı, harcamanın kendi tarihine göre ilgili ay sayfasına kaydeder.
-    harcama: {aciklama, tutar, kategori, tip, tarih, saat}
-    tarih: DD.MM.YYYY formatında — hangi aya ait olduğunu bu belirler
+    Tek bir kaydı ilgili ay sayfasına kaydeder.
+    tip: 'kisisel', 'isletme' veya 'yatirim'
     """
     try:
         sheets = _sheets_baglantisi()
-
-        # Harcamanın tarihine göre sayfa belirle
         harcama_dt = _tarih_parse(harcama["tarih"])
         sayfa_adi = _sayfa_adi_olustur(harcama_dt)
 
@@ -133,9 +136,8 @@ async def harcamayi_kaydet(harcama: dict) -> bool:
             _sayfa_olustur(sheets, sayfa_adi)
 
         gun_adi = GUNLER_TR[harcama_dt.weekday()]
-        tip_tr = "İşletme" if harcama.get("tip") == "isletme" else "Kişisel"
-
-        # Saat: eğer geçmişe ait bir tarihse saat bilgisi olmayabilir
+        tip_raw = harcama.get("tip", "kisisel").lower().strip()
+        tip_tr = TIP_ETIKETI.get(tip_raw, "Kişisel")
         saat = harcama.get("saat", "—")
 
         yeni_satir = [[
@@ -157,8 +159,7 @@ async def harcamayi_kaydet(harcama: dict) -> bool:
             body={"values": yeni_satir}
         ).execute()
 
-        _ozet_guncelle(sheets, harcama_dt, float(harcama["tutar"]), harcama.get("tip", "kisisel"))
-
+        _ozet_guncelle(sheets, harcama_dt, float(harcama["tutar"]), tip_raw)
         return True
 
     except Exception as e:
@@ -167,15 +168,15 @@ async def harcamayi_kaydet(harcama: dict) -> bool:
 
 
 def _ozet_guncelle(sheets, harcama_dt: datetime, tutar: float, tip: str):
+    """📊 Özet sayfasını günceller — artık Yatırım sütunu da var."""
     try:
         ozet_sayfa = "📊 Özet"
-
         if not _sayfa_var_mi(sheets, ozet_sayfa):
             _ozet_sayfasi_olustur(sheets, ozet_sayfa)
 
         result = sheets.values().get(
             spreadsheetId=SHEETS_ID,
-            range=f"'{ozet_sayfa}'!A:D"
+            range=f"'{ozet_sayfa}'!A:E"
         ).execute()
         satirlar = result.get("values", [])
 
@@ -184,37 +185,49 @@ def _ozet_guncelle(sheets, harcama_dt: datetime, tutar: float, tip: str):
 
         for i, satir in enumerate(satirlar):
             if satir and satir[0] == ay_adi:
-                kisisel = float(str(satir[1]).replace(",", ".")) if len(satir) > 1 and satir[1] else 0.0
-                isletme = float(str(satir[2]).replace(",", ".")) if len(satir) > 2 and satir[2] else 0.0
+                kisisel = _safe_float(satir, 1)
+                isletme = _safe_float(satir, 2)
+                yatirim = _safe_float(satir, 3)
 
-                if tip == "isletme":
-                    isletme += tutar
-                else:
+                if tip == "kisisel":
                     kisisel += tutar
+                elif tip == "isletme":
+                    isletme += tutar
+                elif tip == "yatirim":
+                    yatirim += tutar
 
-                toplam = kisisel + isletme
+                toplam = kisisel + isletme + yatirim
                 sheets.values().update(
                     spreadsheetId=SHEETS_ID,
-                    range=f"'{ozet_sayfa}'!B{i+1}:D{i+1}",
+                    range=f"'{ozet_sayfa}'!B{i+1}:E{i+1}",
                     valueInputOption="USER_ENTERED",
-                    body={"values": [[kisisel, isletme, toplam]]}
+                    body={"values": [[kisisel, isletme, yatirim, toplam]]}
                 ).execute()
                 ay_bulundu = True
                 break
 
         if not ay_bulundu:
-            kisisel = 0.0 if tip == "isletme" else tutar
+            kisisel = tutar if tip == "kisisel" else 0.0
             isletme = tutar if tip == "isletme" else 0.0
+            yatirim = tutar if tip == "yatirim" else 0.0
+            toplam = kisisel + isletme + yatirim
             sheets.values().append(
                 spreadsheetId=SHEETS_ID,
-                range=f"'{ozet_sayfa}'!A:D",
+                range=f"'{ozet_sayfa}'!A:E",
                 valueInputOption="USER_ENTERED",
                 insertDataOption="INSERT_ROWS",
-                body={"values": [[ay_adi, kisisel, isletme, tutar]]}
+                body={"values": [[ay_adi, kisisel, isletme, yatirim, toplam]]}
             ).execute()
 
     except Exception as e:
         print(f"Özet güncelleme hatası: {e}")
+
+
+def _safe_float(satir: list, index: int) -> float:
+    try:
+        return float(str(satir[index]).replace(",", ".")) if len(satir) > index and satir[index] else 0.0
+    except:
+        return 0.0
 
 
 def _ozet_sayfasi_olustur(sheets, sayfa_adi: str):
@@ -224,17 +237,18 @@ def _ozet_sayfasi_olustur(sheets, sayfa_adi: str):
                 "properties": {
                     "title": sayfa_adi,
                     "index": 0,
-                    "gridProperties": {"rowCount": 100, "columnCount": 5}
+                    "gridProperties": {"rowCount": 100, "columnCount": 6}
                 }
             }
         }]
     }
     sheets.batchUpdate(spreadsheetId=SHEETS_ID, body=body).execute()
 
-    baslik = [["Ay", "Kişisel (₺)", "İşletme (₺)", "Toplam (₺)"]]
+    # Yatırım sütunu eklendi
+    baslik = [["Ay", "Kişisel (₺)", "İşletme (₺)", "Yatırım (₺)", "Toplam (₺)"]]
     sheets.values().update(
         spreadsheetId=SHEETS_ID,
-        range=f"'{sayfa_adi}'!A1:D1",
+        range=f"'{sayfa_adi}'!A1:E1",
         valueInputOption="RAW",
         body={"values": baslik}
     ).execute()
@@ -249,8 +263,7 @@ def _ozet_sayfasi_olustur(sheets, sayfa_adi: str):
                         "backgroundColor": {"red": 0.13, "green": 0.37, "blue": 0.64},
                         "textFormat": {
                             "foregroundColor": {"red": 1.0, "green": 1.0, "blue": 1.0},
-                            "bold": True,
-                            "fontSize": 11
+                            "bold": True, "fontSize": 11
                         },
                         "horizontalAlignment": "CENTER"
                     }
