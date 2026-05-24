@@ -2,7 +2,8 @@ import os
 import logging
 import tempfile
 import threading
-import asyncio
+import time
+import urllib.request
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
 from telegram import Update
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 IZIN_VERILEN_KULLANICI = int(os.environ.get("IZIN_VERILEN_KULLANICI_ID", "0"))
 PORT = int(os.environ.get("PORT", 10000))
+RENDER_URL = os.environ.get("RENDER_URL", "")  # Render URL'si — env variable olarak eklenecek
 
 RAPOR_KELIMELERI = [
     "rapor", "analiz", "özet", "ozet", "ne kadar", "kaç lira", "kac lira",
@@ -46,14 +48,26 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def log_message(self, format, *args):
-        pass  # HTTP log'larını bastır
+        pass
 
 
 def keepalive_thread():
-    """Ayrı thread'de HTTP sunucusu çalıştırır — Render'ın port kontrolü için."""
     sunucu = HTTPServer(("0.0.0.0", PORT), HealthHandler)
-    logger.info(f"✅ Keepalive HTTP sunucusu port {PORT}'de başlatıldı")
+    logger.info(f"✅ HTTP sunucusu port {PORT}'de başlatıldı")
     sunucu.serve_forever()
+
+
+def self_ping_thread():
+    """Her 10 dakikada bir kendi adresine istek atar — Render uyutmasın diye."""
+    time.sleep(30)  # Bot tamamen başlayana kadar bekle
+    while True:
+        try:
+            if RENDER_URL:
+                urllib.request.urlopen(RENDER_URL, timeout=10)
+                logger.info("✅ Self-ping başarılı")
+        except Exception as e:
+            logger.warning(f"Self-ping başarısız: {e}")
+        time.sleep(600)  # 10 dakikada bir
 
 
 # --- Telegram Handlers ---
@@ -68,7 +82,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "'Nisan ayında kişisel yeme içme ne kadar?'\n"
         "'Geçen ay faturalar toplamı'\n"
         "'Nisan dükkan nakliye harcamaları'\n"
-        "'Mayıs tüm harcamalar özeti'\n\n"
+        "'Bu yıl toplam yatırım raporu'\n\n"
         "🎙️ Sesli mesaj da gönderebilirsiniz!",
         parse_mode="Markdown"
     )
@@ -165,7 +179,8 @@ async def _harcamalari_isle(update: Update, metin: str):
             bugun_str = datetime.now().strftime("%d.%m.%Y")
             harcama["saat"] = datetime.now().strftime("%H:%M") if harcama.get("tarih") == bugun_str else "—"
 
-            tip_emoji = "🏭" if harcama.get("tip") == "isletme" else "👤"
+            tip = harcama.get("tip", "kisisel")
+            tip_emoji = "🏭" if tip == "isletme" else ("💹" if tip == "yatirim" else "👤")
             ozet_satirlar.append(
                 f"{tip_emoji} {harcama['tarih']} | {harcama['aciklama']} | "
                 f"{harcama['tutar']} ₺ | {harcama['kategori']}"
@@ -179,13 +194,15 @@ async def _harcamalari_isle(update: Update, metin: str):
 
         if toplam_adet == 1:
             h = harcama_listesi[0]
-            tip_emoji = "🏭" if h.get("tip") == "isletme" else "👤"
+            tip = h.get("tip", "kisisel")
+            tip_emoji = "🏭" if tip == "isletme" else ("💹" if tip == "yatirim" else "👤")
+            tip_tr = {"isletme": "İşletme", "yatirim": "Yatırım"}.get(tip, "Kişisel")
             mesaj = (
                 f"✅ Kaydedildi!\n\n"
                 f"📌 {h['aciklama']}\n"
                 f"💰 {h['tutar']} ₺\n"
                 f"🏷️ {h['kategori']}\n"
-                f"{tip_emoji} {'İşletme' if h.get('tip') == 'isletme' else 'Kişisel'}\n"
+                f"{tip_emoji} {tip_tr}\n"
                 f"📅 {h['tarih']}"
             )
         else:
@@ -202,15 +219,17 @@ async def _harcamalari_isle(update: Update, metin: str):
 
 
 def main():
-    # HTTP keepalive sunucusunu ANA THREAD'DEN ÖNCE başlat
-    t = threading.Thread(target=keepalive_thread, daemon=True)
-    t.start()
+    # 1. HTTP sunucusunu başlat (Render port kontrolü için)
+    t1 = threading.Thread(target=keepalive_thread, daemon=True)
+    t1.start()
 
-    # Sunucunun port'u açmasını bekle
-    import time
+    # 2. Self-ping thread'i başlat (uyumayı engeller)
+    t2 = threading.Thread(target=self_ping_thread, daemon=True)
+    t2.start()
+
     time.sleep(1)
 
-    # Telegram bot'u başlat
+    # 3. Telegram bot'u başlat
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.VOICE, sesli_mesaj_isle))
