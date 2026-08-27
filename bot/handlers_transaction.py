@@ -12,15 +12,18 @@ from bot.format import (
     onay_mesaji,
     tx_klavyesi,
 )
-from bot.handlers_correction import BEKLEYEN, duzeltme_metni_uygula, son_komut  # noqa: F401
+from bot.handlers_correction import BEKLEYEN, duzeltme_metni_uygula
 from bot.handlers_report import rapor_isle
 from core import repo
 from core.config import settings
+from core.dates import tarih_parse
 from core.llm import classify_intent, parse_correction, parse_transactions, transcribe
-from core.models import Candidate
+from core.models import Candidate, tip_normalize
 from core.review import inceleme_gerek
 
 logger = logging.getLogger(__name__)
+
+PENDING_EDIT = "pending_edit"
 
 YARDIM = (
     "💾 <b>Kayıt:</b> \"market 250\", \"dün benzin 600 tl\", "
@@ -43,6 +46,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+async def _bekleyen_duzeltme(update, context) -> bool:
+    """Kullanıcı bir düzeltme metni beklerken bu metni uygular. İşlendiyse True."""
+    if context.user_data.get(PENDING_EDIT):
+        return await _pending_edit_uygula(update, context)
+    if context.user_data.get(BEKLEYEN):
+        return await duzeltme_metni_uygula(update, context)
+    return False
+
+
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not yetkili(update):
         await update.effective_message.reply_text("⛔ Yetkiniz yok.")
@@ -52,10 +64,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if not metin or metin.startswith("/"):
         return
 
-    # Bekleyen düzeltme metni mi? (önce onay-öncesi aday düzeltme, sonra kayıtlı tx düzeltme)
-    if await pending_edit_metni(update, context):
-        return
-    if await duzeltme_metni_uygula(update, context):
+    if await _bekleyen_duzeltme(update, context):
         return
 
     await _yonlendir(update, context, metin)
@@ -83,11 +92,10 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     await durum.edit_text(f"📝 <i>{metin}</i>", parse_mode="HTML")
+    update.effective_message.text = metin  # düzeltme/normal akış için
 
-    if context.user_data.get(BEKLEYEN):
-        update.effective_message.text = metin  # düzeltme metni olarak kullan
-        if await duzeltme_metni_uygula(update, context):
-            return
+    if await _bekleyen_duzeltme(update, context):
+        return
     await _yonlendir(update, context, metin, kaynak="telegram_voice")
 
 
@@ -114,9 +122,7 @@ async def _isle_islem(update, context, metin: str, kaynak: str) -> None:
         return
 
     if not adaylar:
-        await durum.edit_text(
-            "❓ Kayıt anlaşılamadı.\n\n" + YARDIM, parse_mode="HTML"
-        )
+        await durum.edit_text("❓ Kayıt anlaşılamadı.\n\n" + YARDIM, parse_mode="HTML")
         return
 
     user_id = str(update.effective_user.id)
@@ -162,18 +168,16 @@ async def pending_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if aksiyon == "no":
         await repo.pending_delete(pending_id)
         await q.edit_message_text("❌ İptal edildi, kaydedilmedi.")
-        return
 
-    if aksiyon == "ed":  # tekli adayda düzelt
-        context.user_data["pending_edit"] = pending_id
+    elif aksiyon == "ed":
+        context.user_data[PENDING_EDIT] = pending_id
         await q.message.reply_text(
             "✏️ Ne düzeltmek istiyorsun? Örn: <code>tutar 95</code>, "
             "<code>kategori Market</code>, <code>tip işletme</code>.",
             parse_mode="HTML",
         )
-        return
 
-    if aksiyon == "ok":
+    elif aksiyon == "ok":
         txs = await repo.add_many(adaylar, user_id)
         await repo.pending_delete(pending_id)
         await q.edit_message_text(
@@ -182,22 +186,8 @@ async def pending_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         )
 
 
-async def pending_edit_metni(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
-    """context.user_data['pending_edit'] varsa metni tek adaya uygular ve kaydeder."""
-    pending_id = context.user_data.get("pending_edit")
-    if not pending_id:
-        return False
-    context.user_data.pop("pending_edit", None)
-
-    kayit = await repo.pending_get(pending_id)
-    if not kayit:
-        await update.effective_message.reply_text("Onay süresi doldu, tekrar gönder.")
-        return True
-
-    adaylar = [Candidate.from_dict(d) for d in kayit["payload"]["adaylar"]]
-    d = await parse_correction(update.effective_message.text or "")
-    a = adaylar[0]
-    if "tutar" in d and d["tutar"]:
+def _adaya_uygula(a: Candidate, d: dict) -> Candidate:
+    if d.get("tutar"):
         try:
             a.tutar = round(abs(float(d["tutar"])), 2)
         except (TypeError, ValueError):
@@ -207,15 +197,29 @@ async def pending_edit_metni(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if d.get("aciklama"):
         a.aciklama = str(d["aciklama"])
     if d.get("tip"):
-        from core.models import tip_normalize
         a.tip = tip_normalize(str(d["tip"]))
     if d.get("yon"):
         a.direction = "gelir" if str(d["yon"]).lower().startswith("gel") else "gider"
     if d.get("tarih"):
-        from core.dates import tarih_parse
         a.tarih = tarih_parse(str(d["tarih"]))
+    return a
 
-    txs = await repo.add_many([a], kayit["user_id"])
+
+async def _pending_edit_uygula(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    pending_id = context.user_data.pop(PENDING_EDIT, None)
+    if not pending_id:
+        return False
+
+    kayit = await repo.pending_get(pending_id)
+    if not kayit:
+        await update.effective_message.reply_text("Onay süresi doldu, kaydı tekrar gönder.")
+        return True
+
+    adaylar = [Candidate.from_dict(x) for x in kayit["payload"]["adaylar"]]
+    d = await parse_correction(update.effective_message.text or "")
+    _adaya_uygula(adaylar[0], d)
+
+    txs = await repo.add_many([adaylar[0]], kayit["user_id"])
     await repo.pending_delete(pending_id)
     await update.effective_message.reply_text(
         kaydedildi_mesaji(txs), parse_mode="HTML", reply_markup=tx_klavyesi(txs[0].id)
