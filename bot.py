@@ -6,6 +6,13 @@ import time
 import urllib.request
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
+
+try:
+    from dotenv import load_dotenv  # yerel geliştirme için opsiyonel
+    load_dotenv()
+except ImportError:
+    pass
+
 from telegram import Update
 from telegram.ext import Application, MessageHandler, CommandHandler, filters, ContextTypes
 from groq_client import ses_to_metin, metni_parse_et
@@ -117,7 +124,7 @@ async def sesli_mesaj_isle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await _harcamalari_isle(update, metin)
 
     except Exception as e:
-        logger.error(f"Ses işleme hatası: {e}")
+        logger.error(f"Ses işleme hatası: {e}", exc_info=True)
         await update.message.reply_text("❌ Bir hata oluştu.")
 
 
@@ -151,14 +158,21 @@ async def _rapor_isle(update: Update, soru: str):
             await update.message.reply_text(mesaj)
 
     except Exception as e:
-        logger.error(f"Rapor hatası: {e}")
+        logger.error(f"Rapor hatası: {e}", exc_info=True)
         await update.message.reply_text("❌ Rapor oluşturulurken hata oluştu.")
 
 
 async def _harcamalari_isle(update: Update, metin: str):
     try:
         await update.message.reply_text("🤖 Harcamalar analiz ediliyor...")
-        harcama_listesi = await metni_parse_et(metin)
+        try:
+            harcama_listesi = await metni_parse_et(metin)
+        except Exception as e:
+            logger.error(f"Groq parse erişilemedi: {e}", exc_info=True)
+            await update.message.reply_text(
+                "⚠️ Yapay zeka servisine şu an ulaşılamıyor. Lütfen birazdan tekrar deneyin."
+            )
+            return
 
         if not harcama_listesi:
             await update.message.reply_text(
@@ -214,7 +228,7 @@ async def _harcamalari_isle(update: Update, metin: str):
         await update.message.reply_text(mesaj, parse_mode="Markdown")
 
     except Exception as e:
-        logger.error(f"Harcama işleme hatası: {e}")
+        logger.error(f"Harcama işleme hatası: {e}", exc_info=True)
         await update.message.reply_text("❌ Bir hata oluştu.")
 
 

@@ -1,10 +1,17 @@
 import os
 import json
+import logging
 from datetime import datetime
 from groq import Groq
 
+logger = logging.getLogger(__name__)
+
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
+
+# LLM parse modeli — llama-3.3-70b-versatile Groq tarafından 16.08.2026'da kaldırıldı.
+PARSE_MODEL = os.environ.get("GROQ_PARSE_MODEL", "openai/gpt-oss-120b")
+TRANSCRIBE_MODEL = os.environ.get("GROQ_TRANSCRIBE_MODEL", "whisper-large-v3")
 
 
 async def ses_to_metin(dosya_yolu: str) -> str:
@@ -13,20 +20,23 @@ async def ses_to_metin(dosya_yolu: str) -> str:
         with open(dosya_yolu, "rb") as dosya:
             transkripsiyon = client.audio.transcriptions.create(
                 file=(os.path.basename(dosya_yolu), dosya.read()),
-                model="whisper-large-v3",
+                model=TRANSCRIBE_MODEL,
                 language="tr",
                 response_format="text"
             )
         return str(transkripsiyon).strip()
     except Exception as e:
-        print(f"Ses-metin hatası: {e}")
+        logger.error(f"Ses-metin hatası: {e}", exc_info=True)
         return ""
 
 
-async def metni_parse_et(metin: str) -> list[dict] | None:
+async def metni_parse_et(metin: str) -> list[dict]:
     """
     Harcama/yatırım metnini parse eder.
     tip: 'kisisel', 'isletme' veya 'yatirim'
+
+    Dönüş: harcama dict listesi (metin kayıt içermiyorsa boş liste).
+    Groq API'ye ulaşılamazsa exception fırlatır (çağıran ayırt edebilsin diye).
     """
     bugun = datetime.now().strftime("%d.%m.%Y")
     bugun_yil = datetime.now().year
@@ -37,16 +47,18 @@ Bugünün tarihi: {bugun}
 Kullanıcının mesajında bir veya birden fazla harcama/yatırım olabilir. Tümünü analiz et.
 Mesaj virgülle ayrılmış, satır satır veya karma formatta olabilir.
 
-MUTLAKA şu JSON array formatında yanıt ver (başka hiçbir şey yazma, sadece JSON):
-[
-  {{
-    "aciklama": "kısa açıklama",
-    "tutar": 123.45,
-    "kategori": "kategori adı",
-    "tip": "kisisel veya isletme veya yatirim",
-    "tarih": "DD.MM.YYYY"
-  }}
-]
+MUTLAKA şu JSON formatında yanıt ver (başka hiçbir şey yazma, sadece JSON):
+{{
+  "kayitlar": [
+    {{
+      "aciklama": "kısa açıklama",
+      "tutar": 123.45,
+      "kategori": "kategori adı",
+      "tip": "kisisel veya isletme veya yatirim",
+      "tarih": "DD.MM.YYYY"
+    }}
+  ]
+}}
 
 TİP KURALLARI — ÖNCELİK SIRASI:
 1. YATIRIM: BES, bireysel emeklilik, hisse, borsa, kripto, altın, döviz alımı, fon, tahvil, bono, yatırım fonu, BIST, Midas, Robinhood, temettü → tip: "yatirim"
@@ -72,51 +84,40 @@ SATIN ALMA KURALI:
 - "dolar aldım 500 lira" → yatirim (Altın/Döviz), tutar=500
 - "altın aldım 2000 TL" → yatirim (Altın/Döviz), tutar=2000
 
-Eğer metin hiç kayıt içermiyorsa boş array döndür: []"""
+Eğer metin hiç kayıt içermiyorsa boş liste döndür: {{"kayitlar": []}}"""
 
     try:
         yanit = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=PARSE_MODEL,
             messages=[
                 {"role": "system", "content": sistem_promptu},
                 {"role": "user", "content": metin}
             ],
             temperature=0.1,
-            max_tokens=2000
+            max_tokens=2000,
+            reasoning_effort="low",
+            response_format={"type": "json_object"},
         )
-
         yanit_metni = yanit.choices[0].message.content.strip()
-
-        if "```" in yanit_metni:
-            parcalar = yanit_metni.split("```")
-            for parca in parcalar:
-                if parca.startswith("json"):
-                    yanit_metni = parca[4:].strip()
-                    break
-                elif parca.strip().startswith("["):
-                    yanit_metni = parca.strip()
-                    break
-
-        yanit_metni = yanit_metni.strip()
-
-        if yanit_metni.startswith("["):
-            liste = json.loads(yanit_metni)
-            if isinstance(liste, list) and len(liste) > 0:
-                for h in liste:
-                    if not h.get("tarih"):
-                        h["tarih"] = datetime.now().strftime("%d.%m.%Y")
-                return liste
-            return None
-
-        if yanit_metni.startswith("{"):
-            veri = json.loads(yanit_metni)
-            if veri and "tutar" in veri:
-                if not veri.get("tarih"):
-                    veri["tarih"] = datetime.now().strftime("%d.%m.%Y")
-                return [veri]
-
-        return None
-
     except Exception as e:
-        print(f"Parse hatası: {e}")
-        return None
+        logger.error(f"Groq parse çağrısı başarısız: {e}", exc_info=True)
+        raise
+
+    try:
+        veri = json.loads(yanit_metni)
+    except json.JSONDecodeError as e:
+        logger.error(f"Groq yanıtı JSON değil: {e} | yanıt: {yanit_metni[:500]}")
+        return []
+
+    kayitlar = veri.get("kayitlar", []) if isinstance(veri, dict) else []
+    if not isinstance(kayitlar, list):
+        return []
+
+    temiz = []
+    for h in kayitlar:
+        if not isinstance(h, dict) or "tutar" not in h:
+            continue
+        if not h.get("tarih"):
+            h["tarih"] = datetime.now().strftime("%d.%m.%Y")
+        temiz.append(h)
+    return temiz

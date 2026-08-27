@@ -1,8 +1,12 @@
 import os
 import json
+import logging
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
+logger = logging.getLogger(__name__)
 
 SHEETS_ID = os.environ.get("GOOGLE_SHEETS_ID")
 CREDENTIALS_JSON = os.environ.get("GOOGLE_CREDENTIALS_JSON")
@@ -47,8 +51,11 @@ def _sayfa_var_mi(sheets, sayfa_adi: str) -> bool:
         meta = sheets.get(spreadsheetId=SHEETS_ID).execute()
         sayfalar = [s["properties"]["title"] for s in meta["sheets"]]
         return sayfa_adi in sayfalar
-    except:
-        return False
+    except Exception as e:
+        # Geçici bir API hatasında "sayfa yok" gibi davranıp yanlışlıkla
+        # yeni sayfa oluşturmayı denememek için hatayı yukarı taşı.
+        logger.warning(f"_sayfa_var_mi hata ({sayfa_adi}): {e}")
+        raise
 
 
 def _sayfa_id_al(sheets, sayfa_adi: str) -> int:
@@ -70,7 +77,14 @@ def _sayfa_olustur(sheets, sayfa_adi: str):
             }
         }]
     }
-    sheets.batchUpdate(spreadsheetId=SHEETS_ID, body=body).execute()
+    try:
+        sheets.batchUpdate(spreadsheetId=SHEETS_ID, body=body).execute()
+    except HttpError as e:
+        # Sayfa zaten varsa (ör. _sayfa_var_mi yanlış negatif verdiyse) sorun değil.
+        if "already exists" in str(e):
+            logger.info(f"'{sayfa_adi}' sayfası zaten var, oluşturma atlandı.")
+            return
+        raise
 
     baslik = [["Tarih", "Gün", "Saat", "Açıklama", "Kategori", "Tip", "Tutar (₺)", "Notlar"]]
     sheets.values().update(
@@ -163,7 +177,7 @@ async def harcamayi_kaydet(harcama: dict) -> bool:
         return True
 
     except Exception as e:
-        print(f"Sheets kayıt hatası: {e}")
+        logger.error(f"Sheets kayıt hatası: {e}", exc_info=True)
         return False
 
 
@@ -220,7 +234,7 @@ def _ozet_guncelle(sheets, harcama_dt: datetime, tutar: float, tip: str):
             ).execute()
 
     except Exception as e:
-        print(f"Özet güncelleme hatası: {e}")
+        logger.error(f"Özet güncelleme hatası: {e}", exc_info=True)
 
 
 def _safe_float(satir: list, index: int) -> float:
@@ -242,7 +256,13 @@ def _ozet_sayfasi_olustur(sheets, sayfa_adi: str):
             }
         }]
     }
-    sheets.batchUpdate(spreadsheetId=SHEETS_ID, body=body).execute()
+    try:
+        sheets.batchUpdate(spreadsheetId=SHEETS_ID, body=body).execute()
+    except HttpError as e:
+        if "already exists" in str(e):
+            logger.info(f"'{sayfa_adi}' sayfası zaten var, oluşturma atlandı.")
+            return
+        raise
 
     # Yatırım sütunu eklendi
     baslik = [["Ay", "Kişisel (₺)", "İşletme (₺)", "Yatırım (₺)", "Toplam (₺)"]]

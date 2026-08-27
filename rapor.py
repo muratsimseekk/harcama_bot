@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 import tempfile
 from datetime import datetime
 from google.oauth2.service_account import Credentials
@@ -11,9 +12,12 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
 
+logger = logging.getLogger(__name__)
+
 SHEETS_ID = os.environ.get("GOOGLE_SHEETS_ID")
 CREDENTIALS_JSON = os.environ.get("GOOGLE_CREDENTIALS_JSON")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+ANALIZ_MODEL = os.environ.get("GROQ_PARSE_MODEL", "openai/gpt-oss-120b")
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
@@ -80,7 +84,7 @@ def _sayfa_verilerini_al(sheets, sayfa_adi: str) -> list:
                     continue
         return harcamalar
     except Exception as e:
-        print(f"Sayfa okuma hatası ({sayfa_adi}): {e}")
+        logger.warning(f"Sayfa okuma hatası ({sayfa_adi}): {e}")
         return []
 
 
@@ -119,22 +123,20 @@ TIP: "yatirim","BES","hisse","kripto","altin","emeklilik","fon" -> "yatirim"
 
     try:
         yanit = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=ANALIZ_MODEL,
             messages=[
                 {"role": "system", "content": sistem},
                 {"role": "user", "content": soru}
             ],
             temperature=0.1,
-            max_tokens=400
+            max_tokens=400,
+            reasoning_effort="low",
+            response_format={"type": "json_object"},
         )
         yanit_metni = yanit.choices[0].message.content.strip()
-        if "```" in yanit_metni:
-            yanit_metni = yanit_metni.split("```")[1]
-            if yanit_metni.startswith("json"):
-                yanit_metni = yanit_metni[4:].strip()
         return json.loads(yanit_metni)
     except Exception as e:
-        print(f"Soru analiz hatasi: {e}")
+        logger.error(f"Soru analiz hatasi: {e}", exc_info=True)
         return None
 
 
