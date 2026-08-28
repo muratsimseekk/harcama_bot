@@ -1,5 +1,4 @@
 import json
-import types
 
 import pytest
 
@@ -7,24 +6,11 @@ from core import llm
 from core.dates import today
 
 
-class _FakeResp:
-    def __init__(self, content):
-        self.choices = [types.SimpleNamespace(message=types.SimpleNamespace(content=content))]
-
-
-class _FakeClient:
-    def __init__(self, content):
-        self._content = content
-        self.chat = types.SimpleNamespace(
-            completions=types.SimpleNamespace(create=self._create)
-        )
-
-    def _create(self, **kw):
-        return _FakeResp(self._content)
-
-
 def _patch(monkeypatch, content):
-    monkeypatch.setattr(llm, "_c", lambda: _FakeClient(content))
+    """llm._chat_json'ı sabit içerik döndürecek şekilde değiştirir."""
+    def _fake(system, user, *, max_tokens, temperature=0.1):
+        return content
+    monkeypatch.setattr(llm, "_chat_json", _fake)
 
 
 async def test_parse_tekli(monkeypatch):
@@ -70,10 +56,8 @@ async def test_parse_sifir_elenir_negatif_pozitiflenir(monkeypatch):
 
 
 async def test_parse_api_hatasi_yukari_firlar(monkeypatch):
-    class _Boom:
-        chat = types.SimpleNamespace(completions=types.SimpleNamespace(
-            create=lambda **kw: (_ for _ in ()).throw(RuntimeError("500"))
-        ))
-    monkeypatch.setattr(llm, "_c", lambda: _Boom())
+    def _boom(system, user, *, max_tokens, temperature=0.1):
+        raise RuntimeError("500")
+    monkeypatch.setattr(llm, "_chat_json", _boom)
     with pytest.raises(RuntimeError):
         await llm.parse_transactions("kahve 90")

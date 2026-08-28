@@ -7,7 +7,9 @@ __pycache__
 .env
 .env.*
 tests/
+mobile/
 scripts/schema.sql
+scripts/schema_mobile.sql
 *.md
 .github
 .ruff_cache

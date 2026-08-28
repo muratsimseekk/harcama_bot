@@ -14,5 +14,5 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements-dev.txt
-      - run: ruff check core bot scripts tests main.py
+      - run: ruff check core bot api scripts tests main.py
       - run: pytest -q

@@ -37,6 +37,13 @@ class Settings:
     SUPABASE_SERVICE_KEY: str = os.environ.get(
         "SUPABASE_SERVICE_KEY", os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     )
+    SUPABASE_ANON_KEY: str = os.environ.get("SUPABASE_ANON_KEY", "")
+    # Opsiyonel: verilirse JWT'ler yerelde HS256 ile doğrulanır (ağ çağrısı yok).
+    SUPABASE_JWT_SECRET: str = os.environ.get("SUPABASE_JWT_SECRET", "")
+
+    # --- Mobil API ---
+    FREE_AYLIK_LIMIT: int = _int("FREE_AYLIK_LIMIT", 50)
+    API_CORS_ORIGINS: str = os.environ.get("API_CORS_ORIGINS", "*")
 
     # --- Sunucu / keepalive ---
     PORT: int = _int("PORT", 10000)

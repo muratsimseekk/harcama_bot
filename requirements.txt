@@ -5,6 +5,12 @@ matplotlib==3.9.0
 numpy==1.26.4
 python-dotenv==1.0.1
 
+# --- Mobil API (FastAPI servisi) ---
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-multipart==0.0.18
+pyjwt[crypto]==2.13.0
+
 # --- geçici: Google Sheets → Supabase taşıması bitince kaldırılacak ---
 google-auth==2.29.0
 google-auth-httplib2==0.2.0

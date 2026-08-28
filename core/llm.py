@@ -2,6 +2,9 @@
 
 Groq SDK senkron; tüm çağrılar `asyncio.to_thread` ile sarılır ki Telegram event loop'u
 bloke olmasın.
+
+Sağlayıcıya özel her şey `_chat_json` ve `_transcribe_raw` yardımcılarında toplanmıştır;
+ileride başka bir sağlayıcıya geçiş bu iki fonksiyonla sınırlıdır.
 """
 from __future__ import annotations
 
@@ -29,21 +32,42 @@ def _c() -> Groq:
 
 
 # --------------------------------------------------------------------------- #
+# Sağlayıcı yardımcıları (tek değişim noktası)
+# --------------------------------------------------------------------------- #
+def _chat_json(system: str, user: str, *, max_tokens: int, temperature: float = 0.1) -> str:
+    """JSON-object modunda sohbet tamamlaması; ham içerik string döner. Senkron."""
+    yanit = _c().chat.completions.create(
+        model=settings.PARSE_MODEL,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        temperature=temperature,
+        max_tokens=max_tokens,
+        reasoning_effort="low",
+        response_format={"type": "json_object"},
+    )
+    return yanit.choices[0].message.content.strip()
+
+
+def _transcribe_raw(dosya_yolu: str) -> str:
+    """Ses dosyasını metne çevirir. Senkron."""
+    with open(dosya_yolu, "rb") as f:
+        sonuc = _c().audio.transcriptions.create(
+            file=(os.path.basename(dosya_yolu), f.read()),
+            model=settings.TRANSCRIBE_MODEL,
+            language="tr",
+            response_format="text",
+        )
+    return str(sonuc).strip()
+
+
+# --------------------------------------------------------------------------- #
 # Ses → metin
 # --------------------------------------------------------------------------- #
 async def transcribe(dosya_yolu: str) -> str:
-    def _run() -> str:
-        with open(dosya_yolu, "rb") as f:
-            sonuc = _c().audio.transcriptions.create(
-                file=(os.path.basename(dosya_yolu), f.read()),
-                model=settings.TRANSCRIBE_MODEL,
-                language="tr",
-                response_format="text",
-            )
-        return str(sonuc).strip()
-
     try:
-        return await asyncio.to_thread(_run)
+        return await asyncio.to_thread(_transcribe_raw, dosya_yolu)
     except Exception as e:
         logger.error(f"transcribe hatası: {e}", exc_info=True)
         return ""
@@ -114,22 +138,8 @@ async def parse_transactions(metin: str, *, kaynak: str = "telegram_text") -> li
     bugun = today()
     sistem = _PARSE_SISTEM.format(bugun=tarih_str(bugun), yil=bugun.year)
 
-    def _run() -> str:
-        yanit = _c().chat.completions.create(
-            model=settings.PARSE_MODEL,
-            messages=[
-                {"role": "system", "content": sistem},
-                {"role": "user", "content": metin},
-            ],
-            temperature=0.1,
-            max_tokens=2000,
-            reasoning_effort="low",
-            response_format={"type": "json_object"},
-        )
-        return yanit.choices[0].message.content.strip()
-
     try:
-        ham = await asyncio.to_thread(_run)
+        ham = await asyncio.to_thread(_chat_json, sistem, metin, max_tokens=2000)
     except Exception as e:
         logger.error(f"parse_transactions Groq çağrısı başarısız: {e}", exc_info=True)
         raise
@@ -191,22 +201,8 @@ TIP: "yatirim","BES","hisse","kripto","altin","emeklilik","fon" -> "yatirim"
 YON: "gelir","maas","kazanc" -> "gelir"; "gider","harcama" -> "gider"; belirtilmemisse -> "hepsi"
 """
 
-    def _run() -> str:
-        yanit = _c().chat.completions.create(
-            model=settings.PARSE_MODEL,
-            messages=[
-                {"role": "system", "content": sistem},
-                {"role": "user", "content": soru},
-            ],
-            temperature=0.1,
-            max_tokens=400,
-            reasoning_effort="low",
-            response_format={"type": "json_object"},
-        )
-        return yanit.choices[0].message.content.strip()
-
     try:
-        ham = await asyncio.to_thread(_run)
+        ham = await asyncio.to_thread(_chat_json, sistem, soru, max_tokens=400)
         return json.loads(ham)
     except Exception as e:
         logger.error(f"analyze_query hatasi: {e}", exc_info=True)
@@ -225,6 +221,13 @@ _DUZELTME_KELIMELERI = (
     "değiştir", "degistir", "güncelle", "guncelle",
 )
 
+_INTENT_SISTEM = (
+    "Kullanıcı mesajının niyetini sınıfla. SADECE şu JSON: "
+    '{"niyet": "islem | rapor | duzeltme | yardim"}. '
+    "islem = yeni harcama/gelir kaydı. rapor = geçmiş veri sorgusu/özet. "
+    "duzeltme = var olan kaydı sil/düzelt. yardim = kullanım sorusu."
+)
+
 
 async def classify_intent(metin: str) -> str:
     """Döndürür: 'rapor' | 'duzeltme' | 'islem' | 'yardim'."""
@@ -239,28 +242,10 @@ async def classify_intent(metin: str) -> str:
     if any(k in d for k in _RAPOR_KELIMELERI):
         return "rapor"
 
-    # Belirsiz: kısa LLM çağrısı
-    def _run() -> str:
-        yanit = _c().chat.completions.create(
-            model=settings.PARSE_MODEL,
-            messages=[
-                {"role": "system", "content": (
-                    "Kullanıcı mesajının niyetini sınıfla. SADECE şu JSON: "
-                    '{"niyet": "islem | rapor | duzeltme | yardim"}. '
-                    "islem = yeni harcama/gelir kaydı. rapor = geçmiş veri sorgusu/özet. "
-                    "duzeltme = var olan kaydı sil/düzelt. yardim = kullanım sorusu."
-                )},
-                {"role": "user", "content": metin},
-            ],
-            temperature=0.0,
-            max_tokens=200,
-            reasoning_effort="low",
-            response_format={"type": "json_object"},
-        )
-        return yanit.choices[0].message.content.strip()
-
     try:
-        ham = await asyncio.to_thread(_run)
+        ham = await asyncio.to_thread(
+            _chat_json, _INTENT_SISTEM, metin, max_tokens=200, temperature=0.0
+        )
         niyet = json.loads(ham).get("niyet", "islem")
         return niyet if niyet in ("islem", "rapor", "duzeltme", "yardim") else "islem"
     except Exception as e:
@@ -271,30 +256,21 @@ async def classify_intent(metin: str) -> str:
 # --------------------------------------------------------------------------- #
 # Düzeltme metnini alan→değer sözlüğüne çevir
 # --------------------------------------------------------------------------- #
+_DUZELTME_SISTEM = (
+    "Kullanıcı bir işlem kaydında ne değiştirmek istediğini söylüyor. "
+    "SADECE değişecek alanları şu JSON'da döndür (değişmeyenleri ekleme): "
+    '{"tutar": 0.0, "kategori": "", "aciklama": "", "tip": "kisisel|isletme|yatirim", '
+    '"yon": "gider|gelir", "tarih": "DD.MM.YYYY"}. '
+    "Tarih için 'dün','bugün' gibi ifadeleri DD.MM.YYYY'ye çevir."
+)
+
+
 async def parse_correction(metin: str) -> dict:
     """'kategori market, tutar 95' → {'kategori': 'market', 'tutar': 95.0}"""
-    def _run() -> str:
-        yanit = _c().chat.completions.create(
-            model=settings.PARSE_MODEL,
-            messages=[
-                {"role": "system", "content": (
-                    "Kullanıcı bir işlem kaydında ne değiştirmek istediğini söylüyor. "
-                    "SADECE değişecek alanları şu JSON'da döndür (değişmeyenleri ekleme): "
-                    '{"tutar": 0.0, "kategori": "", "aciklama": "", "tip": "kisisel|isletme|yatirim", '
-                    '"yon": "gider|gelir", "tarih": "DD.MM.YYYY"}. '
-                    "Tarih için 'dün','bugün' gibi ifadeleri DD.MM.YYYY'ye çevir."
-                )},
-                {"role": "user", "content": metin},
-            ],
-            temperature=0.0,
-            max_tokens=120,
-            reasoning_effort="low",
-            response_format={"type": "json_object"},
-        )
-        return yanit.choices[0].message.content.strip()
-
     try:
-        ham = await asyncio.to_thread(_run)
+        ham = await asyncio.to_thread(
+            _chat_json, _DUZELTME_SISTEM, metin, max_tokens=120, temperature=0.0
+        )
         veri = json.loads(ham)
         return veri if isinstance(veri, dict) else {}
     except Exception as e:
