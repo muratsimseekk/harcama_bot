@@ -6,26 +6,22 @@
     "orientation": "portrait",
     "scheme": "harcama",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.harcama.mobil",
-      "infoPlist": {
-        "NSMicrophoneUsageDescription": "Harcamalarını sesle eklemek için mikrofon erişimi gerekir."
-      }
+      "bundleIdentifier": "com.harcama.mobil"
     },
     "android": {
-      "package": "com.harcama.mobil",
-      "permissions": [
-        "RECORD_AUDIO"
-      ]
+      "package": "com.harcama.mobil"
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-av",
-      "expo-asset",
-      "expo-font"
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Harcamalarını sesle eklemek için mikrofon erişimi gerekir."
+        }
+      ]
     ]
   }
 }

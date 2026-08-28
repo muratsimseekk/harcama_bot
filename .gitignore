@@ -68,3 +68,7 @@ Thumbs.db
 # Project specific
 .secrets/
 config.local.json
+
+# mobile/ (Expo) — Python packaging kalıpları (lib/, dist/, build/) buraya karışmasın
+!mobile/lib/
+!mobile/lib/**

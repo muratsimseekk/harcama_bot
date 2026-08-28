@@ -1,7 +1,12 @@
-import { Audio } from "expo-av";
+import {
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorder,
+} from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,9 +28,9 @@ import type { CaptureYanit } from "@/lib/types";
 export default function Capture() {
   const renk = useRenkler();
   const router = useRouter();
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [metin, setMetin] = useState("");
   const [durum, setDurum] = useState<"bos" | "kayit" | "gonderiliyor">("bos");
-  const kayitRef = useRef<Audio.Recording | null>(null);
 
   function sonuca_git(y: CaptureYanit) {
     if (y.candidates.length === 0) {
@@ -36,12 +41,7 @@ export default function Capture() {
   }
 
   function hataGoster(e: unknown) {
-    const mesaj =
-      e instanceof ApiError
-        ? e.status === 402
-          ? e.message
-          : e.message
-        : "Bir şeyler ters gitti, tekrar dene.";
+    const mesaj = e instanceof ApiError ? e.message : "Bir şeyler ters gitti, tekrar dene.";
     Alert.alert("Hata", mesaj);
   }
 
@@ -61,16 +61,14 @@ export default function Capture() {
 
   async function kayitBaslat() {
     try {
-      const izin = await Audio.requestPermissionsAsync();
+      const izin = await AudioModule.requestRecordingPermissionsAsync();
       if (!izin.granted) {
         Alert.alert("Mikrofon izni gerekli");
         return;
       }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY,
-      );
-      kayitRef.current = recording;
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
       setDurum("kayit");
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (e) {
@@ -80,14 +78,12 @@ export default function Capture() {
   }
 
   async function kayitBitir() {
-    const rec = kayitRef.current;
-    kayitRef.current = null;
-    if (!rec) return;
+    if (durum !== "kayit") return;
     setDurum("gonderiliyor");
     try {
-      await rec.stopAndUnloadAsync();
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-      const uri = rec.getURI();
+      await recorder.stop();
+      await setAudioModeAsync({ allowsRecording: false });
+      const uri = recorder.uri;
       if (!uri) throw new Error("Kayıt alınamadı");
       const y = await api.captureAudio(uri);
       sonuca_git(y);
