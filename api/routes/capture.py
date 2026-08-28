@@ -44,6 +44,7 @@ async def capture(
         finally:
             if tmp_path and os.path.exists(tmp_path):
                 os.unlink(tmp_path)
+        logger.info("capture ses: %d bayt %s → transcript=%r", len(veri), uzanti, transcript)
         if not transcript:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Ses anlaşılamadı")
         metin = transcript
@@ -62,6 +63,7 @@ async def capture(
         ) from e
 
     if not adaylar:
+        logger.info("capture: aday çıkmadı | metin=%r", metin)
         return CaptureYanit(candidates=[], needs_review=False, transcript=transcript)
 
     gerek = inceleme_gerek(adaylar)

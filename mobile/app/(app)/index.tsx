@@ -3,10 +3,11 @@ import {
   RecordingPresets,
   setAudioModeAsync,
   useAudioRecorder,
+  useAudioRecorderState,
 } from "expo-audio";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -26,16 +27,26 @@ import { supabase } from "@/lib/supabase";
 import { useRenkler } from "@/lib/theme";
 import type { CaptureYanit } from "@/lib/types";
 
+type Durum = "bos" | "hazirlaniyor" | "kayit" | "gonderiliyor";
+const MIN_KAYIT_MS = 700;
+
 export default function Capture() {
   const renk = useRenkler();
   const router = useRouter();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder);
   const [metin, setMetin] = useState("");
-  const [durum, setDurum] = useState<"bos" | "kayit" | "gonderiliyor">("bos");
+  const [durum, setDurum] = useState<Durum>("bos");
+  const basladiRef = useRef(0);
 
   function sonuca_git(y: CaptureYanit) {
     if (y.candidates.length === 0) {
-      Alert.alert("Anlaşılamadı", "Kayıt çıkarılamadı. Daha açık yazmayı/söylemeyi dene.");
+      Alert.alert(
+        "Anlaşılamadı",
+        y.transcript
+          ? `Duyduğum: "${y.transcript}"\n\nBundan bir kayıt çıkaramadım. Tekrar dene.`
+          : "Kayıt çıkarılamadı. Daha açık yazmayı/söylemeyi dene.",
+      );
       return;
     }
     router.push({ pathname: "/confirm", params: { data: JSON.stringify(y) } });
@@ -60,16 +71,22 @@ export default function Capture() {
     }
   }
 
-  async function kayitBaslat() {
+  async function mikTikla() {
+    if (durum === "kayit") return kayitBitir();
+    if (durum !== "bos") return;
+
+    setDurum("hazirlaniyor");
     try {
       const izin = await AudioModule.requestRecordingPermissionsAsync();
       if (!izin.granted) {
-        Alert.alert("Mikrofon izni gerekli");
+        Alert.alert("Mikrofon izni gerekli", "Ayarlar → Harcama → Mikrofon'u aç.");
+        setDurum("bos");
         return;
       }
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
       recorder.record();
+      basladiRef.current = Date.now();
       setDurum("kayit");
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (e) {
@@ -79,8 +96,12 @@ export default function Capture() {
   }
 
   async function kayitBitir() {
-    if (durum !== "kayit") return;
+    const sure = Date.now() - basladiRef.current;
+    if (sure < MIN_KAYIT_MS) {
+      await new Promise((r) => setTimeout(r, MIN_KAYIT_MS - sure));
+    }
     setDurum("gonderiliyor");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await recorder.stop();
       await setAudioModeAsync({ allowsRecording: false });
@@ -94,6 +115,9 @@ export default function Capture() {
       setDurum("bos");
     }
   }
+
+  const kayitta = durum === "kayit";
+  const mesgul = durum === "gonderiliyor" || durum === "hazirlaniyor";
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: renk.bg }]} edges={["top"]}>
@@ -114,27 +138,28 @@ export default function Capture() {
       >
         <ScrollView contentContainerStyle={s.orta} keyboardShouldPersistTaps="handled">
           <Pressable
-            onPressIn={kayitBaslat}
-            onPressOut={kayitBitir}
-            disabled={durum === "gonderiliyor"}
+            onPress={mikTikla}
+            disabled={mesgul}
             style={[
               s.mic,
               {
-                backgroundColor: durum === "kayit" ? renk.danger : renk.primary,
-                opacity: durum === "gonderiliyor" ? 0.5 : 1,
+                backgroundColor: kayitta ? renk.danger : renk.primary,
+                opacity: mesgul ? 0.5 : 1,
               },
             ]}
           >
-            {durum === "gonderiliyor" ? (
+            {mesgul ? (
               <ActivityIndicator color="#fff" size="large" />
             ) : (
-              <Text style={s.micEmoji}>{durum === "kayit" ? "●" : "🎙️"}</Text>
+              <Text style={s.micEmoji}>{kayitta ? "■" : "🎙️"}</Text>
             )}
           </Pressable>
           <Text style={[s.ipucu, { color: renk.textMuted }]}>
-            {durum === "kayit"
-              ? "Konuş… bırakınca gönderilir"
-              : "Bas-konuş: “market iki yüz elli, dün benzin altı yüz”"}
+            {kayitta
+              ? `Dinliyorum… ${Math.floor(recorderState.durationMillis / 1000)} sn — bitince dokun`
+              : durum === "hazirlaniyor"
+                ? "Hazırlanıyor…"
+                : "Dokun-konuş: “market iki yüz elli, dün benzin altı yüz”"}
           </Text>
         </ScrollView>
 
