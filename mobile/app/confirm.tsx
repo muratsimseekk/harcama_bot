@@ -14,8 +14,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api, ApiError } from "@/lib/api";
 import { turkceTutar } from "@/lib/format";
+import { useCategories } from "@/lib/queries";
 import { useRenkler } from "@/lib/theme";
-import { type Aday, type CaptureYanit, TIP_ETIKET, type Tip, type Yon } from "@/lib/types";
+import { type Aday, type CaptureYanit, type Kategori, TIP_ETIKET, type Tip, type Yon } from "@/lib/types";
 
 const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
 const YONLER: Yon[] = ["gider", "gelir"];
@@ -29,6 +30,7 @@ export default function Confirm() {
   const yanit = useMemo<CaptureYanit>(() => JSON.parse(String(data)), [data]);
   const [adaylar, setAdaylar] = useState<Aday[]>(yanit.candidates);
   const [kaydediliyor, setKaydediliyor] = useState(false);
+  const kategoriler = useCategories();
 
   const toplam = adaylar.reduce(
     (t, a) => t + (a.direction === "gelir" ? a.tutar : -a.tutar),
@@ -111,6 +113,13 @@ export default function Confirm() {
                 placeholderTextColor={renk.textMuted}
               />
             </View>
+
+            <KategoriSecici
+              kategoriler={kategoriler.data ?? []}
+              tip={a.tip}
+              secili={a.kategori}
+              onSec={(ad) => guncelle(i, { kategori: ad })}
+            />
 
             <Secmeli
               secenekler={TIPLER}
@@ -209,6 +218,45 @@ function Secmeli<T extends string>({
   );
 }
 
+function KategoriSecici({
+  kategoriler,
+  tip,
+  secili,
+  onSec,
+}: {
+  kategoriler: Kategori[];
+  tip: Tip;
+  secili: string;
+  onSec: (ad: string) => void;
+}) {
+  const renk = useRenkler();
+  const uygun = kategoriler.filter((k) => k.tip === tip && k.is_active);
+  if (uygun.length === 0) return null;
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ gap: 6, paddingVertical: 2 }}
+    >
+      {uygun.map((k) => {
+        const aktif = k.name === secili;
+        return (
+          <Pressable
+            key={k.id}
+            onPress={() => onSec(k.name)}
+            style={[
+              s.katCip,
+              { borderColor: k.color || renk.border, backgroundColor: aktif ? (k.color || renk.primary) : "transparent" },
+            ]}
+          >
+            <Text style={{ color: aktif ? "#fff" : renk.textMuted, fontSize: 12 }}>{k.name}</Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
 const s = StyleSheet.create({
   safe: { flex: 1 },
   liste: { padding: 16, gap: 14 },
@@ -221,6 +269,7 @@ const s = StyleSheet.create({
   kategori: { flex: 1, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15 },
   secmeli: { flexDirection: "row", gap: 6 },
   secenek: { flex: 1, borderWidth: 1, borderRadius: 8, paddingVertical: 8, alignItems: "center" },
+  katCip: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5 },
   tarih: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15, alignSelf: "flex-start", minWidth: 130 },
   sebepler: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   sebep: { fontSize: 12, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: "hidden" },

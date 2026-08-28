@@ -5,10 +5,14 @@ Artık her şey `Europe/Istanbul` üzerinden.
 """
 from __future__ import annotations
 
-from datetime import date, datetime
+import calendar
+from datetime import date, datetime, timedelta
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 from core.config import settings
+
+Donem = Literal["week", "month", "year"]
 
 TZ = ZoneInfo(settings.TIMEZONE)
 
@@ -79,3 +83,52 @@ def ay_coz(ay_str: str, bugun: date | None = None) -> tuple[int, int]:
 def turkce_tutar(x: float) -> str:
     """1234567.5 → '1.234.567,50'"""
     return f"{x:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
+
+
+# --------------------------------------------------------------------------- #
+# Dönem (hafta / ay / yıl) aralıkları — rapor & dashboard
+# --------------------------------------------------------------------------- #
+def hafta_araligi(d: date) -> tuple[date, date]:
+    """d gününün içinde bulunduğu ISO haftası (Pazartesi–Pazar)."""
+    bas = d - timedelta(days=d.weekday())
+    return bas, bas + timedelta(days=6)
+
+
+def ay_araligi(d: date) -> tuple[date, date]:
+    son = calendar.monthrange(d.year, d.month)[1]
+    return date(d.year, d.month, 1), date(d.year, d.month, son)
+
+
+def yil_araligi(d: date) -> tuple[date, date]:
+    return date(d.year, 1, 1), date(d.year, 12, 31)
+
+
+def donem_araligi(period: Donem, ref: date) -> tuple[date, date]:
+    if period == "week":
+        return hafta_araligi(ref)
+    if period == "year":
+        return yil_araligi(ref)
+    return ay_araligi(ref)
+
+
+def donem_kaydir(period: Donem, ref: date, yon: int) -> date:
+    """Bir önceki/sonraki dönemin referans gününü döndürür (‹ / › gezinme)."""
+    if period == "week":
+        return ref + timedelta(days=7 * yon)
+    if period == "year":
+        return date(ref.year + yon, 1, 1)
+    # ay
+    ay = ref.month - 1 + yon
+    yil = ref.year + ay // 12
+    return date(yil, ay % 12 + 1, 1)
+
+
+def donem_etiket(period: Donem, ref: date) -> str:
+    if period == "week":
+        b, s = hafta_araligi(ref)
+        if b.month == s.month:
+            return f"{b.day}–{s.day} {AYLAR_TR[b.month]} {b.year}"
+        return f"{b.day} {AYLAR_TR[b.month]} – {s.day} {AYLAR_TR[s.month]}"
+    if period == "year":
+        return str(ref.year)
+    return f"{AYLAR_TR[ref.month]} {ref.year}"

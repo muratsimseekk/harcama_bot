@@ -1,6 +1,8 @@
 """/v1/transactions — kaydet (toplu), listele, düzelt, sil."""
 from __future__ import annotations
 
+from datetime import date
+
 from fastapi import APIRouter, HTTPException, Query, status
 
 from api import usage
@@ -31,9 +33,22 @@ async def olustur(user_id: CurrentUser, istek: IslemOlusturIstek) -> list[IslemM
 
 @router.get("", response_model=list[IslemModel])
 async def listele(
-    user_id: CurrentUser, limit: int = Query(default=20, ge=1, le=100)
+    user_id: CurrentUser,
+    limit: int = Query(default=20, ge=1, le=500),
+    bas: date | None = Query(default=None, alias="from"),
+    bit: date | None = Query(default=None, alias="to"),
+    tip: str | None = Query(default=None),
+    direction: str | None = Query(default=None),
 ) -> list[IslemModel]:
-    txs = await repo.list_recent(user_id, limit)
+    if bas and bit:
+        txs = await repo.list_period(user_id, bas, bit, direction=direction, tip=tip)
+        txs = list(reversed(txs))[:limit]
+    else:
+        txs = await repo.list_recent(user_id, limit)
+        if tip:
+            txs = [t for t in txs if t.tip == tip]
+        if direction:
+            txs = [t for t in txs if t.direction == direction]
     return [IslemModel.from_tx(t) for t in txs]
 
 

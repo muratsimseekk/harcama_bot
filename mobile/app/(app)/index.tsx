@@ -1,221 +1,176 @@
-import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
-  useAudioRecorderState,
-} from "expo-audio";
-import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { DEV_NOAUTH } from "@/app/_layout";
-import { api, ApiError } from "@/lib/api";
-import { supabase } from "@/lib/supabase";
+import { KategoriListesi, PastaGrafik } from "@/components/charts";
+import { Kart, KiyasRozet, Segment } from "@/components/ui";
+import { tarihEtiket, turkceTutar } from "@/lib/format";
+import { useSummary, useTransactions } from "@/lib/queries";
 import { useRenkler } from "@/lib/theme";
-import type { CaptureYanit } from "@/lib/types";
+import { TIP_EMOJI, TIP_RENK } from "@/lib/types";
 
-type Durum = "bos" | "hazirlaniyor" | "kayit" | "gonderiliyor";
-const MIN_KAYIT_MS = 700;
+type Secim = "buay" | "gecenay" | "buyil";
+const SECIMLER: Secim[] = ["buay", "gecenay", "buyil"];
+const ETIKET: Record<Secim, string> = { buay: "Bu ay", gecenay: "Geçen ay", buyil: "Bu yıl" };
 
-export default function Capture() {
+function refTarih(sec: Secim): { period: "month" | "year"; ref?: string } {
+  if (sec === "buyil") return { period: "year" };
+  if (sec === "gecenay") {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - 1);
+    return { period: "month", ref: d.toISOString().slice(0, 10) };
+  }
+  return { period: "month" };
+}
+
+export default function Dashboard() {
   const renk = useRenkler();
   const router = useRouter();
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recorderState = useAudioRecorderState(recorder);
-  const [metin, setMetin] = useState("");
-  const [durum, setDurum] = useState<Durum>("bos");
-  const basladiRef = useRef(0);
+  const [sec, setSec] = useState<Secim>("buay");
+  const { period, ref } = refTarih(sec);
 
-  function sonuca_git(y: CaptureYanit) {
-    if (y.candidates.length === 0) {
-      Alert.alert(
-        "Anlaşılamadı",
-        y.transcript
-          ? `Duyduğum: "${y.transcript}"\n\nBundan bir kayıt çıkaramadım. Tekrar dene.`
-          : "Kayıt çıkarılamadı. Daha açık yazmayı/söylemeyi dene.",
-      );
-      return;
+  const ozet = useSummary(period, ref);
+  const sonlar = useTransactions({ limit: 8 });
+
+  const dilimler = useMemo(() => {
+    const g = ozet.data?.bu_donem;
+    if (!g) return [];
+    return g.tip_kirilim.map((t) => ({
+      ad: t.etiket,
+      tutar: t.tutar,
+      oran: t.oran,
+      renk: TIP_RENK[t.tip],
+    }));
+  }, [ozet.data]);
+
+  const katDilimler = useMemo(() => {
+    const g = ozet.data?.bu_donem;
+    if (!g) return [];
+    const ilk6 = g.kategori_kirilim.slice(0, 6);
+    const kalan = g.kategori_kirilim.slice(6);
+    const arr = ilk6.map((k) => ({ ad: k.kategori, tutar: k.tutar, oran: k.oran }));
+    if (kalan.length) {
+      const t = kalan.reduce((s, k) => s + k.tutar, 0);
+      arr.push({ ad: `Diğer (${kalan.length})`, tutar: t, oran: 0 });
     }
-    router.push({ pathname: "/confirm", params: { data: JSON.stringify(y) } });
-  }
+    return arr;
+  }, [ozet.data]);
 
-  function hataGoster(e: unknown) {
-    const mesaj = e instanceof ApiError ? e.message : "Bir şeyler ters gitti, tekrar dene.";
-    Alert.alert("Hata", mesaj);
-  }
+  const yenile = () => {
+    ozet.refetch();
+    sonlar.refetch();
+  };
 
-  async function metinGonder() {
-    if (!metin.trim() || durum !== "bos") return;
-    setDurum("gonderiliyor");
-    try {
-      const y = await api.captureText(metin.trim());
-      setMetin("");
-      sonuca_git(y);
-    } catch (e) {
-      hataGoster(e);
-    } finally {
-      setDurum("bos");
-    }
-  }
-
-  async function mikTikla() {
-    if (durum === "kayit") return kayitBitir();
-    if (durum !== "bos") return;
-
-    setDurum("hazirlaniyor");
-    try {
-      const izin = await AudioModule.requestRecordingPermissionsAsync();
-      if (!izin.granted) {
-        Alert.alert("Mikrofon izni gerekli", "Ayarlar → Harcama → Mikrofon'u aç.");
-        setDurum("bos");
-        return;
-      }
-      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-      await recorder.prepareToRecordAsync();
-      recorder.record();
-      basladiRef.current = Date.now();
-      setDurum("kayit");
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch (e) {
-      hataGoster(e);
-      setDurum("bos");
-    }
-  }
-
-  async function kayitBitir() {
-    const sure = Date.now() - basladiRef.current;
-    if (sure < MIN_KAYIT_MS) {
-      await new Promise((r) => setTimeout(r, MIN_KAYIT_MS - sure));
-    }
-    setDurum("gonderiliyor");
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      await recorder.stop();
-      await setAudioModeAsync({ allowsRecording: false });
-      const uri = recorder.uri;
-      if (!uri) throw new Error("Kayıt alınamadı");
-      const y = await api.captureAudio(uri);
-      sonuca_git(y);
-    } catch (e) {
-      hataGoster(e);
-    } finally {
-      setDurum("bos");
-    }
-  }
-
-  const kayitta = durum === "kayit";
-  const mesgul = durum === "gonderiliyor" || durum === "hazirlaniyor";
+  const g = ozet.data?.bu_donem;
+  const o = ozet.data?.onceki;
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: renk.bg }]} edges={["top"]}>
-      <View style={s.header}>
-        <Text style={[s.baslik, { color: renk.text }]}>Harcama ekle</Text>
-        {DEV_NOAUTH ? (
-          <Text style={[s.cikis, { color: renk.textMuted }]}>yönetici</Text>
-        ) : (
-          <Pressable onPress={() => supabase.auth.signOut()}>
-            <Text style={[s.cikis, { color: renk.textMuted }]}>Çıkış</Text>
-          </Pressable>
-        )}
-      </View>
-
-      <KeyboardAvoidingView
-        style={s.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      <ScrollView
+        contentContainerStyle={s.icerik}
+        refreshControl={
+          <RefreshControl refreshing={ozet.isRefetching} onRefresh={yenile} tintColor={renk.primary} />
+        }
       >
-        <ScrollView contentContainerStyle={s.orta} keyboardShouldPersistTaps="handled">
-          <Pressable
-            onPress={mikTikla}
-            disabled={mesgul}
-            style={[
-              s.mic,
-              {
-                backgroundColor: kayitta ? renk.danger : renk.primary,
-                opacity: mesgul ? 0.5 : 1,
-              },
-            ]}
-          >
-            {mesgul ? (
-              <ActivityIndicator color="#fff" size="large" />
-            ) : (
-              <Text style={s.micEmoji}>{kayitta ? "■" : "🎙️"}</Text>
-            )}
-          </Pressable>
-          <Text style={[s.ipucu, { color: renk.textMuted }]}>
-            {kayitta
-              ? `Dinliyorum… ${Math.floor(recorderState.durationMillis / 1000)} sn — bitince dokun`
-              : durum === "hazirlaniyor"
-                ? "Hazırlanıyor…"
-                : "Dokun-konuş: “market iki yüz elli, dün benzin altı yüz”"}
-          </Text>
-        </ScrollView>
+        <Text style={[s.baslik, { color: renk.text }]}>Özet</Text>
 
-        <View style={[s.altBar, { borderTopColor: renk.border, backgroundColor: renk.card }]}>
-          <TextInput
-            style={[s.input, { color: renk.text, backgroundColor: renk.bg, borderColor: renk.border }]}
-            placeholder="ya da yaz: kahve 90"
-            placeholderTextColor={renk.textMuted}
-            value={metin}
-            onChangeText={setMetin}
-            onSubmitEditing={metinGonder}
-            returnKeyType="send"
-            editable={durum === "bos"}
-          />
-          <Pressable
-            style={[s.gonder, { backgroundColor: metin.trim() ? renk.primary : renk.border }]}
-            onPress={metinGonder}
-            disabled={!metin.trim() || durum !== "bos"}
+        <Segment secenekler={SECIMLER} etiket={(x) => ETIKET[x]} secili={sec} onSec={setSec} />
+
+        {ozet.isLoading || !g ? (
+          <ActivityIndicator style={{ marginTop: 40 }} color={renk.primary} />
+        ) : (
+          <>
+            <Kart style={s.toplamKart}>
+              <Text style={[s.toplamEtiket, { color: renk.textMuted }]}>
+                {ozet.data?.etiket} · toplam gider
+              </Text>
+              <Text style={[s.toplamDeger, { color: renk.text }]}>
+                {turkceTutar(g.toplam_gider)} ₺
+              </Text>
+              {o && <KiyasRozet bu={g.toplam_gider} onceki={o.toplam_gider} />}
+              {g.toplam_gelir > 0 && (
+                <Text style={[s.gelirSatir, { color: renk.success }]}>
+                  Gelir {turkceTutar(g.toplam_gelir)} ₺ · Net {turkceTutar(g.net)} ₺
+                </Text>
+              )}
+            </Kart>
+
+            <Kart>
+              <Text style={[s.kartBaslik, { color: renk.text }]}>Tür dağılımı</Text>
+              <PastaGrafik dilimler={dilimler} />
+            </Kart>
+
+            {katDilimler.length > 0 && (
+              <Kart>
+                <Text style={[s.kartBaslik, { color: renk.text }]}>Kategoriler</Text>
+                <KategoriListesi dilimler={katDilimler} />
+              </Kart>
+            )}
+          </>
+        )}
+
+        <Kart>
+          <Text style={[s.kartBaslik, { color: renk.text }]}>Son hareketler</Text>
+          {sonlar.isLoading ? (
+            <ActivityIndicator color={renk.primary} />
+          ) : (sonlar.data ?? []).length === 0 ? (
+            <Text style={{ color: renk.textMuted }}>Henüz kayıt yok.</Text>
+          ) : (
+            (sonlar.data ?? []).map((t) => (
+              <View key={t.id} style={[s.hareket, { borderBottomColor: renk.border }]}>
+                <Text style={{ fontSize: 16 }}>{TIP_EMOJI[t.tip]}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: renk.text, fontWeight: "600" }} numberOfLines={1}>
+                    {t.aciklama}
+                  </Text>
+                  <Text style={{ color: renk.textMuted, fontSize: 12 }}>
+                    {t.kategori} · {tarihEtiket(t.tarih)}
+                  </Text>
+                </View>
+                <Text
+                  style={{ color: t.direction === "gelir" ? renk.success : renk.text, fontWeight: "700" }}
+                >
+                  {t.direction === "gelir" ? "+" : "−"}
+                  {turkceTutar(t.tutar)} ₺
+                </Text>
+              </View>
+            ))
+          )}
+          <Text
+            style={[s.tumu, { color: renk.primary }]}
+            onPress={() => router.navigate("/(app)/gecmis")}
           >
-            <Text style={{ color: renk.primaryText, fontSize: 18, fontWeight: "700" }}>→</Text>
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
+            Tümünü gör →
+          </Text>
+        </Kart>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1 },
-  flex: { flex: 1 },
-  header: {
+  icerik: { padding: 16, gap: 14, paddingBottom: 32 },
+  baslik: { fontSize: 26, fontWeight: "800" },
+  toplamKart: { gap: 8 },
+  toplamEtiket: { fontSize: 13 },
+  toplamDeger: { fontSize: 32, fontWeight: "800" },
+  gelirSatir: { fontSize: 13, fontWeight: "600" },
+  kartBaslik: { fontSize: 15, fontWeight: "700", marginBottom: 12 },
+  hareket: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  baslik: { fontSize: 22, fontWeight: "800" },
-  cikis: { fontSize: 15 },
-  orta: { flexGrow: 1, alignItems: "center", justifyContent: "center", gap: 20, padding: 24 },
-  mic: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  micEmoji: { fontSize: 64, color: "#fff" },
-  ipucu: { fontSize: 15, textAlign: "center", maxWidth: 280 },
-  altBar: {
-    flexDirection: "row",
     gap: 10,
-    padding: 12,
-    borderTopWidth: 1,
-    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  input: { flex: 1, borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
-  gonder: { width: 46, height: 46, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  tumu: { fontSize: 14, fontWeight: "600", marginTop: 12, textAlign: "center" },
 });

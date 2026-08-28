@@ -138,3 +138,29 @@ def _as_dt(v) -> datetime | None:
         return datetime.fromisoformat(str(v).replace("Z", "+00:00"))
     except (ValueError, TypeError):
         return None
+
+
+@dataclass
+class Category:
+    """Kullanıcının düzenlenebilir harcama kategorisi."""
+    id: str
+    user_id: str
+    name: str
+    tip: TxType
+    color: str | None = None
+    keywords: list[str] = field(default_factory=list)
+    is_active: bool = True
+    sort_order: int = 0
+
+    @classmethod
+    def from_row(cls, r: dict) -> Category:
+        return cls(
+            id=r["id"],
+            user_id=r["user_id"],
+            name=r.get("name", ""),
+            tip=tip_normalize(r.get("type", "kisisel")),
+            color=r.get("color"),
+            keywords=list(r.get("keywords") or []),
+            is_active=bool(r.get("is_active", True)),
+            sort_order=int(r.get("sort_order", 0) or 0),
+        )

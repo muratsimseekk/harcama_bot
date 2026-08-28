@@ -6,7 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from core.models import Candidate, Transaction
+from core.models import Candidate, Category, Transaction
+from core.summary import Ozet
 
 Tip = Literal["kisisel", "isletme", "yatirim"]
 Yon = Literal["gider", "gelir"]
@@ -99,3 +100,98 @@ class BenModel(BaseModel):
     plan: str
     ay_kayit: int
     limit: int
+    toplam_kayit: int = 0
+
+
+# --------------------------------------------------------------------------- #
+# Kategoriler
+# --------------------------------------------------------------------------- #
+class KategoriModel(BaseModel):
+    id: str
+    name: str
+    tip: Tip
+    color: str | None = None
+    keywords: list[str] = Field(default_factory=list)
+    is_active: bool = True
+    sort_order: int = 0
+
+    @classmethod
+    def from_cat(cls, c: Category) -> KategoriModel:
+        return cls(
+            id=c.id, name=c.name, tip=c.tip, color=c.color,
+            keywords=list(c.keywords), is_active=c.is_active, sort_order=c.sort_order,
+        )
+
+
+class KategoriOlusturIstek(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    tip: Tip
+    color: str | None = None
+    keywords: list[str] = Field(default_factory=list)
+
+
+class KategoriGuncelleIstek(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=60)
+    tip: Tip | None = None
+    color: str | None = None
+    is_active: bool | None = None
+    sort_order: int | None = None
+
+    def kolonlar(self) -> dict:
+        m = {"name": "name", "tip": "type", "color": "color",
+             "is_active": "is_active", "sort_order": "sort_order"}
+        return {kol: getattr(self, alan) for alan, kol in m.items()
+                if getattr(self, alan) is not None}
+
+
+# --------------------------------------------------------------------------- #
+# Özet (dashboard + rapor)
+# --------------------------------------------------------------------------- #
+class TipKirilimModel(BaseModel):
+    tip: str
+    etiket: str
+    tutar: float
+    adet: int
+    oran: float
+
+
+class KategoriKirilimModel(BaseModel):
+    kategori: str
+    tip: str
+    tutar: float
+    adet: int
+    oran: float
+
+
+class GunlukNoktaModel(BaseModel):
+    tarih: date
+    gider: float
+    gelir: float
+
+
+class OzetGovde(BaseModel):
+    toplam_gider: float
+    toplam_gelir: float
+    net: float
+    adet: int
+    tip_kirilim: list[TipKirilimModel]
+    kategori_kirilim: list[KategoriKirilimModel]
+    gunluk: list[GunlukNoktaModel]
+
+    @classmethod
+    def from_ozet(cls, o: Ozet) -> OzetGovde:
+        return cls(
+            toplam_gider=o.toplam_gider, toplam_gelir=o.toplam_gelir, net=o.net, adet=o.adet,
+            tip_kirilim=[TipKirilimModel(**vars(x)) for x in o.tip_kirilim],
+            kategori_kirilim=[KategoriKirilimModel(**vars(x)) for x in o.kategori_kirilim],
+            gunluk=[GunlukNoktaModel(**vars(x)) for x in o.gunluk],
+        )
+
+
+class OzetModel(BaseModel):
+    period: str
+    baslangic: date
+    bitis: date
+    etiket: str
+    bu_donem: OzetGovde
+    onceki: OzetGovde

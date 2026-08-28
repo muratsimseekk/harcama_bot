@@ -9,6 +9,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
 from api.deps import CurrentUser
 from api.schemas import AdayModel, CaptureYanit
+from core import repo
 from core.llm import parse_transactions, transcribe
 from core.review import inceleme_gerek
 
@@ -55,7 +56,13 @@ async def capture(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "text veya audio gerekli")
 
     try:
-        adaylar = await parse_transactions(metin, kaynak=kaynak)
+        kategoriler = await repo.categories_list(user_id)
+    except Exception:
+        logger.warning("capture: kategoriler yüklenemedi, varsayılan liste kullanılıyor")
+        kategoriler = []
+
+    try:
+        adaylar = await parse_transactions(metin, kaynak=kaynak, kategoriler=kategoriler)
     except Exception as e:
         logger.error(f"capture parse hatası: {e}", exc_info=True)
         raise HTTPException(

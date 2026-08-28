@@ -22,12 +22,40 @@ import { useRenkler } from "@/lib/theme";
 import { TIP_EMOJI, TIP_ETIKET, type Islem, type Tip } from "@/lib/types";
 
 const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
+type Donem = "hepsi" | "buhafta" | "buay" | "buyil";
+const DONEMLER: Donem[] = ["hepsi", "buhafta", "buay", "buyil"];
+const DETIKET: Record<Donem, string> = {
+  hepsi: "Tümü", buhafta: "Bu hafta", buay: "Bu ay", buyil: "Bu yıl",
+};
+
+function donemAralik(d: Donem): { from?: string; to?: string } {
+  if (d === "hepsi") return {};
+  const now = new Date();
+  const iso = (x: Date) => x.toISOString().slice(0, 10);
+  const to = iso(now);
+  if (d === "buhafta") {
+    const b = new Date(now);
+    b.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    return { from: iso(b), to };
+  }
+  if (d === "buay") return { from: iso(new Date(now.getFullYear(), now.getMonth(), 1)), to };
+  return { from: iso(new Date(now.getFullYear(), 0, 1)), to };
+}
 
 export default function History() {
   const renk = useRenkler();
-  const { data, isLoading, refetch, isRefetching } = useTransactions(30);
   const me = useMe();
   const [acikId, setAcikId] = useState<string | null>(null);
+  const [donem, setDonem] = useState<Donem>("hepsi");
+  const [tipF, setTipF] = useState<Tip | null>(null);
+
+  const { from, to } = donemAralik(donem);
+  const { data, isLoading, refetch, isRefetching } = useTransactions({
+    limit: 300,
+    from,
+    to,
+    tip: tipF ?? undefined,
+  });
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: renk.bg }]} edges={["top"]}>
@@ -35,11 +63,26 @@ export default function History() {
         <Text style={[s.baslik, { color: renk.text }]}>Geçmiş</Text>
         {me.data && (
           <Text style={[s.kota, { color: renk.textMuted }]}>
-            {me.data.plan === "pro"
-              ? "Pro"
-              : `${me.data.ay_kayit}/${me.data.limit} bu ay`}
+            {(data ?? []).length} kayıt
           </Text>
         )}
+      </View>
+
+      <View style={s.filtreler}>
+        {DONEMLER.map((d) => (
+          <Cip key={d} aktif={donem === d} onPress={() => setDonem(d)} yazi={DETIKET[d]} />
+        ))}
+      </View>
+      <View style={s.filtreler}>
+        <Cip aktif={tipF === null} onPress={() => setTipF(null)} yazi="Tüm türler" />
+        {TIPLER.map((t) => (
+          <Cip
+            key={t}
+            aktif={tipF === t}
+            onPress={() => setTipF(tipF === t ? null : t)}
+            yazi={TIP_ETIKET[t]}
+          />
+        ))}
       </View>
 
       {isLoading ? (
@@ -53,7 +96,7 @@ export default function History() {
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={renk.primary} />
           }
           ListEmptyComponent={
-            <Text style={[s.bos, { color: renk.textMuted }]}>Henüz kayıt yok.</Text>
+            <Text style={[s.bos, { color: renk.textMuted }]}>Kayıt yok.</Text>
           }
           renderItem={({ item }) => (
             <Row
@@ -65,6 +108,21 @@ export default function History() {
         />
       )}
     </SafeAreaView>
+  );
+}
+
+function Cip({ aktif, onPress, yazi }: { aktif: boolean; onPress: () => void; yazi: string }) {
+  const renk = useRenkler();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        s.cip,
+        { borderColor: renk.border, backgroundColor: aktif ? renk.primary : "transparent" },
+      ]}
+    >
+      <Text style={{ color: aktif ? "#fff" : renk.textMuted, fontSize: 12 }}>{yazi}</Text>
+    </Pressable>
   );
 }
 
@@ -195,6 +253,8 @@ const s = StyleSheet.create({
   },
   baslik: { fontSize: 22, fontWeight: "800" },
   kota: { fontSize: 13 },
+  filtreler: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 16, paddingBottom: 8 },
+  cip: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
   liste: { padding: 16, gap: 10 },
   bos: { textAlign: "center", marginTop: 60, fontSize: 15 },
   kart: { borderWidth: 1, borderRadius: 12 },

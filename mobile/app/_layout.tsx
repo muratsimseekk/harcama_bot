@@ -43,6 +43,7 @@ function Kapi() {
         name="confirm"
         options={{ presentation: "modal", headerShown: true, title: "Onayla" }}
       />
+      <Stack.Screen name="kategoriler" options={{ headerShown: true, title: "Kategoriler" }} />
     </Stack>
   );
 }

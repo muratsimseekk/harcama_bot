@@ -40,6 +40,17 @@ def _ay_kayit_sayisi(user_id: str) -> int:
     return res.count or 0
 
 
+def _toplam_kayit(user_id: str) -> int:
+    res = (
+        _db().table("transactions")
+        .select("id", count="exact")
+        .eq("user_id", user_id)
+        .is_("deleted_at", "null")
+        .execute()
+    )
+    return res.count or 0
+
+
 async def plan(user_id: str) -> str:
     if _dev_user(user_id):
         return "pro"
@@ -60,3 +71,10 @@ async def profil_garanti(user_id: str) -> None:
 
 async def ay_kayit_sayisi(user_id: str) -> int:
     return await asyncio.to_thread(_ay_kayit_sayisi, user_id)
+
+
+async def toplam_kayit(user_id: str) -> int:
+    try:
+        return await asyncio.to_thread(_toplam_kayit, user_id)
+    except Exception:
+        return 0

@@ -16,5 +16,6 @@ async def me(user_id: CurrentUser) -> BenModel:
     await usage.profil_garanti(user_id)
     plan = await usage.plan(user_id)
     ay_kayit = await usage.ay_kayit_sayisi(user_id)
+    toplam = await usage.toplam_kayit(user_id)
     limit = 10**9 if plan == "pro" else settings.FREE_AYLIK_LIMIT
-    return BenModel(plan=plan, ay_kayit=ay_kayit, limit=limit)
+    return BenModel(plan=plan, ay_kayit=ay_kayit, limit=limit, toplam_kayit=toplam)

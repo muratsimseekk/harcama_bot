@@ -55,6 +55,26 @@ async def test_parse_sifir_elenir_negatif_pozitiflenir(monkeypatch):
     assert [(a.aciklama, a.tutar) for a in adaylar] == [("a", 5.0), ("c", 10.0)]
 
 
+async def test_parse_kategoriler_prompta_girer(monkeypatch):
+    from core.models import Category
+
+    yakalanan = {}
+
+    def _fake(system, user, *, max_tokens, temperature=0.1):
+        yakalanan["system"] = system
+        return json.dumps({"kayitlar": []})
+
+    monkeypatch.setattr(llm, "_chat_json", _fake)
+    cats = [
+        Category(id="1", user_id="u", name="Nargile", tip="kisisel"),
+        Category(id="2", user_id="u", name="Sac Levha", tip="isletme"),
+    ]
+    await llm.parse_transactions("x", kategoriler=cats)
+    assert "Nargile" in yakalanan["system"]
+    assert "Sac Levha" in yakalanan["system"]
+    assert "Market" not in yakalanan["system"]  # varsayılan liste kullanılmadı
+
+
 async def test_parse_api_hatasi_yukari_firlar(monkeypatch):
     def _boom(system, user, *, max_tokens, temperature=0.1):
         raise RuntimeError("500")

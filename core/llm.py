@@ -106,10 +106,8 @@ TİP KURALLARI — ÖNCELİK SIRASI:
 2. İŞLETME: ankraj, galvaniz, üretim, nakliye, malzeme, personel, fabrika, demir, alüminyum, hammadde, çelik, rota metal, işçi, sevkiyat, makine, ekipman, dükkan gideri → tip: "isletme"
 3. KİŞİSEL: diğer her şey → tip: "kisisel"
 
-KATEGORİ KURALLARI:
-- KİŞİSEL: Market, Sigara/İçecek, Kafe/Restoran, Ulaşım, Sağlık, Giyim, Eğlence, Fatura, Telefon/İnternet, Diğer
-- İŞLETME: Hammadde, Nakliye, Personel, Yakıt/Araç, Elektrik/Su, Kira, Makine/Ekipman, Galvaniz, Diğer İşletme
-- YATIRIM: BES/Emeklilik, Hisse Senedi, Kripto Para, Altın/Döviz, Yatırım Fonu, Tahvil/Bono, Diğer Yatırım
+KATEGORİ KURALLARI (yalnız bu listelerden seç, uymuyorsa ilgili "Diğer"):
+{kategori_bolumu}
 - GELİR: Maaş, Tahsilat, Satış, Diğer Gelir
 
 TARİH KURALLARI:
@@ -132,11 +130,45 @@ SATIN ALMA KURALI:
 
 Eğer metin hiç işlem içermiyorsa boş liste döndür: {{"kayitlar": []}}"""
 
+_VARSAYILAN_KATEGORI_BOLUMU = (
+    "- KİŞİSEL: Market, Sigara/İçecek, Kafe/Restoran, Ulaşım, Sağlık, Giyim, Eğlence, "
+    "Fatura, Telefon/İnternet, Diğer\n"
+    "- İŞLETME: Hammadde, Nakliye, Personel, Yakıt/Araç, Elektrik/Su, Kira, "
+    "Makine/Ekipman, Galvaniz, Diğer İşletme\n"
+    "- YATIRIM: BES/Emeklilik, Hisse Senedi, Kripto Para, Altın/Döviz, Yatırım Fonu, "
+    "Tahvil/Bono, Diğer Yatırım"
+)
 
-async def parse_transactions(metin: str, *, kaynak: str = "telegram_text") -> list[Candidate]:
-    """Metni işlem adaylarına çevirir. Groq'a ulaşılamazsa exception fırlatır."""
+_TIP_BASLIK = {"kisisel": "KİŞİSEL", "isletme": "İŞLETME", "yatirim": "YATIRIM"}
+
+
+def _kategori_bolumu(kategoriler) -> str:
+    """Category listesinden tip'e göre gruplu prompt bölümü kurar."""
+    if not kategoriler:
+        return _VARSAYILAN_KATEGORI_BOLUMU
+    gruplar: dict[str, list[str]] = {"kisisel": [], "isletme": [], "yatirim": []}
+    for k in kategoriler:
+        if k.tip in gruplar and k.name not in gruplar[k.tip]:
+            gruplar[k.tip].append(k.name)
+    satirlar = []
+    for tip, adlar in gruplar.items():
+        if adlar:
+            satirlar.append(f"- {_TIP_BASLIK[tip]}: {', '.join(adlar)}")
+    return "\n".join(satirlar) or _VARSAYILAN_KATEGORI_BOLUMU
+
+
+async def parse_transactions(
+    metin: str, *, kaynak: str = "telegram_text", kategoriler=None,
+) -> list[Candidate]:
+    """Metni işlem adaylarına çevirir. Groq'a ulaşılamazsa exception fırlatır.
+
+    `kategoriler` verilirse (list[core.models.Category]) KATEGORİ bölümü bundan kurulur.
+    """
     bugun = today()
-    sistem = _PARSE_SISTEM.format(bugun=tarih_str(bugun), yil=bugun.year)
+    sistem = _PARSE_SISTEM.format(
+        bugun=tarih_str(bugun), yil=bugun.year,
+        kategori_bolumu=_kategori_bolumu(kategoriler),
+    )
 
     try:
         ham = await asyncio.to_thread(_chat_json, sistem, metin, max_tokens=2000)

@@ -15,6 +15,11 @@ def _aday(aciklama="kahve", tutar=90.0, kategori="Kafe/Restoran", tip="kisisel")
 @pytest.fixture
 def client(monkeypatch):
     app.dependency_overrides[current_user] = lambda: "test-user"
+
+    async def _bos_kategoriler(uid, **k):
+        return []
+    monkeypatch.setattr(capture.repo, "categories_list", _bos_kategoriler)
+
     yield TestClient(app)
     app.dependency_overrides.clear()
 
@@ -27,7 +32,7 @@ def test_auth_yok_401(monkeypatch):
 
 
 def test_capture_tekli_dusuk_tutar(client, monkeypatch):
-    async def fake_parse(metin, *, kaynak="x"):
+    async def fake_parse(metin, *, kaynak="x", kategoriler=None):
         return [_aday()]
     monkeypatch.setattr(capture, "parse_transactions", fake_parse)
 
@@ -40,7 +45,7 @@ def test_capture_tekli_dusuk_tutar(client, monkeypatch):
 
 
 def test_capture_yuksek_tutar_onay_ister(client, monkeypatch):
-    async def fake_parse(metin, *, kaynak="x"):
+    async def fake_parse(metin, *, kaynak="x", kategoriler=None):
         return [_aday(aciklama="danışmanlık", tutar=40000, kategori="Diğer İşletme", tip="isletme")]
     monkeypatch.setattr(capture, "parse_transactions", fake_parse)
 
@@ -51,7 +56,7 @@ def test_capture_yuksek_tutar_onay_ister(client, monkeypatch):
 
 
 def test_capture_bos_sonuc(client, monkeypatch):
-    async def fake_parse(metin, *, kaynak="x"):
+    async def fake_parse(metin, *, kaynak="x", kategoriler=None):
         return []
     monkeypatch.setattr(capture, "parse_transactions", fake_parse)
 
@@ -66,7 +71,7 @@ def test_capture_girdi_yok_400(client):
 
 
 def test_capture_ai_hata_503(client, monkeypatch):
-    async def patlat(metin, *, kaynak="x"):
+    async def patlat(metin, *, kaynak="x", kategoriler=None):
         raise RuntimeError("groq down")
     monkeypatch.setattr(capture, "parse_transactions", patlat)
 

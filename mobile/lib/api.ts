@@ -1,5 +1,22 @@
 import { supabase } from "./supabase";
-import type { Aday, Ben, CaptureYanit, Islem } from "./types";
+import type {
+  Aday,
+  Ben,
+  CaptureYanit,
+  Granularity,
+  Islem,
+  Kategori,
+  Ozet,
+  Tip,
+} from "./types";
+
+export interface IslemFiltre {
+  from?: string;
+  to?: string;
+  tip?: Tip;
+  direction?: "gider" | "gelir";
+  limit?: number;
+}
 
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? "";
 
@@ -73,8 +90,15 @@ export const api = {
     return jsonReq<Islem[]>("/v1/transactions", "POST", { candidates });
   },
 
-  listTransactions(limit = 20): Promise<Islem[]> {
-    return jsonReq<Islem[]>(`/v1/transactions?limit=${limit}`, "GET");
+  listTransactions(f: IslemFiltre = {}): Promise<Islem[]> {
+    const q = new URLSearchParams();
+    if (f.limit) q.set("limit", String(f.limit));
+    if (f.from) q.set("from", f.from);
+    if (f.to) q.set("to", f.to);
+    if (f.tip) q.set("tip", f.tip);
+    if (f.direction) q.set("direction", f.direction);
+    const qs = q.toString();
+    return jsonReq<Islem[]>(`/v1/transactions${qs ? `?${qs}` : ""}`, "GET");
   },
 
   patchTransaction(id: string, alanlar: Partial<Aday>): Promise<Islem> {
@@ -87,5 +111,27 @@ export const api = {
 
   me(): Promise<Ben> {
     return jsonReq<Ben>("/v1/me", "GET");
+  },
+
+  summary(period: Granularity, ref?: string): Promise<Ozet> {
+    const q = new URLSearchParams({ period });
+    if (ref) q.set("ref", ref);
+    return jsonReq<Ozet>(`/v1/summary?${q.toString()}`, "GET");
+  },
+
+  listCategories(): Promise<Kategori[]> {
+    return jsonReq<Kategori[]>("/v1/categories", "GET");
+  },
+
+  createCategory(body: { name: string; tip: Tip; color?: string }): Promise<Kategori> {
+    return jsonReq<Kategori>("/v1/categories", "POST", body);
+  },
+
+  patchCategory(id: string, body: Partial<Kategori>): Promise<Kategori> {
+    return jsonReq<Kategori>(`/v1/categories/${id}`, "PATCH", body);
+  },
+
+  deleteCategory(id: string): Promise<{ silindi: boolean }> {
+    return jsonReq(`/v1/categories/${id}`, "DELETE");
   },
 };

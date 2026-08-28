@@ -12,7 +12,7 @@ from supabase import Client, create_client
 
 from core.config import settings
 from core.dates import now
-from core.models import Candidate, Transaction
+from core.models import Candidate, Category, Transaction
 
 logger = logging.getLogger(__name__)
 
@@ -182,3 +182,142 @@ async def pending_set_message(pending_id: str, chat_id: int, message_id: int) ->
         ).eq("id", pending_id).execute()
 
     await asyncio.to_thread(_run)
+
+
+# --------------------------------------------------------------------------- #
+# categories (düzenlenebilir kategori sistemi)
+# --------------------------------------------------------------------------- #
+PALET = [
+    "#2563EB", "#7C3AED", "#DB2777", "#EA580C", "#D97706", "#16A34A",
+    "#0891B2", "#DC2626", "#9333EA", "#65A30D", "#0D9488", "#E11D48",
+]
+
+VARSAYILAN_KATEGORILER: dict[str, list[str]] = {
+    "kisisel": [
+        "Market", "Sigara/İçecek", "Kafe/Restoran", "Ulaşım", "Sağlık",
+        "Giyim", "Eğlence", "Fatura", "Telefon/İnternet", "Diğer",
+    ],
+    "isletme": [
+        "Hammadde", "Nakliye", "Personel", "Yakıt/Araç", "Elektrik/Su",
+        "Kira", "Makine/Ekipman", "Galvaniz", "Diğer İşletme",
+    ],
+    "yatirim": [
+        "BES/Emeklilik", "Hisse Senedi", "Kripto Para", "Altın/Döviz",
+        "Yatırım Fonu", "Tahvil/Bono", "Diğer Yatırım",
+    ],
+}
+
+
+async def categories_list(user_id: str, *, only_active: bool = True) -> list[Category]:
+    def _run() -> list[dict]:
+        q = _db().table("categories").select("*").eq("user_id", user_id)
+        if only_active:
+            q = q.eq("is_active", True)
+        return q.order("type").order("sort_order").order("name").execute().data
+
+    return [Category.from_row(r) for r in await asyncio.to_thread(_run)]
+
+
+async def category_create(
+    user_id: str, name: str, tip: str, color: str | None = None,
+    keywords: list[str] | None = None,
+) -> Category:
+    row = {
+        "user_id": user_id,
+        "name": name.strip(),
+        "type": tip,
+        "color": color or PALET[abs(hash(name)) % len(PALET)],
+        "keywords": keywords or [],
+    }
+
+    def _run() -> dict:
+        return _db().table("categories").insert(row).execute().data[0]
+
+    return Category.from_row(await asyncio.to_thread(_run))
+
+
+async def category_get(cat_id: str) -> Category | None:
+    def _run() -> dict | None:
+        res = _db().table("categories").select("*").eq("id", cat_id).limit(1).execute()
+        return res.data[0] if res.data else None
+
+    r = await asyncio.to_thread(_run)
+    return Category.from_row(r) if r else None
+
+
+async def category_update(cat_id: str, alanlar: dict) -> Category | None:
+    if not alanlar:
+        return await category_get(cat_id)
+    alanlar = {**alanlar, "updated_at": now().isoformat()}
+
+    def _run() -> dict | None:
+        res = _db().table("categories").update(alanlar).eq("id", cat_id).execute()
+        return res.data[0] if res.data else None
+
+    r = await asyncio.to_thread(_run)
+    return Category.from_row(r) if r else None
+
+
+async def category_delete(cat_id: str) -> bool:
+    def _run() -> bool:
+        res = _db().table("categories").delete().eq("id", cat_id).execute()
+        return bool(res.data)
+
+    return await asyncio.to_thread(_run)
+
+
+async def categories_seed(user_id: str) -> int:
+    """Kullanıcının hiç kategorisi yoksa: varsayılan liste + geçmişteki kategoriler.
+    Var olanı bozmaz (idempotent). Eklenen satır sayısını döndürür.
+    """
+    def _run() -> int:
+        db = _db()
+        mevcut = db.table("categories").select("id").eq("user_id", user_id).limit(1).execute()
+        if mevcut.data:
+            return 0
+
+        # geçmiş işlemlerdeki (kategori, tip) çiftleri
+        gecmis: dict[str, str] = {}
+        bas = 0
+        while True:
+            res = (
+                db.table("transactions")
+                .select("category,type")
+                .eq("user_id", user_id).eq("direction", "gider")
+                .range(bas, bas + 999).execute()
+            )
+            for r in res.data:
+                ad = (r.get("category") or "").strip()
+                if ad:
+                    gecmis.setdefault(ad, r.get("type") or "kisisel")
+            if len(res.data) < 1000:
+                break
+            bas += 1000
+
+        satirlar: list[dict] = []
+        eklendi: set[str] = set()
+        for tip, adlar in VARSAYILAN_KATEGORILER.items():
+            for i, ad in enumerate(adlar):
+                if ad.lower() in eklendi:
+                    continue
+                eklendi.add(ad.lower())
+                satirlar.append({
+                    "user_id": user_id, "name": ad, "type": tip,
+                    "color": PALET[len(satirlar) % len(PALET)], "sort_order": i,
+                })
+        for ad, tip in gecmis.items():
+            if ad.lower() in eklendi:
+                continue
+            eklendi.add(ad.lower())
+            satirlar.append({
+                "user_id": user_id, "name": ad,
+                "type": tip if tip in VARSAYILAN_KATEGORILER else "kisisel",
+                "color": PALET[len(satirlar) % len(PALET)], "sort_order": 50,
+            })
+
+        if not satirlar:
+            return 0
+        db.table("categories").insert(satirlar).execute()
+        return len(satirlar)
+
+    return await asyncio.to_thread(_run)

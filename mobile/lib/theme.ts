@@ -33,3 +33,13 @@ export type Renkler = typeof light;
 export function useRenkler(): Renkler {
   return useColorScheme() === "dark" ? dark : light;
 }
+
+/** Kategori grafiği renk paleti (API rengi yoksa buradan sırayla). */
+export const PALET = [
+  "#2563EB", "#7C3AED", "#DB2777", "#EA580C", "#D97706", "#16A34A",
+  "#0891B2", "#DC2626", "#9333EA", "#65A30D", "#0D9488", "#E11D48",
+];
+
+export function paletRenk(i: number): string {
+  return PALET[i % PALET.length];
+}
