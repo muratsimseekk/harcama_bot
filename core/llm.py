@@ -229,7 +229,10 @@ _DUZELTME_KELIMELERI = (
 async def classify_intent(metin: str) -> str:
     """Döndürür: 'rapor' | 'duzeltme' | 'islem' | 'yardim'."""
     d = metin.lower().strip()
-    if d in ("yardım", "yardim", "help", "?", "nasıl", "nasil"):
+    if d in ("yardım", "yardim", "help", "?", "nasıl", "nasil", "komutlar", "start"):
+        return "yardim"
+    if any(k in d for k in ("nasıl kullan", "nasil kullan", "ne işe yar", "ne ise yar",
+                            "nasıl çalış", "nasil calis", "yardım et", "yardim et")):
         return "yardim"
     if any(k in d for k in _DUZELTME_KELIMELERI) and not any(c.isdigit() for c in d[:3]):
         return "duzeltme"
@@ -250,7 +253,7 @@ async def classify_intent(metin: str) -> str:
                 {"role": "user", "content": metin},
             ],
             temperature=0.0,
-            max_tokens=30,
+            max_tokens=200,
             reasoning_effort="low",
             response_format={"type": "json_object"},
         )
