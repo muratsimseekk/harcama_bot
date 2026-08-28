@@ -44,6 +44,9 @@ class Settings:
     # --- Mobil API ---
     FREE_AYLIK_LIMIT: int = _int("FREE_AYLIK_LIMIT", 50)
     API_CORS_ORIGINS: str = os.environ.get("API_CORS_ORIGINS", "*")
+    # Dev/yönetici modu: ayarlıysa, Authorization başlığı olmayan istekler bu
+    # kullanıcı id'siyle çalışır (kimlik doğrulama atlanır). PROD'DA BOŞ BIRAK.
+    DEV_BYPASS_USER_ID: str = os.environ.get("DEV_BYPASS_USER_ID", "")
 
     # --- Sunucu / keepalive ---
     PORT: int = _int("PORT", 10000)

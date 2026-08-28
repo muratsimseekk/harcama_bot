@@ -20,9 +20,20 @@ def _token(sub="user-abc", aud="authenticated", exp_delta=3600):
 @pytest.fixture(autouse=True)
 def _temiz_cache_ve_secret(monkeypatch):
     monkeypatch.setattr(auth.settings, "SUPABASE_JWT_SECRET", _SECRET)
+    monkeypatch.setattr(auth.settings, "DEV_BYPASS_USER_ID", "")
     auth._cache.clear()
     yield
     auth._cache.clear()
+
+
+async def test_dev_bypass_baslik_yoksa_id_doner(monkeypatch):
+    monkeypatch.setattr(auth.settings, "DEV_BYPASS_USER_ID", "admin-42")
+    assert await auth.current_user(None) == "admin-42"
+
+
+async def test_dev_bypass_baslik_varsa_normal_dogrular(monkeypatch):
+    monkeypatch.setattr(auth.settings, "DEV_BYPASS_USER_ID", "admin-42")
+    assert await auth.current_user(f"Bearer {_token(sub='gercek')}") == "gercek"
 
 
 async def test_gecerli_jeton_sub_doner():

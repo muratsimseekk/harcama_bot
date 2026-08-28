@@ -65,7 +65,14 @@ def _verify_remote(token: str) -> str:
 
 
 async def current_user(authorization: str | None = Header(default=None)) -> str:
-    """FastAPI bağımlılığı — doğrulanmış kullanıcı id'sini (auth UUID) döndürür."""
+    """FastAPI bağımlılığı — doğrulanmış kullanıcı id'sini (auth UUID) döndürür.
+
+    Dev/yönetici modu: `DEV_BYPASS_USER_ID` ayarlıysa ve istek Authorization
+    başlığı taşımıyorsa, o id ile devam edilir (kimlik doğrulama atlanır).
+    """
+    if settings.DEV_BYPASS_USER_ID and not authorization:
+        return settings.DEV_BYPASS_USER_ID
+
     token = _bearer(authorization)
 
     hit = _cache.get(token)

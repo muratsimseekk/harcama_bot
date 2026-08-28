@@ -19,7 +19,8 @@ def client(monkeypatch):
     app.dependency_overrides.clear()
 
 
-def test_auth_yok_401():
+def test_auth_yok_401(monkeypatch):
+    monkeypatch.setattr("api.auth.settings.DEV_BYPASS_USER_ID", "")
     c = TestClient(app)
     r = c.post("/v1/capture", data={"text": "kahve 90"})
     assert r.status_code == 401

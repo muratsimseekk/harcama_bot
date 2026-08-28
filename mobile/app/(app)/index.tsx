@@ -20,6 +20,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { DEV_NOAUTH } from "@/app/_layout";
 import { api, ApiError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { useRenkler } from "@/lib/theme";
@@ -98,9 +99,13 @@ export default function Capture() {
     <SafeAreaView style={[s.safe, { backgroundColor: renk.bg }]} edges={["top"]}>
       <View style={s.header}>
         <Text style={[s.baslik, { color: renk.text }]}>Harcama ekle</Text>
-        <Pressable onPress={() => supabase.auth.signOut()}>
-          <Text style={[s.cikis, { color: renk.textMuted }]}>Çıkış</Text>
-        </Pressable>
+        {DEV_NOAUTH ? (
+          <Text style={[s.cikis, { color: renk.textMuted }]}>yönetici</Text>
+        ) : (
+          <Pressable onPress={() => supabase.auth.signOut()}>
+            <Text style={[s.cikis, { color: renk.textMuted }]}>Çıkış</Text>
+          </Pressable>
+        )}
       </View>
 
       <KeyboardAvoidingView

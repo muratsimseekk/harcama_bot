@@ -3,8 +3,13 @@ from __future__ import annotations
 
 import asyncio
 
+from core.config import settings
 from core.dates import now
 from core.repo import _db
+
+
+def _dev_user(user_id: str) -> bool:
+    return bool(settings.DEV_BYPASS_USER_ID) and user_id == settings.DEV_BYPASS_USER_ID
 
 
 def _ay_basi_iso() -> str:
@@ -36,11 +41,21 @@ def _ay_kayit_sayisi(user_id: str) -> int:
 
 
 async def plan(user_id: str) -> str:
-    return await asyncio.to_thread(_plan_oku, user_id)
+    if _dev_user(user_id):
+        return "pro"
+    try:
+        return await asyncio.to_thread(_plan_oku, user_id)
+    except Exception:
+        return "free"
 
 
 async def profil_garanti(user_id: str) -> None:
-    await asyncio.to_thread(_profil_garanti, user_id)
+    if _dev_user(user_id):
+        return
+    try:
+        await asyncio.to_thread(_profil_garanti, user_id)
+    except Exception:
+        pass
 
 
 async def ay_kayit_sayisi(user_id: str) -> int:

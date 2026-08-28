@@ -12,6 +12,8 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 15_000 } },
 });
 
+export const DEV_NOAUTH = process.env.EXPO_PUBLIC_DEV_NOAUTH === "1";
+
 function Kapi() {
   const { session, yukleniyor } = useAuth();
   const segments = useSegments();
@@ -19,13 +21,13 @@ function Kapi() {
   const renk = useRenkler();
 
   useEffect(() => {
-    if (yukleniyor) return;
+    if (DEV_NOAUTH || yukleniyor) return;
     const authGrubunda = segments[0] === "(auth)";
     if (!session && !authGrubunda) router.replace("/(auth)/login");
     else if (session && authGrubunda) router.replace("/(app)");
   }, [session, yukleniyor, segments]);
 
-  if (yukleniyor) {
+  if (!DEV_NOAUTH && yukleniyor) {
     return (
       <View style={{ flex: 1, justifyContent: "center", backgroundColor: renk.bg }}>
         <ActivityIndicator size="large" color={renk.primary} />
