@@ -6,6 +6,7 @@ import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { TemaProvider, useEtkinSema } from "@/lib/tema";
 import { useRenkler } from "@/lib/theme";
 
 const queryClient = new QueryClient({
@@ -35,29 +36,42 @@ function Kapi() {
     );
   }
 
+  const baslik = {
+    headerShown: true,
+    headerStyle: { backgroundColor: renk.card },
+    headerTintColor: renk.text,
+    headerShadowVisible: false,
+  } as const;
+
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: renk.bg } }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(app)" />
-      <Stack.Screen
-        name="confirm"
-        options={{ presentation: "modal", headerShown: true, title: "Onayla" }}
-      />
-      <Stack.Screen name="kategoriler" options={{ headerShown: true, title: "Kategoriler" }} />
+      <Stack.Screen name="confirm" options={{ ...baslik, presentation: "modal", title: "Onayla" }} />
+      <Stack.Screen name="kategoriler" options={{ ...baslik, title: "Kategoriler" }} />
+      <Stack.Screen name="ayarlar/gorunum" options={{ ...baslik, title: "Görünüm" }} />
+      <Stack.Screen name="ayarlar/hakkinda" options={{ ...baslik, title: "Hakkında" }} />
+      <Stack.Screen name="ayarlar/veri" options={{ ...baslik, title: "Veri & Gizlilik" }} />
     </Stack>
   );
+}
+
+function TemaliDurumCubugu() {
+  return <StatusBar style={useEtkinSema() === "dark" ? "light" : "dark"} />;
 }
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <StatusBar style="auto" />
-            <Kapi />
-          </AuthProvider>
-        </QueryClientProvider>
+        <TemaProvider>
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <TemaliDurumCubugu />
+              <Kapi />
+            </AuthProvider>
+          </QueryClientProvider>
+        </TemaProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

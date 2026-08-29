@@ -1,17 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
-  Baslik,
   BosDurum,
   Ekran,
   IkonDaire,
   Kart,
   KartBaslik,
-  KiyasRozet,
-  Sekmeli,
   Yukleniyor,
 } from "@/components/base";
 import { KategoriBar, PastaGrafik } from "@/components/charts";
@@ -21,28 +18,11 @@ import { useSummary, useTransactions } from "@/lib/queries";
 import { R, SP, useRenkler } from "@/lib/theme";
 import { TIP_RENK } from "@/lib/types";
 
-type Secim = "buay" | "gecenay" | "buyil";
-const SECIMLER: Secim[] = ["buay", "gecenay", "buyil"];
-const ETIKET: Record<Secim, string> = { buay: "Bu ay", gecenay: "Geçen ay", buyil: "Bu yıl" };
-
-function donemRef(sec: Secim): { period: "month" | "year"; ref?: string } {
-  if (sec === "buyil") return { period: "year" };
-  if (sec === "gecenay") {
-    const d = new Date();
-    d.setDate(1);
-    d.setMonth(d.getMonth() - 1);
-    return { period: "month", ref: d.toISOString().slice(0, 10) };
-  }
-  return { period: "month" };
-}
-
 export default function Dashboard() {
   const renk = useRenkler();
   const router = useRouter();
-  const [sec, setSec] = useState<Secim>("buay");
-  const { period, ref: r } = donemRef(sec);
 
-  const ozet = useSummary(period, r);
+  const ozet = useSummary("month");
   const sonlar = useTransactions({ limit: 6 });
 
   const g = ozet.data?.bu_donem;
@@ -76,9 +56,6 @@ export default function Dashboard() {
 
   return (
     <Ekran onRefresh={() => { ozet.refetch(); sonlar.refetch(); }} refreshing={ozet.isRefetching}>
-      <Baslik>Özet</Baslik>
-      <Sekmeli secenekler={SECIMLER} etiket={(x) => ETIKET[x]} secili={sec} onSec={setSec} />
-
       {ozet.isLoading || !g ? (
         <Yukleniyor yukseklik={180} />
       ) : (

@@ -245,6 +245,62 @@ export function IkonDaire({
   );
 }
 
+export function AyarGrup({ baslik, children }: { baslik?: string; children: React.ReactNode }) {
+  const renk = useRenkler();
+  return (
+    <View style={{ gap: SP.sm }}>
+      {baslik && <Text style={[s.grupBaslik, { color: renk.textFaint }]}>{baslik}</Text>}
+      <View
+        style={[
+          s.grupKart,
+          { backgroundColor: renk.card, borderColor: renk.border },
+          golge(1),
+        ]}
+      >
+        {children}
+      </View>
+    </View>
+  );
+}
+
+export function AyarSatir({
+  ikon,
+  baslik,
+  deger,
+  onPress,
+  son,
+  tehlike,
+  sag,
+}: {
+  ikon?: keyof typeof Ionicons.glyphMap;
+  baslik: string;
+  deger?: string;
+  onPress?: () => void;
+  son?: boolean;
+  tehlike?: boolean;
+  sag?: React.ReactNode;
+}) {
+  const renk = useRenkler();
+  const anaRenk = tehlike ? renk.danger : renk.text;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [
+        s.ayarSatir,
+        !son && { borderBottomColor: renk.hairline, borderBottomWidth: StyleSheet.hairlineWidth },
+        pressed && onPress ? { backgroundColor: renk.cardAlt } : null,
+      ]}
+    >
+      {ikon && <Ionicons name={ikon} size={20} color={tehlike ? renk.danger : renk.textMuted} />}
+      <Text style={{ color: anaRenk, flex: 1, fontSize: 15, fontWeight: "500" }}>{baslik}</Text>
+      {deger && <Text style={{ color: renk.textFaint, fontSize: 14 }}>{deger}</Text>}
+      {sag}
+      {onPress && !sag && <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />}
+    </Pressable>
+  );
+}
+
 export function BasilabilirSatir({
   children,
   style,
@@ -268,7 +324,7 @@ export const yazi = StyleSheet.create({
 const s = StyleSheet.create({
   safe: { flex: 1 },
   scrollIcerik: { paddingBottom: 40 },
-  padli: { paddingHorizontal: SP.lg, gap: SP.md },
+  padli: { paddingHorizontal: SP.lg, paddingTop: SP.md, gap: SP.md },
   baslikSatir: {
     flexDirection: "row",
     alignItems: "center",
@@ -289,6 +345,15 @@ const s = StyleSheet.create({
     borderRadius: R.pill,
     paddingHorizontal: 13,
     paddingVertical: 7,
+  },
+  grupBaslik: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6, marginLeft: 4 },
+  grupKart: { borderWidth: StyleSheet.hairlineWidth, borderRadius: R.md, overflow: "hidden" },
+  ayarSatir: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SP.md,
+    paddingHorizontal: SP.lg,
+    paddingVertical: 14,
   },
   rozet: {
     flexDirection: "row",

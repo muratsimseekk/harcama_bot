@@ -1,4 +1,5 @@
-import { Platform, useColorScheme, type ViewStyle } from "react-native";
+import { Platform, type ViewStyle } from "react-native";
+import { useEtkinSema } from "./tema";
 
 const light = {
   bg: "#F3F4F7",
@@ -54,11 +55,11 @@ const dark: typeof light = {
 export type Renkler = typeof light;
 
 export function useRenkler(): Renkler {
-  return useColorScheme() === "dark" ? dark : light;
+  return useEtkinSema() === "dark" ? dark : light;
 }
 
 export function useKaranlik(): boolean {
-  return useColorScheme() === "dark";
+  return useEtkinSema() === "dark";
 }
 
 /** Boşluk ölçeği (8pt tabanlı) */
