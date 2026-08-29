@@ -1,7 +1,16 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { Alert, Linking, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, StyleSheet, View } from "react-native";
+import { DEV_NOAUTH } from "@/app/_layout";
+import { AyarGrup, AyarSatir, Baslik, Ekran, IkonDaire, Kart } from "@/components/base";
+import { Metin as Text } from "@/components/Metin";
+import { turkceTutar } from "@/lib/format";
+import { useCategories, useMe, useSummary } from "@/lib/queries";
+import { supabase } from "@/lib/supabase";
+import { useTemaMod } from "@/lib/tema";
+import { golge, R, SP, T, useRenkler } from "@/lib/theme";
 
+const TEMA_ETIKET = { system: "Sistem", light: "Açık", dark: "Koyu" } as const;
 const DESTEK_EPOSTA = "destek@harcama.app"; // TODO: gerçek destek adresi
 
 async function mailAc() {
@@ -13,15 +22,6 @@ async function mailAc() {
   }
   Alert.alert("Destek", `Bize şu adresten yazabilirsin:\n${DESTEK_EPOSTA}`);
 }
-import { DEV_NOAUTH } from "@/app/_layout";
-import { AyarGrup, AyarSatir, Baslik, Ekran, IkonDaire, Kart } from "@/components/base";
-import { turkceTutar } from "@/lib/format";
-import { useCategories, useMe, useSummary } from "@/lib/queries";
-import { supabase } from "@/lib/supabase";
-import { useTemaMod } from "@/lib/tema";
-import { golge, R, SP, useRenkler } from "@/lib/theme";
-
-const TEMA_ETIKET = { system: "Sistem", light: "Açık", dark: "Koyu" } as const;
 
 export default function Profil() {
   const renk = useRenkler();

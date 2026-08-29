@@ -6,10 +6,10 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from "react-native";
+import { Metin as Text } from "@/components/Metin";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BosDurum, Kart, Sekmeli } from "@/components/base";
 import {

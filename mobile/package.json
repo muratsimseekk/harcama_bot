@@ -8,6 +8,7 @@
     "ios": "expo start --ios"
   },
   "dependencies": {
+    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native/babel-preset": "^0.87.1",
     "@supabase/supabase-js": "^2.112.4",
@@ -23,6 +24,7 @@
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.24",
     "expo-secure-store": "~15.0.8",
+    "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-system-ui": "~6.0.9",
     "react": "19.1.0",

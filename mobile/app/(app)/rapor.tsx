@@ -1,6 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
+import { Metin as Text } from "@/components/Metin";
 import {
   Baslik,
   Ekran,

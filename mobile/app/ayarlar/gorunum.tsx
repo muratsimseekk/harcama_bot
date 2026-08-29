@@ -1,5 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import { Metin as Text } from "@/components/Metin";
 import { AyarGrup, AyarSatir } from "@/components/base";
 import { type TemaMod, useTemaMod } from "@/lib/tema";
 import { SP, useRenkler } from "@/lib/theme";

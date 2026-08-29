@@ -25,6 +25,21 @@ export function yuzde(x: number): string {
   return `%${Math.round(x)}`;
 }
 
+export function selamlama(): string {
+  const s = new Date().getHours();
+  if (s < 6) return "İyi geceler";
+  if (s < 12) return "Günaydın";
+  if (s < 18) return "İyi günler";
+  return "İyi akşamlar";
+}
+
+export function bugunUzun(): string {
+  const d = new Date();
+  const aylar = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+  const gunler = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+  return `${gunler[d.getDay()]}, ${d.getDate()} ${aylar[d.getMonth()]}`;
+}
+
 /** Aynı isimli kategori satırlarını (farklı tür) tek satırda birleştirir. */
 export function birlestirKategori<T extends { kategori: string; tutar: number; oran: number }>(
   liste: T[],

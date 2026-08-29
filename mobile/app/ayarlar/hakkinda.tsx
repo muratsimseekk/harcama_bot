@@ -1,5 +1,11 @@
 import Constants from "expo-constants";
-import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Linking,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import { Metin as Text } from "@/components/Metin";
 import { AyarGrup, AyarSatir, IkonDaire } from "@/components/base";
 import { SP, useRenkler } from "@/lib/theme";
 

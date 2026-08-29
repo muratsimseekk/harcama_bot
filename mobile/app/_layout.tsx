@@ -1,13 +1,25 @@
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+  useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { useCallback, useEffect } from "react";
+import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Giris } from "@/components/Giris";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { TemaProvider, useEtkinSema } from "@/lib/tema";
 import { useRenkler } from "@/lib/theme";
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 15_000 } },
@@ -28,18 +40,13 @@ function Kapi() {
     else if (session && authGrubunda) router.replace("/(app)");
   }, [session, yukleniyor, segments]);
 
-  if (!DEV_NOAUTH && yukleniyor) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", backgroundColor: renk.bg }}>
-        <ActivityIndicator size="large" color={renk.primary} />
-      </View>
-    );
-  }
+  if (!DEV_NOAUTH && yukleniyor) return <Giris />;
 
   const baslik = {
     headerShown: true,
     headerStyle: { backgroundColor: renk.card },
     headerTintColor: renk.text,
+    headerTitleStyle: { fontFamily: "PlusJakartaSans_700Bold" },
     headerShadowVisible: false,
   } as const;
 
@@ -61,6 +68,18 @@ function TemaliDurumCubugu() {
 }
 
 export default function RootLayout() {
+  const [fontHazir] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+
+  const yerlesimHazir = useCallback(async () => {
+    if (fontHazir) await SplashScreen.hideAsync().catch(() => {});
+  }, [fontHazir]);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -68,7 +87,9 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <TemaliDurumCubugu />
-              <Kapi />
+              <View style={{ flex: 1 }} onLayout={yerlesimHazir}>
+                {fontHazir ? <Kapi /> : <Giris />}
+              </View>
             </AuthProvider>
           </QueryClientProvider>
         </TemaProvider>

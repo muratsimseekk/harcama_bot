@@ -8,10 +8,10 @@ import {
   ScrollView,
   SectionList,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from "react-native";
+import { Metin as Text } from "@/components/Metin";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BosDurum, Cip, IkonDaire } from "@/components/base";
 import { tarihEtiket, turkceTutar } from "@/lib/format";

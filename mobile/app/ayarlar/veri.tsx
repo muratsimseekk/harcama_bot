@@ -1,4 +1,9 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import { Metin as Text } from "@/components/Metin";
 import { AyarGrup, AyarSatir } from "@/components/base";
 import { useMe } from "@/lib/queries";
 import { SP, useRenkler } from "@/lib/theme";

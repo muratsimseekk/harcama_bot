@@ -1,19 +1,60 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   type PressableProps,
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
-  type TextStyle,
+  type TextProps,
   View,
   type ViewStyle,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { kiyas } from "@/lib/format";
-import { golge, R, SP, useRenkler } from "@/lib/theme";
+import { Metin as Text } from "@/components/Metin";
+import { kiyas, turkceTutar } from "@/lib/format";
+import { golge, R, SP, T, useRenkler } from "@/lib/theme";
+
+/** 0'dan hedefe animasyonlu sayan para metni */
+export function Sayac({ deger, sure = 650, style, ...rest }: { deger: number; sure?: number } & TextProps) {
+  const [n, setN] = useState(0);
+  const bas = useRef<number | null>(null);
+  useEffect(() => {
+    bas.current = null;
+    let raf = 0;
+    const adim = (t: number) => {
+      if (bas.current === null) bas.current = t;
+      const p = Math.min(1, (t - bas.current) / sure);
+      setN(deger * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) raf = requestAnimationFrame(adim);
+    };
+    raf = requestAnimationFrame(adim);
+    return () => cancelAnimationFrame(raf);
+  }, [deger, sure]);
+  return (
+    <Text style={style} {...rest}>
+      {turkceTutar(n)}
+    </Text>
+  );
+}
+
+/** Kademeli beliren sarmalayıcı — liste/kart giriş animasyonu */
+export function Beliren({
+  children,
+  sira = 0,
+  style,
+}: {
+  children: React.ReactNode;
+  sira?: number;
+  style?: ViewStyle;
+}) {
+  return (
+    <Animated.View entering={FadeInDown.duration(340).delay(sira * 55)} style={style}>
+      {children}
+    </Animated.View>
+  );
+}
 
 /** Sayfa iskeleti: SafeAreaView + kaydırılabilir içerik + opsiyonel yenileme. */
 export function Ekran({
@@ -30,9 +71,7 @@ export function Ekran({
   pad?: boolean;
 }) {
   const renk = useRenkler();
-  const inner = (
-    <View style={pad ? s.padli : undefined}>{children}</View>
-  );
+  const inner = <View style={pad ? s.padli : undefined}>{children}</View>;
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: renk.bg }]} edges={["top"]}>
       {scroll ? (
@@ -54,11 +93,14 @@ export function Ekran({
   );
 }
 
-export function Baslik({ children, sag }: { children: string; sag?: React.ReactNode }) {
+export function Baslik({ children, alt, sag }: { children: string; alt?: string; sag?: React.ReactNode }) {
   const renk = useRenkler();
   return (
     <View style={s.baslikSatir}>
-      <Text style={[s.baslik, { color: renk.text }]}>{children}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={[T.title, { color: renk.text }]}>{children}</Text>
+        {alt && <Text style={[T.caption, { color: renk.textFaint, marginTop: 2 }]}>{alt}</Text>}
+      </View>
       {sag}
     </View>
   );
@@ -72,19 +114,14 @@ export function Kart({
 }: {
   children: React.ReactNode;
   style?: ViewStyle | ViewStyle[];
-  seviye?: 1 | 2;
+  seviye?: 1 | 2 | 3;
   onPress?: () => void;
 }) {
   const renk = useRenkler();
-  const stil = [
-    s.kart,
-    { backgroundColor: renk.card, borderColor: renk.border },
-    golge(seviye),
-    style,
-  ];
+  const stil = [s.kart, { backgroundColor: renk.card }, golge(seviye), style];
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [stil, pressed && { opacity: 0.7 }]}>
+      <Pressable onPress={onPress} style={({ pressed }) => [stil, pressed && { opacity: 0.8 }]}>
         {children}
       </Pressable>
     );
@@ -92,12 +129,13 @@ export function Kart({
   return <View style={stil}>{children}</View>;
 }
 
-export function KartBaslik({ children, ikon }: { children: string; ikon?: keyof typeof Ionicons.glyphMap }) {
+export function KartBaslik({ children, ikon, sag }: { children: string; ikon?: keyof typeof Ionicons.glyphMap; sag?: React.ReactNode }) {
   const renk = useRenkler();
   return (
     <View style={s.kartBaslikSatir}>
-      {ikon && <Ionicons name={ikon} size={16} color={renk.textMuted} />}
-      <Text style={[s.kartBaslik, { color: renk.textMuted }]}>{children}</Text>
+      {ikon && <Ionicons name={ikon} size={15} color={renk.textFaint} />}
+      <Text style={[T.overline, { color: renk.textFaint, flex: 1 }]}>{children}</Text>
+      {sag}
     </View>
   );
 }
@@ -105,8 +143,10 @@ export function KartBaslik({ children, ikon }: { children: string; ikon?: keyof 
 export function Yukleniyor({ yukseklik = 120 }: { yukseklik?: number }) {
   const renk = useRenkler();
   return (
-    <View style={{ height: yukseklik, alignItems: "center", justifyContent: "center" }}>
-      <ActivityIndicator color={renk.primary} />
+    <View style={{ height: yukseklik, gap: SP.sm, justifyContent: "center" }}>
+      <View style={[s.iskeletCizgi, { backgroundColor: renk.cardAlt, width: "55%", height: 26 }]} />
+      <View style={[s.iskeletCizgi, { backgroundColor: renk.cardAlt, width: "80%" }]} />
+      <View style={[s.iskeletCizgi, { backgroundColor: renk.cardAlt, width: "70%" }]} />
     </View>
   );
 }
@@ -121,8 +161,10 @@ export function BosDurum({
   const renk = useRenkler();
   return (
     <View style={s.bos}>
-      <Ionicons name={ikon} size={34} color={renk.textFaint} />
-      <Text style={[s.bosYazi, { color: renk.textMuted }]}>{yazi}</Text>
+      <View style={[s.bosDaire, { backgroundColor: renk.cardAlt }]}>
+        <Ionicons name={ikon} size={26} color={renk.textFaint} />
+      </View>
+      <Text style={[T.body, { color: renk.textMuted, textAlign: "center" }]}>{yazi}</Text>
     </View>
   );
 }
@@ -142,24 +184,20 @@ export function Sekmeli<T extends string>({
 }) {
   const renk = useRenkler();
   return (
-    <View style={[s.seg, { backgroundColor: renk.cardAlt, borderColor: renk.border }]}>
+    <View style={[s.seg, { backgroundColor: renk.cardAlt }]}>
       {secenekler.map((o) => {
         const aktif = o === secili;
         return (
           <Pressable
             key={o}
             onPress={() => onSec(o)}
-            style={[
-              s.segItem,
-              kucuk && { paddingVertical: 6 },
-              aktif && [{ backgroundColor: renk.card }, golge(1)],
-            ]}
+            style={[s.segItem, kucuk && { paddingVertical: 7 }, aktif && [{ backgroundColor: renk.card }, golge(1)]]}
           >
             <Text
               style={{
                 color: aktif ? renk.text : renk.textMuted,
-                fontWeight: aktif ? "700" : "500",
-                fontSize: kucuk ? 12 : 13,
+                fontWeight: aktif ? "700" : "600",
+                fontSize: kucuk ? 12.5 : 13.5,
               }}
             >
               {etiket(o)}
@@ -191,7 +229,7 @@ export function Cip({
         s.cip,
         {
           borderColor: aktif ? ana : renk.border,
-          backgroundColor: aktif ? ana : "transparent",
+          backgroundColor: aktif ? ana : renk.card,
         },
       ]}
     >
@@ -204,7 +242,7 @@ export function Cip({
 
 export function Rozet({ yazi, renk: c, ikon }: { yazi: string; renk: string; ikon?: keyof typeof Ionicons.glyphMap }) {
   return (
-    <View style={[s.rozet, { backgroundColor: c + "1F" }]}>
+    <View style={[s.rozet, { backgroundColor: c + "22" }]}>
       {ikon && <Ionicons name={ikon} size={12} color={c} />}
       <Text style={{ color: c, fontSize: 12, fontWeight: "700" }}>{yazi}</Text>
     </View>
@@ -223,7 +261,7 @@ export function KiyasRozet({ bu, onceki }: { bu: number; onceki: number }) {
 export function IkonDaire({
   ikon,
   renk: c,
-  boyut = 38,
+  boyut = 40,
 }: {
   ikon: keyof typeof Ionicons.glyphMap;
   renk: string;
@@ -234,8 +272,8 @@ export function IkonDaire({
       style={{
         width: boyut,
         height: boyut,
-        borderRadius: boyut / 2,
-        backgroundColor: c + "1F",
+        borderRadius: boyut * 0.32,
+        backgroundColor: c + "22",
         alignItems: "center",
         justifyContent: "center",
       }}
@@ -249,16 +287,8 @@ export function AyarGrup({ baslik, children }: { baslik?: string; children: Reac
   const renk = useRenkler();
   return (
     <View style={{ gap: SP.sm }}>
-      {baslik && <Text style={[s.grupBaslik, { color: renk.textFaint }]}>{baslik}</Text>}
-      <View
-        style={[
-          s.grupKart,
-          { backgroundColor: renk.card, borderColor: renk.border },
-          golge(1),
-        ]}
-      >
-        {children}
-      </View>
+      {baslik && <Text style={[T.overline, { color: renk.textFaint, marginLeft: SP.xs }]}>{baslik}</Text>}
+      <View style={[s.grupKart, { backgroundColor: renk.card }, golge(1)]}>{children}</View>
     </View>
   );
 }
@@ -292,11 +322,15 @@ export function AyarSatir({
         pressed && onPress ? { backgroundColor: renk.cardAlt } : null,
       ]}
     >
-      {ikon && <Ionicons name={ikon} size={20} color={tehlike ? renk.danger : renk.textMuted} />}
-      <Text style={{ color: anaRenk, flex: 1, fontSize: 15, fontWeight: "500" }}>{baslik}</Text>
-      {deger && <Text style={{ color: renk.textFaint, fontSize: 14 }}>{deger}</Text>}
+      {ikon && (
+        <View style={[s.ayarIkon, { backgroundColor: (tehlike ? renk.danger : renk.textMuted) + "1A" }]}>
+          <Ionicons name={ikon} size={17} color={tehlike ? renk.danger : renk.textMuted} />
+        </View>
+      )}
+      <Text style={{ color: anaRenk, flex: 1, fontSize: 15, fontWeight: "600" }}>{baslik}</Text>
+      {deger && <Text style={{ color: renk.textFaint, fontSize: 14, fontWeight: "500" }}>{deger}</Text>}
       {sag}
-      {onPress && !sag && <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />}
+      {onPress && !sag && <Ionicons name="chevron-forward" size={17} color={renk.textFaint} />}
     </Pressable>
   );
 }
@@ -307,24 +341,16 @@ export function BasilabilirSatir({
   ...rest
 }: PressableProps & { children: React.ReactNode; style?: ViewStyle }) {
   return (
-    <Pressable
-      style={({ pressed }) => [style as ViewStyle, pressed && { opacity: 0.6 }]}
-      {...rest}
-    >
+    <Pressable style={({ pressed }) => [style as ViewStyle, pressed && { opacity: 0.6 }]} {...rest}>
       {children}
     </Pressable>
   );
 }
 
-export const yazi = StyleSheet.create({
-  buyukSayi: { fontSize: 34, fontWeight: "800", letterSpacing: -0.5 } as TextStyle,
-  ortaSayi: { fontSize: 18, fontWeight: "700" } as TextStyle,
-});
-
 const s = StyleSheet.create({
   safe: { flex: 1 },
-  scrollIcerik: { paddingBottom: 40 },
-  padli: { paddingHorizontal: SP.lg, paddingTop: SP.md, gap: SP.md },
+  scrollIcerik: { paddingBottom: 48 },
+  padli: { paddingHorizontal: SP.lg, paddingTop: SP.sm, gap: SP.md },
   baslikSatir: {
     flexDirection: "row",
     alignItems: "center",
@@ -332,29 +358,17 @@ const s = StyleSheet.create({
     paddingTop: SP.sm,
     paddingBottom: SP.xs,
   },
-  baslik: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
-  kart: { borderWidth: StyleSheet.hairlineWidth, borderRadius: R.lg, padding: SP.lg },
+  kart: { borderRadius: R.lg, padding: SP.lg },
   kartBaslikSatir: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: SP.md },
-  kartBaslik: { fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
-  bos: { alignItems: "center", justifyContent: "center", paddingVertical: SP.xl, gap: SP.sm },
-  bosYazi: { fontSize: 14 },
-  seg: { flexDirection: "row", borderRadius: R.md, borderWidth: StyleSheet.hairlineWidth, padding: 4, gap: 4 },
-  segItem: { flex: 1, paddingVertical: 8, borderRadius: R.sm, alignItems: "center" },
-  cip: {
-    borderWidth: 1,
-    borderRadius: R.pill,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-  },
-  grupBaslik: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6, marginLeft: 4 },
-  grupKart: { borderWidth: StyleSheet.hairlineWidth, borderRadius: R.md, overflow: "hidden" },
-  ayarSatir: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SP.md,
-    paddingHorizontal: SP.lg,
-    paddingVertical: 14,
-  },
+  bos: { alignItems: "center", justifyContent: "center", paddingVertical: SP.xl, gap: SP.md },
+  bosDaire: { width: 60, height: 60, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  iskeletCizgi: { height: 14, borderRadius: 7 },
+  seg: { flexDirection: "row", borderRadius: R.pill, padding: 4, gap: 4 },
+  segItem: { flex: 1, paddingVertical: 9, borderRadius: R.pill, alignItems: "center" },
+  cip: { borderWidth: 1, borderRadius: R.pill, paddingHorizontal: 13, paddingVertical: 7 },
+  grupKart: { borderRadius: R.md, overflow: "hidden" },
+  ayarSatir: { flexDirection: "row", alignItems: "center", gap: SP.md, paddingHorizontal: SP.lg, paddingVertical: 12 },
+  ayarIkon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   rozet: {
     flexDirection: "row",
     alignItems: "center",

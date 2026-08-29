@@ -6,10 +6,10 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from "react-native";
+import { Metin as Text } from "@/components/Metin";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { useRenkler } from "@/lib/theme";
