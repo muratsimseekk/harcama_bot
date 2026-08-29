@@ -21,21 +21,15 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { EkranBasligi } from "@/components/EkranBasligi";
 import { Metin as Text } from "@/components/Metin";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { api, ApiError } from "@/lib/api";
-import { R, SP, useRenkler } from "@/lib/theme";
+import { R, SP, T, useRenkler } from "@/lib/theme";
 import type { CaptureYanit } from "@/lib/types";
 
 type Durum = "bos" | "hazirlaniyor" | "kayit" | "gonderiliyor";
 const MIN_KAYIT_MS = 700;
-
-const ORNEKLER = [
-  "market 250, dün benzin 600",
-  "kahve 90",
-  "3 mayıs galvaniz 4500 tl",
-  "maaş geldi 45000",
-];
+const ORNEKLER = ["market 250, dün benzin 600", "kahve 90", "maaş geldi 45000", "3 mayıs galvaniz 4500"];
 
 export default function Ekle() {
   const renk = useRenkler();
@@ -45,29 +39,26 @@ export default function Ekle() {
   const [metin, setMetin] = useState("");
   const [durum, setDurum] = useState<Durum>("bos");
   const basladiRef = useRef(0);
-  const nabiz = useRef(new Animated.Value(1)).current;
+  const halka = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (durum === "kayit") {
-      const anim = Animated.loop(
-        Animated.sequence([
-          Animated.timing(nabiz, { toValue: 1.12, duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-          Animated.timing(nabiz, { toValue: 1, duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        ]),
+      const a = Animated.loop(
+        Animated.timing(halka, { toValue: 1, duration: 1600, easing: Easing.out(Easing.ease), useNativeDriver: true }),
       );
-      anim.start();
-      return () => anim.stop();
+      a.start();
+      return () => {
+        a.stop();
+        halka.setValue(0);
+      };
     }
-    nabiz.setValue(1);
-  }, [durum, nabiz]);
+  }, [durum, halka]);
 
   function sonuc(y: CaptureYanit) {
     if (y.candidates.length === 0) {
       Alert.alert(
         "Anlaşılamadı",
-        y.transcript
-          ? `Duyduğum: "${y.transcript}"\n\nBundan bir kayıt çıkaramadım. Tekrar dene.`
-          : "Kayıt çıkarılamadı. Daha açık yazmayı/söylemeyi dene.",
+        y.transcript ? `Duyduğum: "${y.transcript}"\n\nKayıt çıkaramadım.` : "Daha açık dene.",
       );
       return;
     }
@@ -75,7 +66,7 @@ export default function Ekle() {
   }
 
   function hata(e: unknown) {
-    Alert.alert("Hata", e instanceof ApiError ? e.message : "Bir şeyler ters gitti, tekrar dene.");
+    Alert.alert("Hata", e instanceof ApiError ? e.message : "Bir şeyler ters gitti.");
   }
 
   async function metinGonder() {
@@ -99,7 +90,7 @@ export default function Ekle() {
     try {
       const izin = await AudioModule.requestRecordingPermissionsAsync();
       if (!izin.granted) {
-        Alert.alert("Mikrofon izni gerekli", "Ayarlar → Harcama → Mikrofon'u aç.");
+        Alert.alert("Mikrofon izni gerekli");
         setDurum("bos");
         return;
       }
@@ -138,33 +129,36 @@ export default function Ekle() {
   const sn = Math.floor(rState.durationMillis / 1000);
 
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: renk.bg }]} edges={["top"]}>
-      <KeyboardAvoidingView
-        style={s.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+    <EkranBasligi baslik="Ekle" zil={false} kaydir={false}>
+      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={s.orta}>
-          <Animated.View style={{ transform: [{ scale: nabiz }] }}>
+          <View style={s.micSar}>
+            {kayitta && (
+              <Animated.View
+                style={[
+                  s.dalga,
+                  {
+                    borderColor: renk.green,
+                    opacity: halka.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }),
+                    transform: [{ scale: halka.interpolate({ inputRange: [0, 1], outputRange: [1, 2] }) }],
+                  },
+                ]}
+              />
+            )}
             <Pressable
               onPress={mikTikla}
               disabled={mesgul}
-              style={[
-                s.mic,
-                {
-                  backgroundColor: kayitta ? renk.danger : renk.primary,
-                  opacity: mesgul ? 0.6 : 1,
-                },
-              ]}
+              style={[s.mic, { backgroundColor: kayitta ? renk.danger : renk.green, opacity: mesgul ? 0.6 : 1 }]}
             >
               {mesgul ? (
-                <ActivityIndicator color="#fff" size="large" />
+                <ActivityIndicator color={renk.onGreen} size="large" />
               ) : (
-                <Ionicons name={kayitta ? "stop" : "mic"} size={54} color="#fff" />
+                <Ionicons name={kayitta ? "stop" : "mic"} size={52} color={renk.onGreen} />
               )}
             </Pressable>
-          </Animated.View>
+          </View>
 
-          <Text style={[s.durumYazi, { color: kayitta ? renk.danger : renk.text }]}>
+          <Text style={[T.heading, { color: kayitta ? renk.danger : renk.text }]}>
             {kayitta
               ? `Dinliyorum · ${sn} sn`
               : durum === "hazirlaniyor"
@@ -183,7 +177,7 @@ export default function Ekle() {
                 <Pressable
                   key={o}
                   onPress={() => setMetin(o)}
-                  style={[s.ornek, { borderColor: renk.border, backgroundColor: renk.card }]}
+                  style={[s.ornek, { backgroundColor: renk.greenSoft }]}
                 >
                   <Text style={{ color: renk.textMuted, fontSize: 12.5 }}>{o}</Text>
                 </Pressable>
@@ -192,9 +186,9 @@ export default function Ekle() {
           )}
         </View>
 
-        <View style={[s.altBar, { borderTopColor: renk.hairline, backgroundColor: renk.card }]}>
+        <View style={[s.altBar, { backgroundColor: renk.greenSoft }]}>
           <TextInput
-            style={[s.input, { color: renk.text, backgroundColor: renk.bg, borderColor: renk.border }]}
+            style={[s.input, { color: renk.text }]}
             placeholder="yazarak ekle…"
             placeholderTextColor={renk.textFaint}
             value={metin}
@@ -205,49 +199,35 @@ export default function Ekle() {
             multiline
           />
           <Pressable
-            style={[s.gonder, { backgroundColor: metin.trim() ? renk.primary : renk.border }]}
+            style={[s.gonder, { backgroundColor: metin.trim() ? renk.green : renk.border }]}
             onPress={metinGonder}
             disabled={!metin.trim() || durum !== "bos"}
           >
-            <Ionicons name="arrow-up" size={20} color="#fff" />
+            <Ionicons name="arrow-up" size={20} color={renk.onGreen} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </EkranBasligi>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1 },
   flex: { flex: 1 },
   orta: { flex: 1, alignItems: "center", justifyContent: "center", gap: SP.md, padding: SP.xl },
-  mic: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  durumYazi: { fontSize: 17, fontWeight: "700", marginTop: SP.sm },
+  micSar: { alignItems: "center", justifyContent: "center", width: 150, height: 150 },
+  dalga: { position: "absolute", width: 150, height: 150, borderRadius: 75, borderWidth: 3 },
+  mic: { width: 138, height: 138, borderRadius: 69, alignItems: "center", justifyContent: "center" },
   ipucu: { fontSize: 13, textAlign: "center", maxWidth: 280 },
   ornekler: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: SP.sm, marginTop: SP.lg },
-  ornek: { borderWidth: 1, borderRadius: R.pill, paddingHorizontal: 12, paddingVertical: 7 },
+  ornek: { borderRadius: R.pill, paddingHorizontal: 12, paddingVertical: 7 },
   altBar: {
     flexDirection: "row",
     gap: SP.sm,
-    padding: SP.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    padding: SP.sm,
+    borderRadius: R.pill,
     alignItems: "flex-end",
+    margin: SP.lg,
   },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: R.md,
-    paddingHorizontal: 14,
-    paddingTop: 11,
-    paddingBottom: 11,
-    fontSize: 16,
-    maxHeight: 100,
-  },
-  gonder: { width: 44, height: 44, borderRadius: R.md, alignItems: "center", justifyContent: "center" },
+  input: { flex: 1, fontSize: 15.5, paddingHorizontal: SP.md, paddingVertical: 12, maxHeight: 100, fontFamily: "Poppins_500Medium" },
+  gonder: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
 });

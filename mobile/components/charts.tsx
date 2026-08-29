@@ -97,6 +97,57 @@ export function CubukGrafik({ etiketler, degerler }: { etiketler: string[]; dege
   );
 }
 
+/** FinWise ikili çubuk: her birim için gelir (yeşil) + gider (mavi) yan yana */
+export function IkiliCubukGrafik({
+  etiketler,
+  gelir,
+  gider,
+}: {
+  etiketler: string[];
+  gelir: number[];
+  gider: number[];
+}) {
+  const renk = useRenkler();
+  const hepsi = [...gelir, ...gider];
+  if (hepsi.length === 0 || hepsi.every((v) => v === 0)) {
+    return (
+      <Text style={[T.body, { color: renk.textMuted, textAlign: "center", paddingVertical: SP.lg }]}>
+        Bu dönemde veri yok.
+      </Text>
+    );
+  }
+  const enBuyuk = Math.max(...hepsi, 1);
+  const n = etiketler.length;
+  const data = etiketler.flatMap((et, i) => [
+    { value: gelir[i] ?? 0, frontColor: renk.green, spacing: 3, label: "" },
+    { value: gider[i] ?? 0, frontColor: renk.blue, spacing: n > 8 ? 8 : 16, label: et },
+  ]);
+
+  return (
+    <BarChart
+      data={data}
+      barWidth={Math.max(5, Math.min(12, 150 / n))}
+      initialSpacing={10}
+      barBorderTopLeftRadius={3}
+      barBorderTopRightRadius={3}
+      noOfSections={3}
+      maxValue={enBuyuk * 1.15}
+      yAxisThickness={0}
+      xAxisThickness={1}
+      xAxisColor={renk.text}
+      xAxisLabelTextStyle={{ color: renk.textMuted, fontSize: 9 }}
+      yAxisTextStyle={{ color: renk.blueSoft, fontSize: 9 }}
+      formatYLabel={(l: string) => tutarKisa(Number(l))}
+      rulesType="dashed"
+      rulesColor={renk.blueSoft}
+      dashWidth={3}
+      dashGap={6}
+      isAnimated
+      animationDuration={500}
+    />
+  );
+}
+
 /** İnce trend çizgisi (hero altı) */
 export function Sparkline({
   degerler,

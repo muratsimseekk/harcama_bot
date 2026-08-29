@@ -1,212 +1,151 @@
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useMemo } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
-import {
-  Beliren,
-  BosDurum,
-  Ekran,
-  IkonDaire,
-  Kart,
-  KartBaslik,
-  Sayac,
-  Yukleniyor,
-} from "@/components/base";
-import { KategoriBar, PastaGrafik, Sparkline } from "@/components/charts";
+import { useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { Kart, Yukleniyor } from "@/components/base";
+import { DonemSekmeleri } from "@/components/DonemSekmeleri";
+import { EkranBasligi } from "@/components/EkranBasligi";
+import { HedefHalkasi } from "@/components/HedefHalkasi";
+import { IlerlemeCubugu } from "@/components/IlerlemeCubugu";
+import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
-import { birlestirKategori, bugunUzun, selamlama, tarihEtiket, turkceTutar } from "@/lib/format";
-import { kategoriIkon } from "@/lib/kategoriIkon";
-import { useSummary, useTransactions } from "@/lib/queries";
-import { R, SP, T, useRenkler } from "@/lib/theme";
-import { TIP_RENK } from "@/lib/types";
+import { selamlama, turkceTutar } from "@/lib/format";
+import { useGoal, useSummary, useTransactions } from "@/lib/queries";
+import { SP, T, useRenkler } from "@/lib/theme";
+import type { Granularity } from "@/lib/types";
 
-export default function Dashboard() {
+const GRAN: Granularity[] = ["week", "month", "year"];
+const ETIKET: Record<Granularity, string> = { week: "Haftalık", month: "Aylık", year: "Yıllık" };
+
+export default function AnaSayfa() {
   const renk = useRenkler();
   const router = useRouter();
-  const ozet = useSummary("month");
-  const sonlar = useTransactions({ limit: 6 });
+  const [gran, setGran] = useState<Granularity>("month");
+  const ozet = useSummary(gran);
+  const ayOzet = useSummary("month");
+  const goal = useGoal();
+  const sonlar = useTransactions({ limit: 5 });
 
   const g = ozet.data?.bu_donem;
-  const o = ozet.data?.onceki;
+  const genelHedef = ayOzet.data?.hedefler.find((h) => h.kapsam === "genel");
+  const yatirim = ayOzet.data?.yatirim;
 
-  const turDilimler = useMemo(
-    () =>
-      (g?.tip_kirilim ?? []).map((t) => ({
-        ad: t.etiket,
-        tutar: t.tutar,
-        oran: t.oran,
-        renk: TIP_RENK[t.tip],
-      })),
-    [g],
-  );
-
-  const katDilimler = useMemo(() => {
-    if (!g) return [];
-    const hepsi = birlestirKategori(g.kategori_kirilim);
-    const ilk = hepsi.slice(0, 5);
-    const kalan = hepsi.slice(5);
-    if (kalan.length) {
-      ilk.push({ ad: `+${kalan.length} kategori`, tutar: kalan.reduce((s, k) => s + k.tutar, 0), oran: 0 });
-    }
-    return ilk;
-  }, [g]);
-
-  const sparkVeri = useMemo(() => (g?.gunluk ?? []).map((x) => x.gider), [g]);
+  const haftaGider = useMemo(() => {
+    const gl = ayOzet.data?.bu_donem.gunluk ?? [];
+    return gl.slice(-7).reduce((s, x) => s + x.gider, 0);
+  }, [ayOzet.data]);
 
   return (
-    <Ekran onRefresh={() => { ozet.refetch(); sonlar.refetch(); }} refreshing={ozet.isRefetching}>
-      <View style={s.selam}>
-        <Text style={[T.caption, { color: renk.textFaint }]}>{bugunUzun()}</Text>
-        <Text style={[T.title, { color: renk.text }]}>{selamlama()}</Text>
-      </View>
+    <EkranBasligi
+      baslik=""
+      zil
+      onRefresh={() => {
+        ozet.refetch();
+        ayOzet.refetch();
+        sonlar.refetch();
+        goal.refetch();
+      }}
+      refreshing={ozet.isRefetching}
+      yesilAlan={
+        <View style={{ gap: SP.md, paddingBottom: SP.md }}>
+          <View style={s.selam}>
+            <Text style={[T.title, { color: renk.onGreen }]}>{selamlama()}</Text>
+            <Text style={[s.selamAlt, { color: renk.text }]}>Tekrar hoş geldin</Text>
+          </View>
 
-      {ozet.isLoading || !g ? (
-        <Yukleniyor yukseklik={190} />
-      ) : (
-        <>
-          <Beliren>
-            <LinearGradient
-              colors={[renk.primary, renk.isletme]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1.2 }}
-              style={s.hero}
-            >
-              <View style={s.heroUst}>
-                <Text style={s.heroEtiket}>{ozet.data?.etiket} · toplam gider</Text>
-                {o && <HeroKiyas bu={g.toplam_gider} onceki={o.toplam_gider} />}
-              </View>
-              <View style={s.heroSayiSatir}>
-                <Sayac deger={g.toplam_gider} style={[T.para, s.heroSayi]} />
-                <Text style={s.heroBirim}>₺</Text>
-              </View>
-              {sparkVeri.length > 2 && (
-                <View style={s.spark}>
-                  <Sparkline degerler={sparkVeri} renk="#FFFFFF" yukseklik={36} />
-                </View>
-              )}
-              <View style={s.heroDip}>
-                <HeroMini etiket="işlem" deger={`${g.adet}`} />
-                {g.toplam_gelir > 0 && <HeroMini etiket="gelir" deger={`${turkceTutar(g.toplam_gelir)} ₺`} />}
-                <HeroMini etiket="net" deger={`${turkceTutar(g.net)} ₺`} />
-              </View>
-            </LinearGradient>
-          </Beliren>
-
-          <Beliren sira={1}>
-            <Kart>
-              <KartBaslik ikon="pie-chart-outline">Tür dağılımı</KartBaslik>
-              <PastaGrafik dilimler={turDilimler} />
-            </Kart>
-          </Beliren>
-
-          {katDilimler.length > 0 && (
-            <Beliren sira={2}>
-              <Kart>
-                <KartBaslik ikon="list-outline">Kategoriler</KartBaslik>
-                <KategoriBar dilimler={katDilimler} />
-              </Kart>
-            </Beliren>
-          )}
-        </>
-      )}
-
-      <Beliren sira={3}>
-        <Kart>
-          <KartBaslik
-            ikon="time-outline"
-            sag={
-              <Pressable onPress={() => router.navigate("/(app)/gecmis")} hitSlop={8}>
-                <Text style={{ color: renk.primary, fontWeight: "700", fontSize: 12.5 }}>Tümü</Text>
-              </Pressable>
-            }
-          >
-            Son hareketler
-          </KartBaslik>
-          {sonlar.isLoading ? (
-            <Yukleniyor yukseklik={80} />
-          ) : (sonlar.data ?? []).length === 0 ? (
-            <BosDurum ikon="wallet-outline" yazi="Henüz kayıt yok" />
-          ) : (
-            (sonlar.data ?? []).map((t, i) => (
-              <View
-                key={t.id}
-                style={[
-                  s.hareket,
-                  i > 0 && { borderTopColor: renk.hairline, borderTopWidth: StyleSheet.hairlineWidth },
-                ]}
-              >
-                <IkonDaire ikon={kategoriIkon(t.kategori)} renk={TIP_RENK[t.tip]} />
+          {g && (
+            <>
+              <View style={s.ggSatir}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: renk.text, fontWeight: "600", fontSize: 15 }} numberOfLines={1}>
-                    {t.aciklama}
-                  </Text>
-                  <Text style={{ color: renk.textFaint, fontSize: 12 }}>
-                    {t.kategori} · {tarihEtiket(t.tarih)}
+                  <Text style={[s.ggEtiket, { color: renk.onGreen }]}>↗ Bu ay gelir</Text>
+                  <Text style={[s.ggDeger, { color: renk.onGreen }]}>
+                    {turkceTutar(g.toplam_gelir)} ₺
                   </Text>
                 </View>
-                <Text
-                  style={{
-                    color: t.direction === "gelir" ? renk.gelir : renk.text,
-                    fontWeight: "700",
-                    fontSize: 15,
-                  }}
-                >
-                  {t.direction === "gelir" ? "+" : "−"}
-                  {turkceTutar(t.tutar)}
-                </Text>
+                <View style={s.ggAyrac} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.ggEtiket, { color: renk.blue }]}>↘ Bu ay harcama</Text>
+                  <Text style={[s.ggDeger, { color: renk.blue }]}>
+                    -{turkceTutar(g.toplam_gider)} ₺
+                  </Text>
+                </View>
               </View>
-            ))
+
+              {genelHedef ? (
+                <>
+                  <IlerlemeCubugu oran={genelHedef.oran} hedef={genelHedef.limit} />
+                  <Text style={[s.hedefNot, { color: renk.text }]}>
+                    {genelHedef.durum === "asti"
+                      ? `Aylık hedefini ${turkceTutar(-genelHedef.kalan)} ₺ aştın.`
+                      : `Hedefinin %${Math.round(genelHedef.oran)}'i doldu — ${
+                          genelHedef.durum === "yaklasti" ? "dikkatli ol." : "iyi gidiyorsun."
+                        }`}
+                  </Text>
+                </>
+              ) : (
+                <Text style={[s.hedefNot, { color: renk.text }]}>
+                  Aylık harcama hedefi belirlemek için Analiz → Hedeflerim.
+                </Text>
+              )}
+            </>
           )}
-        </Kart>
-      </Beliren>
-    </Ekran>
-  );
-}
+        </View>
+      }
+    >
+      <Kart style={{ backgroundColor: renk.green }}>
+        <View style={s.hedefKart}>
+          <View style={{ alignItems: "center", gap: SP.sm }}>
+            <HedefHalkasi oran={yatirim?.oran ?? 0} ikon="wallet-outline" boyut={92} />
+            <Text style={[s.hedefBaslik, { color: renk.onGreen }]}>Yatırım{"\n"}Hedefi</Text>
+          </View>
+          <View style={[s.hedefDikey, { backgroundColor: "rgba(9,48,48,0.2)" }]} />
+          <View style={{ flex: 1, gap: SP.md }}>
+            <View>
+              <Text style={[s.miniEtiket, { color: renk.onGreen }]}>Bu ay biriken</Text>
+              <Text style={[s.miniDeger, { color: renk.onGreen }]}>
+                {turkceTutar(yatirim?.birikmis ?? 0)} ₺
+              </Text>
+            </View>
+            <View style={[s.miniAyrac, { backgroundColor: "rgba(9,48,48,0.2)" }]} />
+            <View>
+              <Text style={[s.miniEtiket, { color: renk.blue }]}>Son 7 gün harcama</Text>
+              <Text style={[s.miniDeger, { color: renk.blue }]}>-{turkceTutar(haftaGider)} ₺</Text>
+            </View>
+          </View>
+        </View>
+      </Kart>
 
-function HeroKiyas({ bu, onceki }: { bu: number; onceki: number }) {
-  if (onceki <= 0) return null;
-  const fark = ((bu - onceki) / onceki) * 100;
-  if (Math.abs(fark) < 1) return null;
-  return (
-    <View style={s.heroRozet}>
-      <Ionicons name={fark > 0 ? "trending-up" : "trending-down"} size={12} color="#fff" />
-      <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>
-        {fark > 0 ? "+" : "−"}%{Math.abs(Math.round(fark))}
-      </Text>
-    </View>
-  );
-}
+      <DonemSekmeleri secenekler={GRAN} etiket={(x) => ETIKET[x]} secili={gran} onSec={setGran} />
 
-function HeroMini({ etiket, deger }: { etiket: string; deger: string }) {
-  return (
-    <View>
-      <Text style={s.heroMiniDeger}>{deger}</Text>
-      <Text style={s.heroMiniEtiket}>{etiket}</Text>
-    </View>
+      {sonlar.isLoading ? (
+        <Yukleniyor yukseklik={120} />
+      ) : (
+        <View>
+          {(sonlar.data ?? []).map((t) => (
+            <IslemSatiri key={t.id} islem={t} onPress={() => router.navigate("/(app)/analiz")} />
+          ))}
+          {(sonlar.data ?? []).length === 0 && (
+            <Text style={{ color: renk.textFaint, textAlign: "center", paddingVertical: SP.xl }}>
+              Henüz kayıt yok. Ekle sekmesinden başla.
+            </Text>
+          )}
+        </View>
+      )}
+    </EkranBasligi>
   );
 }
 
 const s = StyleSheet.create({
-  selam: { paddingTop: SP.xs, paddingBottom: SP.xs },
-  hero: { borderRadius: R.xl, padding: SP.lg, gap: SP.sm, overflow: "hidden" },
-  heroUst: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  heroEtiket: { color: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: "600" },
-  heroSayiSatir: { flexDirection: "row", alignItems: "flex-end", gap: 4 },
-  heroSayi: { color: "#fff", fontSize: 38 },
-  heroBirim: { color: "rgba(255,255,255,0.9)", fontSize: 20, fontWeight: "700", marginBottom: 4 },
-  spark: { marginHorizontal: -SP.xs, marginVertical: -2 },
-  heroDip: { flexDirection: "row", gap: SP.xl, marginTop: 2 },
-  heroMiniDeger: { color: "#fff", fontSize: 14, fontWeight: "800" },
-  heroMiniEtiket: { color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: "600" },
-  heroRozet: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(255,255,255,0.22)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: R.pill,
-  },
-  hareket: { flexDirection: "row", alignItems: "center", gap: SP.md, paddingVertical: SP.md },
+  selam: {},
+  selamAlt: { fontSize: 13, fontWeight: "500", marginTop: -2 },
+  ggSatir: { flexDirection: "row", alignItems: "center" },
+  ggEtiket: { fontSize: 12.5, fontWeight: "600" },
+  ggDeger: { fontSize: 20, fontWeight: "800", marginTop: 2, letterSpacing: -0.4 },
+  ggAyrac: { width: 1, height: 38, backgroundColor: "rgba(9,48,48,0.25)", marginHorizontal: SP.md },
+  hedefNot: { fontSize: 13, fontWeight: "500" },
+  hedefKart: { flexDirection: "row", alignItems: "center", gap: SP.lg },
+  hedefBaslik: { fontSize: 13, fontWeight: "700", textAlign: "center", lineHeight: 16 },
+  hedefDikey: { width: 1, alignSelf: "stretch", marginVertical: 4 },
+  miniEtiket: { fontSize: 12, fontWeight: "500" },
+  miniDeger: { fontSize: 16, fontWeight: "700", marginTop: 2 },
+  miniAyrac: { height: 1 },
 });

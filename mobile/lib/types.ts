@@ -83,6 +83,26 @@ export interface OzetGovde {
   gunluk: GunlukNokta[];
 }
 
+export type Kapsam = "genel" | "kategori" | "tip";
+
+export interface HedefIlerleme {
+  kapsam: Kapsam;
+  kapsam_deger: string | null;
+  etiket: string;
+  limit: number;
+  harcanan: number;
+  oran: number;
+  kalan: number;
+  durum: "iyi" | "yaklasti" | "asti";
+}
+
+export interface YatirimIlerleme {
+  hedef: number;
+  birikmis: number;
+  kalan: number;
+  oran: number;
+}
+
 export interface Ozet {
   period: Granularity;
   baslangic: string;
@@ -90,6 +110,31 @@ export interface Ozet {
   etiket: string;
   bu_donem: OzetGovde;
   onceki: OzetGovde;
+  hedefler: HedefIlerleme[];
+  yatirim: YatirimIlerleme | null;
+}
+
+export interface Butce {
+  id: string;
+  kapsam: Kapsam;
+  kapsam_deger: string | null;
+  limit_amount: number;
+  period: string;
+}
+
+export interface Hedef {
+  id: string;
+  hedef_amount: number;
+  tip: string;
+  period: string;
+}
+
+export interface Bildirim {
+  tur: "uyari" | "bilgi" | "motivasyon" | "islem";
+  baslik: string;
+  metin: string;
+  grup: string;
+  ikon: string;
 }
 
 export const TIP_ETIKET: Record<Tip, string> = {
@@ -99,9 +144,9 @@ export const TIP_ETIKET: Record<Tip, string> = {
 };
 
 export const TIP_RENK: Record<Tip, string> = {
-  kisisel: "#2563EB",
-  isletme: "#16A34A",
-  yatirim: "#9333EA",
+  kisisel: "#3299FF",
+  isletme: "#0068FF",
+  yatirim: "#6DB6FE",
 };
 
 export const TIP_EMOJI: Record<Tip, string> = {

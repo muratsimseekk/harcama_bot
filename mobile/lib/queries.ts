@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type IslemFiltre } from "./api";
-import type { Aday, Granularity, Islem, Kategori, Tip } from "./types";
+import type { Aday, Granularity, Kapsam, Kategori, Tip } from "./types";
 
 export function useTransactions(filtre: IslemFiltre = { limit: 20 }) {
   return useQuery({
@@ -28,6 +28,53 @@ function invalidateHepsi(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["transactions"] });
   qc.invalidateQueries({ queryKey: ["summary"] });
   qc.invalidateQueries({ queryKey: ["me"] });
+  qc.invalidateQueries({ queryKey: ["notifications"] });
+}
+
+export function useBudgets() {
+  return useQuery({ queryKey: ["budgets"], queryFn: () => api.listBudgets() });
+}
+
+export function useGoal() {
+  return useQuery({ queryKey: ["goal"], queryFn: () => api.getGoal() });
+}
+
+export function useNotifications() {
+  return useQuery({ queryKey: ["notifications"], queryFn: () => api.notifications() });
+}
+
+export function useSetBudget() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { kapsam: Kapsam; kapsam_deger?: string | null; limit_amount: number }) =>
+      api.setBudget(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+      qc.invalidateQueries({ queryKey: ["summary"] });
+    },
+  });
+}
+
+export function useDeleteBudget() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteBudget(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+      qc.invalidateQueries({ queryKey: ["summary"] });
+    },
+  });
+}
+
+export function useSetGoal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (tutar: number) => api.setGoal(tutar),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["goal"] });
+      qc.invalidateQueries({ queryKey: ["summary"] });
+    },
+  });
 }
 
 export function useDeleteTransaction() {

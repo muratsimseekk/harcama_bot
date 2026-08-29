@@ -2,9 +2,13 @@ import { supabase } from "./supabase";
 import type {
   Aday,
   Ben,
+  Bildirim,
+  Butce,
   CaptureYanit,
   Granularity,
+  Hedef,
   Islem,
+  Kapsam,
   Kategori,
   Ozet,
   Tip,
@@ -133,5 +137,33 @@ export const api = {
 
   deleteCategory(id: string): Promise<{ silindi: boolean }> {
     return jsonReq(`/v1/categories/${id}`, "DELETE");
+  },
+
+  listBudgets(): Promise<Butce[]> {
+    return jsonReq<Butce[]>("/v1/budgets", "GET");
+  },
+
+  setBudget(body: { kapsam: Kapsam; kapsam_deger?: string | null; limit_amount: number }): Promise<Butce> {
+    return jsonReq<Butce>("/v1/budgets", "PUT", body);
+  },
+
+  deleteBudget(id: string): Promise<{ silindi: boolean }> {
+    return jsonReq(`/v1/budgets/${id}`, "DELETE");
+  },
+
+  getGoal(): Promise<Hedef | null> {
+    return jsonReq<Hedef | null>("/v1/goals", "GET");
+  },
+
+  setGoal(hedef_amount: number): Promise<Hedef> {
+    return jsonReq<Hedef>("/v1/goals", "PUT", { hedef_amount });
+  },
+
+  deleteGoal(): Promise<{ silindi: boolean }> {
+    return jsonReq("/v1/goals", "DELETE");
+  },
+
+  notifications(): Promise<{ bildirimler: Bildirim[] }> {
+    return jsonReq<{ bildirimler: Bildirim[] }>("/v1/notifications", "GET");
   },
 };
