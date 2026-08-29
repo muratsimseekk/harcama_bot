@@ -6,8 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from core.models import Candidate, Category, Transaction
-from core.summary import Ozet
+from core.models import Budget, Candidate, Category, Goal, Transaction
+from core.summary import HedefIlerleme, Ozet
 
 Tip = Literal["kisisel", "isletme", "yatirim"]
 Yon = Literal["gider", "gelir"]
@@ -188,6 +188,28 @@ class OzetGovde(BaseModel):
         )
 
 
+class HedefIlerlemeModel(BaseModel):
+    kapsam: str
+    kapsam_deger: str | None = None
+    etiket: str
+    limit: float
+    harcanan: float
+    oran: float
+    kalan: float
+    durum: str
+
+    @classmethod
+    def from_h(cls, h: HedefIlerleme) -> HedefIlerlemeModel:
+        return cls(**vars(h))
+
+
+class YatirimModel(BaseModel):
+    hedef: float
+    birikmis: float
+    kalan: float
+    oran: float
+
+
 class OzetModel(BaseModel):
     period: str
     baslangic: date
@@ -195,3 +217,45 @@ class OzetModel(BaseModel):
     etiket: str
     bu_donem: OzetGovde
     onceki: OzetGovde
+    hedefler: list[HedefIlerlemeModel] = Field(default_factory=list)
+    yatirim: YatirimModel | None = None
+
+
+# --------------------------------------------------------------------------- #
+# Bütçe / hedef
+# --------------------------------------------------------------------------- #
+class ButceModel(BaseModel):
+    id: str
+    kapsam: str
+    kapsam_deger: str | None = None
+    limit_amount: float
+    period: str = "month"
+
+    @classmethod
+    def from_b(cls, b: Budget) -> ButceModel:
+        return cls(
+            id=b.id, kapsam=b.kapsam, kapsam_deger=b.kapsam_deger,
+            limit_amount=b.limit_amount, period=b.period,
+        )
+
+
+class ButceIstek(BaseModel):
+    kapsam: Literal["genel", "kategori", "tip"]
+    kapsam_deger: str | None = None
+    limit_amount: float = Field(gt=0)
+
+
+class HedefModel(BaseModel):
+    id: str
+    hedef_amount: float
+    tip: str = "yatirim"
+    period: str = "month"
+
+    @classmethod
+    def from_g(cls, g: Goal) -> HedefModel:
+        return cls(id=g.id, hedef_amount=g.hedef_amount, tip=g.tip, period=g.period)
+
+
+class HedefIstek(BaseModel):
+    hedef_amount: float = Field(gt=0)
+    tip: str = "yatirim"

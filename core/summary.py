@@ -111,3 +111,68 @@ def ozetle(txs: list[Transaction]) -> Ozet:
         kategori_kirilim=kategori_kirilim,
         gunluk=gunluk,
     )
+
+
+@dataclass
+class HedefIlerleme:
+    kapsam: str            # 'genel' | 'kategori' | 'tip'
+    kapsam_deger: str | None
+    etiket: str
+    limit: float
+    harcanan: float
+    oran: float            # 0–100+
+    kalan: float
+    durum: str             # 'iyi' | 'yaklasti' (>=80) | 'asti' (>=100)
+
+
+def _bucket_durum(oran: float) -> str:
+    if oran >= 100:
+        return "asti"
+    if oran >= 80:
+        return "yaklasti"
+    return "iyi"
+
+
+def hedef_ilerleme(txs, budgets) -> list[HedefIlerleme]:
+    """Dönem giderlerini bütçe kapsamlarına böler (budgets: list[core.models.Budget])."""
+    giderler = [t for t in txs if t.direction == "gider"]
+    toplam_gider = sum(t.tutar for t in giderler)
+    kat_top: dict[str, float] = {}
+    tip_top: dict[str, float] = {}
+    for t in giderler:
+        kat_top[t.kategori] = kat_top.get(t.kategori, 0.0) + t.tutar
+        tip_top[t.tip] = tip_top.get(t.tip, 0.0) + t.tutar
+
+    out: list[HedefIlerleme] = []
+    for b in budgets:
+        if b.kapsam == "genel":
+            harcanan = toplam_gider
+            etiket = "Toplam"
+        elif b.kapsam == "kategori":
+            harcanan = kat_top.get(b.kapsam_deger or "", 0.0)
+            etiket = b.kapsam_deger or "?"
+        else:  # tip
+            harcanan = tip_top.get(b.kapsam_deger or "", 0.0)
+            etiket = TIP_ETIKETI.get(b.kapsam_deger or "", b.kapsam_deger or "?")
+        harcanan = round(harcanan, 2)
+        oran = round(harcanan / b.limit_amount * 100, 1) if b.limit_amount else 0.0
+        out.append(HedefIlerleme(
+            kapsam=b.kapsam, kapsam_deger=b.kapsam_deger, etiket=etiket,
+            limit=b.limit_amount, harcanan=harcanan, oran=oran,
+            kalan=round(b.limit_amount - harcanan, 2), durum=_bucket_durum(oran),
+        ))
+    # genel önce, sonra tutara göre
+    out.sort(key=lambda h: (h.kapsam != "genel", -h.harcanan))
+    return out
+
+
+def yatirim_ilerleme(txs, hedef_amount: float) -> dict:
+    """Dönemde 'yatirim' tipi giderlerin toplamı = birikmiş."""
+    birikmis = round(sum(t.tutar for t in txs if t.direction == "gider" and t.tip == "yatirim"), 2)
+    oran = round(birikmis / hedef_amount * 100, 1) if hedef_amount else 0.0
+    return {
+        "hedef": round(hedef_amount, 2),
+        "birikmis": birikmis,
+        "kalan": round(max(0.0, hedef_amount - birikmis), 2),
+        "oran": oran,
+    }

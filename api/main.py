@@ -6,7 +6,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import capture, categories, me, summary, transactions
+from api.routes import budgets, capture, categories, me, notifications, summary, transactions
 from core.config import settings
 
 logging.basicConfig(
@@ -28,6 +28,8 @@ app.include_router(capture.router)
 app.include_router(transactions.router)
 app.include_router(categories.router)
 app.include_router(summary.router)
+app.include_router(budgets.router)
+app.include_router(notifications.router)
 app.include_router(me.router)
 
 

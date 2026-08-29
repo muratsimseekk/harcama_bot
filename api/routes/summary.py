@@ -1,4 +1,4 @@
-"""/v1/summary — dönem (hafta/ay/yıl) özeti + önceki döneme kıyas."""
+"""/v1/summary — dönem (hafta/ay/yıl) özeti + önceki döneme kıyas + bütçe ilerlemesi."""
 from __future__ import annotations
 
 from datetime import date
@@ -6,10 +6,10 @@ from datetime import date
 from fastapi import APIRouter, Query
 
 from api.deps import CurrentUser
-from api.schemas import OzetGovde, OzetModel
+from api.schemas import HedefIlerlemeModel, OzetGovde, OzetModel, YatirimModel
 from core import repo
 from core.dates import donem_araligi, donem_etiket, donem_kaydir, today
-from core.summary import ozetle
+from core.summary import hedef_ilerleme, ozetle, yatirim_ilerleme
 
 router = APIRouter(prefix="/v1", tags=["summary"])
 
@@ -28,6 +28,18 @@ async def summary(
     bu_txs = await repo.list_period(user_id, bas, bit)
     onceki_txs = await repo.list_period(user_id, obas, obit)
 
+    hedefler: list[HedefIlerlemeModel] = []
+    yatirim: YatirimModel | None = None
+    try:
+        butceler = await repo.budgets_list(user_id)
+        if butceler:
+            hedefler = [HedefIlerlemeModel.from_h(h) for h in hedef_ilerleme(bu_txs, butceler)]
+        g = await repo.goal_get(user_id, "yatirim")
+        if g:
+            yatirim = YatirimModel(**yatirim_ilerleme(bu_txs, g.hedef_amount))
+    except Exception:  # bütçe tabloları henüz yoksa özet yine dönsün
+        pass
+
     return OzetModel(
         period=period,
         baslangic=bas,
@@ -35,4 +47,6 @@ async def summary(
         etiket=donem_etiket(period, ref),  # type: ignore[arg-type]
         bu_donem=OzetGovde.from_ozet(ozetle(bu_txs)),
         onceki=OzetGovde.from_ozet(ozetle(onceki_txs)),
+        hedefler=hedefler,
+        yatirim=yatirim,
     )

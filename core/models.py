@@ -164,3 +164,48 @@ class Category:
             is_active=bool(r.get("is_active", True)),
             sort_order=int(r.get("sort_order", 0) or 0),
         )
+
+
+Kapsam = Literal["genel", "kategori", "tip"]
+
+
+@dataclass
+class Budget:
+    """Aylık harcama limiti (genel / kategori / tür)."""
+    id: str
+    user_id: str
+    kapsam: Kapsam
+    kapsam_deger: str | None
+    limit_amount: float
+    period: str = "month"
+
+    @classmethod
+    def from_row(cls, r: dict) -> Budget:
+        return cls(
+            id=r["id"],
+            user_id=r["user_id"],
+            kapsam=r.get("kapsam", "genel"),
+            kapsam_deger=r.get("kapsam_deger"),
+            limit_amount=float(r.get("limit_amount", 0) or 0),
+            period=r.get("period", "month"),
+        )
+
+
+@dataclass
+class Goal:
+    """Aylık yatırım/birikim hedefi."""
+    id: str
+    user_id: str
+    hedef_amount: float
+    tip: str = "yatirim"
+    period: str = "month"
+
+    @classmethod
+    def from_row(cls, r: dict) -> Goal:
+        return cls(
+            id=r["id"],
+            user_id=r["user_id"],
+            hedef_amount=float(r.get("hedef_amount", 0) or 0),
+            tip=r.get("tip", "yatirim"),
+            period=r.get("period", "month"),
+        )

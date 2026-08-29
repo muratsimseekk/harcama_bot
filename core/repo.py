@@ -12,7 +12,7 @@ from supabase import Client, create_client
 
 from core.config import settings
 from core.dates import now
-from core.models import Candidate, Category, Transaction
+from core.models import Budget, Candidate, Category, Goal, Transaction
 
 logger = logging.getLogger(__name__)
 
@@ -319,5 +319,89 @@ async def categories_seed(user_id: str) -> int:
             return 0
         db.table("categories").insert(satirlar).execute()
         return len(satirlar)
+
+    return await asyncio.to_thread(_run)
+
+
+# --------------------------------------------------------------------------- #
+# budgets & goals (bütçe / hedef)
+# --------------------------------------------------------------------------- #
+async def budgets_list(user_id: str) -> list[Budget]:
+    def _run() -> list[dict]:
+        return (
+            _db().table("budgets").select("*").eq("user_id", user_id)
+            .order("kapsam").execute().data
+        )
+
+    return [Budget.from_row(r) for r in await asyncio.to_thread(_run)]
+
+
+async def budget_get(bid: str) -> Budget | None:
+    def _run() -> dict | None:
+        res = _db().table("budgets").select("*").eq("id", bid).limit(1).execute()
+        return res.data[0] if res.data else None
+
+    r = await asyncio.to_thread(_run)
+    return Budget.from_row(r) if r else None
+
+
+async def budget_upsert(user_id: str, kapsam: str, kapsam_deger: str | None, limit_amount: float) -> Budget:
+    row = {
+        "user_id": user_id, "kapsam": kapsam,
+        "kapsam_deger": kapsam_deger, "limit_amount": round(float(limit_amount), 2),
+        "updated_at": now().isoformat(),
+    }
+
+    def _run() -> dict:
+        return (
+            _db().table("budgets")
+            .upsert(row, on_conflict="user_id,kapsam,kapsam_deger")
+            .execute().data[0]
+        )
+
+    return Budget.from_row(await asyncio.to_thread(_run))
+
+
+async def budget_delete(bid: str) -> bool:
+    def _run() -> bool:
+        return bool(_db().table("budgets").delete().eq("id", bid).execute().data)
+
+    return await asyncio.to_thread(_run)
+
+
+async def goal_get(user_id: str, tip: str = "yatirim") -> Goal | None:
+    def _run() -> dict | None:
+        res = (
+            _db().table("goals").select("*")
+            .eq("user_id", user_id).eq("tip", tip).limit(1).execute()
+        )
+        return res.data[0] if res.data else None
+
+    r = await asyncio.to_thread(_run)
+    return Goal.from_row(r) if r else None
+
+
+async def goal_upsert(user_id: str, hedef_amount: float, tip: str = "yatirim") -> Goal:
+    row = {
+        "user_id": user_id, "tip": tip, "period": "month",
+        "hedef_amount": round(float(hedef_amount), 2), "updated_at": now().isoformat(),
+    }
+
+    def _run() -> dict:
+        return (
+            _db().table("goals")
+            .upsert(row, on_conflict="user_id,tip,period")
+            .execute().data[0]
+        )
+
+    return Goal.from_row(await asyncio.to_thread(_run))
+
+
+async def goal_delete(user_id: str, tip: str = "yatirim") -> bool:
+    def _run() -> bool:
+        return bool(
+            _db().table("goals").delete()
+            .eq("user_id", user_id).eq("tip", tip).execute().data
+        )
 
     return await asyncio.to_thread(_run)
