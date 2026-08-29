@@ -13,7 +13,10 @@ router = APIRouter(prefix="/v1", tags=["budgets"])
 # ---- budgets ---------------------------------------------------------------- #
 @router.get("/budgets", response_model=list[ButceModel])
 async def butce_listele(user_id: CurrentUser) -> list[ButceModel]:
-    return [ButceModel.from_b(b) for b in await repo.budgets_list(user_id)]
+    try:
+        return [ButceModel.from_b(b) for b in await repo.budgets_list(user_id)]
+    except Exception:  # budgets tablosu henüz yok
+        return []
 
 
 @router.put("/budgets", response_model=ButceModel)
@@ -37,7 +40,10 @@ async def butce_sil(user_id: CurrentUser, bid: str) -> dict:
 # ---- goals ---------------------------------------------------------------- #
 @router.get("/goals", response_model=HedefModel | None)
 async def hedef_getir(user_id: CurrentUser) -> HedefModel | None:
-    g = await repo.goal_get(user_id, "yatirim")
+    try:
+        g = await repo.goal_get(user_id, "yatirim")
+    except Exception:  # goals tablosu henüz yok
+        return None
     return HedefModel.from_g(g) if g else None
 
 
