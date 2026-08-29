@@ -11,7 +11,7 @@ import {
   Yukleniyor,
 } from "@/components/base";
 import { CubukGrafik, KategoriBar } from "@/components/charts";
-import { kisaGun, turkceTutar } from "@/lib/format";
+import { birlestirKategori, kisaGun, turkceTutar } from "@/lib/format";
 import { useSummary } from "@/lib/queries";
 import { R, SP, useRenkler } from "@/lib/theme";
 import type { Granularity } from "@/lib/types";
@@ -53,11 +53,7 @@ export default function Rapor() {
     };
   }, [g, period]);
 
-  const katDilimler = (g?.kategori_kirilim ?? []).map((k) => ({
-    ad: k.kategori,
-    tutar: k.tutar,
-    oran: k.oran,
-  }));
+  const katDilimler = birlestirKategori(g?.kategori_kirilim ?? []);
 
   function setGran(p: Granularity) {
     setPeriod(p);

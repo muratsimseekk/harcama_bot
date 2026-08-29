@@ -25,6 +25,23 @@ export function yuzde(x: number): string {
   return `%${Math.round(x)}`;
 }
 
+/** Aynı isimli kategori satırlarını (farklı tür) tek satırda birleştirir. */
+export function birlestirKategori<T extends { kategori: string; tutar: number; oran: number }>(
+  liste: T[],
+): { ad: string; tutar: number; oran: number }[] {
+  const map = new Map<string, { ad: string; tutar: number; oran: number }>();
+  for (const k of liste) {
+    const v = map.get(k.kategori);
+    if (v) {
+      v.tutar += k.tutar;
+      v.oran += k.oran;
+    } else {
+      map.set(k.kategori, { ad: k.kategori, tutar: k.tutar, oran: k.oran });
+    }
+  }
+  return [...map.values()].sort((a, b) => b.tutar - a.tutar);
+}
+
 export function kisaGun(iso: string): string {
   const [, m, d] = iso.split("-");
   return `${Number(d)}.${Number(m)}`;

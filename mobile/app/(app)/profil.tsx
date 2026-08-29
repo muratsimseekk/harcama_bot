@@ -1,6 +1,18 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { Alert, Linking, StyleSheet, Text, View } from "react-native";
+
+const DESTEK_EPOSTA = "destek@harcama.app"; // TODO: gerçek destek adresi
+
+async function mailAc() {
+  const url = `mailto:${DESTEK_EPOSTA}`;
+  try {
+    if (await Linking.canOpenURL(url)) return Linking.openURL(url);
+  } catch {
+    /* yoksay */
+  }
+  Alert.alert("Destek", `Bize şu adresten yazabilirsin:\n${DESTEK_EPOSTA}`);
+}
 import { DEV_NOAUTH } from "@/app/_layout";
 import { AyarGrup, AyarSatir, Baslik, Ekran, IkonDaire, Kart } from "@/components/base";
 import { turkceTutar } from "@/lib/format";
@@ -80,7 +92,7 @@ export default function Profil() {
         <AyarSatir
           ikon="mail-outline"
           baslik="Destek / geri bildirim"
-          onPress={() => Linking.openURL("mailto:muratsimseekk@gmail.com?subject=Harcama%20uygulaması")}
+          onPress={mailAc}
           son
         />
       </AyarGrup>

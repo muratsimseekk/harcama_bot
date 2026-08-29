@@ -39,7 +39,7 @@ export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
       />
       <View style={s.lejant}>
         {dolu.slice(0, 6).map((d, i) => (
-          <View key={d.ad} style={s.lejantSatir}>
+          <View key={`${d.ad}-${i}`} style={s.lejantSatir}>
             <View style={[s.nokta, { backgroundColor: d.renk || paletRenk(i) }]} />
             <Text style={[s.lejantAd, { color: renk.text }]} numberOfLines={1}>
               {d.ad}
@@ -99,7 +99,7 @@ export function KategoriBar({ dilimler }: { dilimler: Dilim[] }) {
   return (
     <View style={{ gap: SP.md }}>
       {dilimler.map((d, i) => (
-        <View key={d.ad} style={{ gap: 6 }}>
+        <View key={`${d.ad}-${i}`} style={{ gap: 6 }}>
           <View style={s.katUst}>
             <Text style={[s.katAd, { color: renk.text }]} numberOfLines={1}>
               {d.ad}

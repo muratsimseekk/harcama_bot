@@ -12,7 +12,7 @@ import {
   Yukleniyor,
 } from "@/components/base";
 import { KategoriBar, PastaGrafik } from "@/components/charts";
-import { tarihEtiket, turkceTutar } from "@/lib/format";
+import { birlestirKategori, tarihEtiket, turkceTutar } from "@/lib/format";
 import { kategoriIkon } from "@/lib/kategoriIkon";
 import { useSummary, useTransactions } from "@/lib/queries";
 import { R, SP, useRenkler } from "@/lib/theme";
@@ -41,17 +41,17 @@ export default function Dashboard() {
 
   const katDilimler = useMemo(() => {
     if (!g) return [];
-    const ilk = g.kategori_kirilim.slice(0, 5);
-    const kalan = g.kategori_kirilim.slice(5);
-    const arr = ilk.map((k) => ({ ad: k.kategori, tutar: k.tutar, oran: k.oran }));
+    const hepsi = birlestirKategori(g.kategori_kirilim);
+    const ilk = hepsi.slice(0, 5);
+    const kalan = hepsi.slice(5);
     if (kalan.length) {
-      arr.push({
+      ilk.push({
         ad: `+${kalan.length} kategori`,
         tutar: kalan.reduce((s, k) => s + k.tutar, 0),
         oran: 0,
       });
     }
-    return arr;
+    return ilk;
   }, [g]);
 
   return (
