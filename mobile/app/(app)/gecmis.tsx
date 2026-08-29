@@ -1,34 +1,31 @@
-import { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
+  SectionList,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { turkceTutar } from "@/lib/format";
-import {
-  useDeleteTransaction,
-  useMe,
-  usePatchTransaction,
-  useTransactions,
-} from "@/lib/queries";
-import { useRenkler } from "@/lib/theme";
-import { TIP_EMOJI, TIP_ETIKET, type Islem, type Tip } from "@/lib/types";
+import { BosDurum, Cip, IkonDaire } from "@/components/base";
+import { tarihEtiket, turkceTutar } from "@/lib/format";
+import { kategoriIkon } from "@/lib/kategoriIkon";
+import { useDeleteTransaction, usePatchTransaction, useTransactions } from "@/lib/queries";
+import { golge, R, SP, useRenkler } from "@/lib/theme";
+import { type Islem, TIP_ETIKET, TIP_RENK, type Tip } from "@/lib/types";
 
 const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
 type Donem = "hepsi" | "buhafta" | "buay" | "buyil";
 const DONEMLER: Donem[] = ["hepsi", "buhafta", "buay", "buyil"];
-const DETIKET: Record<Donem, string> = {
-  hepsi: "Tümü", buhafta: "Bu hafta", buay: "Bu ay", buyil: "Bu yıl",
-};
+const DETIKET: Record<Donem, string> = { hepsi: "Tümü", buhafta: "Bu hafta", buay: "Bu ay", buyil: "Bu yıl" };
 
-function donemAralik(d: Donem): { from?: string; to?: string } {
+function aralik(d: Donem): { from?: string; to?: string } {
   if (d === "hepsi") return {};
   const now = new Date();
   const iso = (x: Date) => x.toISOString().slice(0, 10);
@@ -42,64 +39,84 @@ function donemAralik(d: Donem): { from?: string; to?: string } {
   return { from: iso(new Date(now.getFullYear(), 0, 1)), to };
 }
 
-export default function History() {
+export default function Gecmis() {
   const renk = useRenkler();
-  const me = useMe();
   const [acikId, setAcikId] = useState<string | null>(null);
-  const [donem, setDonem] = useState<Donem>("hepsi");
+  const [donem, setDonem] = useState<Donem>("buay");
   const [tipF, setTipF] = useState<Tip | null>(null);
 
-  const { from, to } = donemAralik(donem);
-  const { data, isLoading, refetch, isRefetching } = useTransactions({
-    limit: 300,
-    from,
-    to,
-    tip: tipF ?? undefined,
-  });
+  const { from, to } = aralik(donem);
+  const q = useTransactions({ limit: 400, from, to, tip: tipF ?? undefined });
+
+  const bolumler = useMemo(() => {
+    const map = new Map<string, Islem[]>();
+    for (const t of q.data ?? []) {
+      const k = t.tarih;
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(t);
+    }
+    return [...map.entries()]
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([tarih, data]) => ({
+        tarih,
+        toplam: data.reduce((s, t) => s + (t.direction === "gelir" ? 0 : t.tutar), 0),
+        data,
+      }));
+  }, [q.data]);
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: renk.bg }]} edges={["top"]}>
       <View style={s.header}>
         <Text style={[s.baslik, { color: renk.text }]}>Geçmiş</Text>
-        {me.data && (
-          <Text style={[s.kota, { color: renk.textMuted }]}>
-            {(data ?? []).length} kayıt
-          </Text>
-        )}
+        <Text style={{ color: renk.textFaint, fontSize: 13 }}>{(q.data ?? []).length} kayıt</Text>
       </View>
 
-      <View style={s.filtreler}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={s.cipSira}
+      >
         {DONEMLER.map((d) => (
-          <Cip key={d} aktif={donem === d} onPress={() => setDonem(d)} yazi={DETIKET[d]} />
+          <Cip key={d} yazi={DETIKET[d]} aktif={donem === d} onPress={() => setDonem(d)} />
         ))}
-      </View>
-      <View style={s.filtreler}>
-        <Cip aktif={tipF === null} onPress={() => setTipF(null)} yazi="Tüm türler" />
+        <View style={[s.ayrac, { backgroundColor: renk.border }]} />
+        <Cip yazi="Tümü" aktif={tipF === null} onPress={() => setTipF(null)} />
         {TIPLER.map((t) => (
           <Cip
             key={t}
-            aktif={tipF === t}
-            onPress={() => setTipF(tipF === t ? null : t)}
             yazi={TIP_ETIKET[t]}
+            aktif={tipF === t}
+            renkli={TIP_RENK[t]}
+            onPress={() => setTipF(tipF === t ? null : t)}
           />
         ))}
-      </View>
+      </ScrollView>
 
-      {isLoading ? (
+      {q.isLoading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={renk.primary} />
+      ) : bolumler.length === 0 ? (
+        <BosDurum ikon="receipt-outline" yazi="Bu filtrede kayıt yok" />
       ) : (
-        <FlatList
-          data={data ?? []}
+        <SectionList
+          sections={bolumler}
           keyExtractor={(t) => t.id}
-          contentContainerStyle={s.liste}
+          contentContainerStyle={{ padding: SP.lg, paddingBottom: 40 }}
+          stickySectionHeadersEnabled={false}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={renk.primary} />
+            <RefreshControl refreshing={q.isRefetching} onRefresh={q.refetch} tintColor={renk.primary} />
           }
-          ListEmptyComponent={
-            <Text style={[s.bos, { color: renk.textMuted }]}>Kayıt yok.</Text>
-          }
+          renderSectionHeader={({ section }) => (
+            <View style={s.bolumBaslik}>
+              <Text style={{ color: renk.textMuted, fontWeight: "700", fontSize: 13 }}>
+                {tarihEtiket(section.tarih)}
+              </Text>
+              <Text style={{ color: renk.textFaint, fontSize: 12 }}>
+                {turkceTutar(section.toplam)} ₺
+              </Text>
+            </View>
+          )}
           renderItem={({ item }) => (
-            <Row
+            <Satir
               islem={item}
               acik={acikId === item.id}
               onToggle={() => setAcikId(acikId === item.id ? null : item.id)}
@@ -111,30 +128,7 @@ export default function History() {
   );
 }
 
-function Cip({ aktif, onPress, yazi }: { aktif: boolean; onPress: () => void; yazi: string }) {
-  const renk = useRenkler();
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        s.cip,
-        { borderColor: renk.border, backgroundColor: aktif ? renk.primary : "transparent" },
-      ]}
-    >
-      <Text style={{ color: aktif ? "#fff" : renk.textMuted, fontSize: 12 }}>{yazi}</Text>
-    </Pressable>
-  );
-}
-
-function Row({
-  islem,
-  acik,
-  onToggle,
-}: {
-  islem: Islem;
-  acik: boolean;
-  onToggle: () => void;
-}) {
+function Satir({ islem, acik, onToggle }: { islem: Islem; acik: boolean; onToggle: () => void }) {
   const renk = useRenkler();
   const sil = useDeleteTransaction();
   const patch = usePatchTransaction();
@@ -142,7 +136,7 @@ function Row({
   const [kategori, setKategori] = useState(islem.kategori);
   const [tip, setTip] = useState<Tip>(islem.tip);
 
-  function silOnayla() {
+  function silOnay() {
     Alert.alert("Sil", `"${islem.aciklama}" silinsin mi?`, [
       { text: "Vazgeç", style: "cancel" },
       { text: "Sil", style: "destructive", onPress: () => sil.mutate(islem.id) },
@@ -155,10 +149,7 @@ function Row({
     if (t > 0 && t !== islem.tutar) alanlar.tutar = t;
     if (kategori && kategori !== islem.kategori) alanlar.kategori = kategori;
     if (tip !== islem.tip) alanlar.tip = tip;
-    if (Object.keys(alanlar).length === 0) {
-      onToggle();
-      return;
-    }
+    if (Object.keys(alanlar).length === 0) return onToggle();
     patch.mutate(
       { id: islem.id, alanlar },
       { onSuccess: onToggle, onError: (e) => Alert.alert("Hata", String(e)) },
@@ -166,30 +157,29 @@ function Row({
   }
 
   return (
-    <View style={[s.kart, { backgroundColor: renk.card, borderColor: renk.border }]}>
+    <View style={[s.kart, { backgroundColor: renk.card, borderColor: renk.border }, golge(1)]}>
       <Pressable style={s.ust} onPress={onToggle}>
-        <Text style={s.emoji}>{TIP_EMOJI[islem.tip]}</Text>
-        <View style={s.flex}>
-          <Text style={[s.acik, { color: renk.text }]} numberOfLines={1}>
+        <IkonDaire ikon={kategoriIkon(islem.kategori)} renk={TIP_RENK[islem.tip]} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: renk.text, fontWeight: "600", fontSize: 15 }} numberOfLines={1}>
             {islem.aciklama}
           </Text>
-          <Text style={[s.meta, { color: renk.textMuted }]}>
-            {islem.kategori} · {islem.tarih}
-          </Text>
+          <Text style={{ color: renk.textFaint, fontSize: 12 }}>{islem.kategori}</Text>
         </View>
         <Text
-          style={[
-            s.para,
-            { color: islem.direction === "gelir" ? renk.success : renk.text },
-          ]}
+          style={{
+            color: islem.direction === "gelir" ? renk.gelir : renk.text,
+            fontWeight: "700",
+            fontSize: 15,
+          }}
         >
           {islem.direction === "gelir" ? "+" : "−"}
-          {turkceTutar(islem.tutar)} ₺
+          {turkceTutar(islem.tutar)}
         </Text>
       </Pressable>
 
       {acik && (
-        <View style={[s.duzenle, { borderTopColor: renk.border }]}>
+        <View style={[s.duzenle, { borderTopColor: renk.hairline }]}>
           <View style={s.satir}>
             <TextInput
               style={[s.input, { color: renk.text, borderColor: renk.border }]}
@@ -198,9 +188,11 @@ function Row({
               keyboardType="decimal-pad"
             />
             <TextInput
-              style={[s.input, s.flex, { color: renk.text, borderColor: renk.border }]}
+              style={[s.input, { flex: 1, color: renk.text, borderColor: renk.border }]}
               value={kategori}
               onChangeText={setKategori}
+              placeholder="kategori"
+              placeholderTextColor={renk.textFaint}
             />
           </View>
           <View style={s.satir}>
@@ -210,28 +202,29 @@ function Row({
                 onPress={() => setTip(t)}
                 style={[
                   s.tipSec,
-                  { borderColor: renk.border, backgroundColor: t === tip ? renk.primary : "transparent" },
+                  { borderColor: renk.border, backgroundColor: t === tip ? TIP_RENK[t] : "transparent" },
                 ]}
               >
-                <Text style={{ color: t === tip ? renk.primaryText : renk.textMuted, fontSize: 12 }}>
+                <Text style={{ color: t === tip ? "#fff" : renk.textMuted, fontSize: 12 }}>
                   {TIP_ETIKET[t]}
                 </Text>
               </Pressable>
             ))}
           </View>
           <View style={s.satir}>
-            <Pressable style={[s.sil, { borderColor: renk.danger }]} onPress={silOnayla}>
-              <Text style={{ color: renk.danger, fontWeight: "600" }}>Sil</Text>
+            <Pressable style={[s.silBtn, { borderColor: renk.danger }]} onPress={silOnay}>
+              <Ionicons name="trash-outline" size={15} color={renk.danger} />
+              <Text style={{ color: renk.danger, fontWeight: "600", fontSize: 13 }}>Sil</Text>
             </Pressable>
             <Pressable
-              style={[s.kaydet, s.flex, { backgroundColor: renk.primary }]}
+              style={[s.kaydetBtn, { backgroundColor: renk.primary }]}
               onPress={kaydet}
               disabled={patch.isPending}
             >
               {patch.isPending ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={{ color: "#fff", fontWeight: "700" }}>Kaydet</Text>
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Kaydet</Text>
               )}
             </Pressable>
           </View>
@@ -243,30 +236,38 @@ function Row({
 
 const s = StyleSheet.create({
   safe: { flex: 1 },
-  flex: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: SP.lg,
+    paddingTop: SP.sm,
+    paddingBottom: SP.sm,
   },
-  baslik: { fontSize: 22, fontWeight: "800" },
-  kota: { fontSize: 13 },
-  filtreler: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingHorizontal: 16, paddingBottom: 8 },
-  cip: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
-  liste: { padding: 16, gap: 10 },
-  bos: { textAlign: "center", marginTop: 60, fontSize: 15 },
-  kart: { borderWidth: 1, borderRadius: 12 },
-  ust: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12 },
-  emoji: { fontSize: 20 },
-  acik: { fontSize: 16, fontWeight: "600" },
-  meta: { fontSize: 13, marginTop: 2 },
-  para: { fontSize: 15, fontWeight: "700" },
-  duzenle: { borderTopWidth: 1, padding: 12, gap: 10 },
-  satir: { flexDirection: "row", gap: 8, alignItems: "center" },
-  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15, minWidth: 80 },
-  tipSec: { flex: 1, borderWidth: 1, borderRadius: 8, paddingVertical: 8, alignItems: "center" },
-  sil: { borderWidth: 1, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, alignItems: "center" },
-  kaydet: { borderRadius: 8, paddingVertical: 12, alignItems: "center" },
+  baslik: { fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
+  cipSira: { paddingHorizontal: SP.lg, paddingBottom: SP.md, gap: 6, alignItems: "center" },
+  ayrac: { width: StyleSheet.hairlineWidth, height: 20, marginHorizontal: 2 },
+  bolumBaslik: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: SP.md,
+    marginBottom: SP.sm,
+  },
+  kart: { borderWidth: StyleSheet.hairlineWidth, borderRadius: R.md, marginBottom: SP.sm },
+  ust: { flexDirection: "row", alignItems: "center", gap: SP.md, padding: SP.md },
+  duzenle: { borderTopWidth: StyleSheet.hairlineWidth, padding: SP.md, gap: SP.sm },
+  satir: { flexDirection: "row", gap: SP.sm, alignItems: "center" },
+  input: { borderWidth: 1, borderRadius: R.sm, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15, minWidth: 90 },
+  tipSec: { flex: 1, borderWidth: 1, borderRadius: R.sm, paddingVertical: 8, alignItems: "center" },
+  silBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderWidth: 1,
+    borderRadius: R.sm,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+  },
+  kaydetBtn: { flex: 1, borderRadius: R.sm, paddingVertical: 11, alignItems: "center" },
 });

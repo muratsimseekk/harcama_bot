@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -12,10 +13,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Sekmeli } from "@/components/base";
 import { api, ApiError } from "@/lib/api";
 import { turkceTutar } from "@/lib/format";
 import { useCategories } from "@/lib/queries";
-import { useRenkler } from "@/lib/theme";
+import { golge, R, SP, useRenkler } from "@/lib/theme";
 import { type Aday, type CaptureYanit, type Kategori, TIP_ETIKET, type Tip, type Yon } from "@/lib/types";
 
 const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
@@ -32,24 +34,14 @@ export default function Confirm() {
   const [kaydediliyor, setKaydediliyor] = useState(false);
   const kategoriler = useCategories();
 
-  const toplam = adaylar.reduce(
-    (t, a) => t + (a.direction === "gelir" ? a.tutar : -a.tutar),
-    0,
-  );
+  const toplam = adaylar.reduce((t, a) => t + (a.direction === "gelir" ? a.tutar : -a.tutar), 0);
 
-  function guncelle(i: number, yama: Partial<Aday>) {
+  const guncelle = (i: number, yama: Partial<Aday>) =>
     setAdaylar((eski) => eski.map((a, j) => (j === i ? { ...a, ...yama } : a)));
-  }
-
-  function sil(i: number) {
-    setAdaylar((eski) => eski.filter((_, j) => j !== i));
-  }
+  const sil = (i: number) => setAdaylar((eski) => eski.filter((_, j) => j !== i));
 
   async function onayla() {
-    if (adaylar.length === 0) {
-      router.back();
-      return;
-    }
+    if (adaylar.length === 0) return router.back();
     for (const a of adaylar) {
       if (!(a.tutar > 0)) {
         Alert.alert("Geçersiz tutar", `"${a.aciklama}" için tutar 0'dan büyük olmalı.`);
@@ -59,8 +51,7 @@ export default function Confirm() {
     setKaydediliyor(true);
     try {
       await api.saveTransactions(adaylar);
-      await qc.invalidateQueries({ queryKey: ["transactions"] });
-      await qc.invalidateQueries({ queryKey: ["me"] });
+      await qc.invalidateQueries();
       router.back();
     } catch (e) {
       setKaydediliyor(false);
@@ -73,44 +64,49 @@ export default function Confirm() {
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: renk.bg }]} edges={["bottom"]}>
-      <ScrollView contentContainerStyle={s.liste}>
+      <ScrollView contentContainerStyle={s.liste} showsVerticalScrollIndicator={false}>
         {yanit.needs_review && (
-          <Text style={[s.uyariUst, { color: renk.warnText }]}>
-            ⚠️ Bazı kayıtlar kontrol istiyor — dokun, düzelt, sonra onayla.
-          </Text>
+          <View style={[s.uyari, { backgroundColor: renk.warnSoft }]}>
+            <Ionicons name="alert-circle" size={16} color={renk.warn} />
+            <Text style={{ color: renk.warn, fontSize: 13, flex: 1 }}>
+              Bazı kayıtlar kontrol istiyor — düzelt, sonra onayla.
+            </Text>
+          </View>
         )}
 
         {adaylar.map((a, i) => (
-          <View key={i} style={[s.kart, { backgroundColor: renk.card, borderColor: renk.border }]}>
+          <View key={i} style={[s.kart, { backgroundColor: renk.card, borderColor: renk.border }, golge(1)]}>
             <View style={s.satir}>
               <TextInput
                 style={[s.aciklama, { color: renk.text }]}
                 value={a.aciklama}
                 onChangeText={(v) => guncelle(i, { aciklama: v })}
                 placeholder="açıklama"
-                placeholderTextColor={renk.textMuted}
+                placeholderTextColor={renk.textFaint}
               />
-              <Pressable onPress={() => sil(i)} hitSlop={10}>
-                <Text style={{ color: renk.danger, fontSize: 18 }}>✕</Text>
-              </Pressable>
+              {adaylar.length > 1 && (
+                <Pressable onPress={() => sil(i)} hitSlop={10}>
+                  <Ionicons name="close-circle" size={22} color={renk.textFaint} />
+                </Pressable>
+              )}
             </View>
 
             <View style={s.satir}>
-              <TextInput
-                style={[s.tutar, { color: renk.text, borderColor: renk.border }]}
-                value={String(a.tutar)}
-                onChangeText={(v) =>
-                  guncelle(i, { tutar: Number(v.replace(",", ".")) || 0 })
-                }
-                keyboardType="decimal-pad"
-              />
-              <Text style={[s.birim, { color: renk.textMuted }]}>₺</Text>
+              <View style={[s.tutarKutu, { borderColor: renk.border }]}>
+                <TextInput
+                  style={[s.tutar, { color: renk.text }]}
+                  value={String(a.tutar)}
+                  onChangeText={(v) => guncelle(i, { tutar: Number(v.replace(",", ".")) || 0 })}
+                  keyboardType="decimal-pad"
+                />
+                <Text style={{ color: renk.textMuted, fontSize: 15 }}>₺</Text>
+              </View>
               <TextInput
                 style={[s.kategori, { color: renk.text, borderColor: renk.border }]}
                 value={a.kategori}
                 onChangeText={(v) => guncelle(i, { kategori: v })}
                 placeholder="kategori"
-                placeholderTextColor={renk.textMuted}
+                placeholderTextColor={renk.textFaint}
               />
             </View>
 
@@ -121,33 +117,36 @@ export default function Confirm() {
               onSec={(ad) => guncelle(i, { kategori: ad })}
             />
 
-            <Secmeli
+            <Sekmeli
               secenekler={TIPLER}
               etiket={(t) => TIP_ETIKET[t]}
               secili={a.tip}
               onSec={(t) => guncelle(i, { tip: t })}
-              renk={renk}
+              kucuk
             />
-            <Secmeli
+            <Sekmeli
               secenekler={YONLER}
               etiket={(y) => (y === "gelir" ? "Gelir" : "Gider")}
               secili={a.direction}
               onSec={(y) => guncelle(i, { direction: y })}
-              renk={renk}
+              kucuk
             />
 
-            <TextInput
-              style={[s.tarih, { color: renk.text, borderColor: renk.border }]}
-              value={a.tarih}
-              onChangeText={(v) => guncelle(i, { tarih: v })}
-              placeholder="YYYY-AA-GG"
-              placeholderTextColor={renk.textMuted}
-            />
+            <View style={s.satir}>
+              <Ionicons name="calendar-outline" size={16} color={renk.textMuted} />
+              <TextInput
+                style={[s.tarih, { color: renk.text, borderColor: renk.border }]}
+                value={a.tarih}
+                onChangeText={(v) => guncelle(i, { tarih: v })}
+                placeholder="YYYY-AA-GG"
+                placeholderTextColor={renk.textFaint}
+              />
+            </View>
 
             {a.inceleme_sebepleri.length > 0 && (
               <View style={s.sebepler}>
                 {a.inceleme_sebepleri.map((sb, k) => (
-                  <Text key={k} style={[s.sebep, { backgroundColor: renk.warnBg, color: renk.warnText }]}>
+                  <Text key={k} style={[s.sebep, { backgroundColor: renk.warnSoft, color: renk.warn }]}>
                     {sb}
                   </Text>
                 ))}
@@ -157,64 +156,31 @@ export default function Confirm() {
         ))}
       </ScrollView>
 
-      <View style={[s.altBar, { borderTopColor: renk.border, backgroundColor: renk.card }]}>
-        <Text style={[s.toplam, { color: renk.text }]}>
-          {adaylar.length} kayıt · {turkceTutar(Math.abs(toplam))} ₺
+      <View style={[s.altBar, { borderTopColor: renk.hairline, backgroundColor: renk.card }]}>
+        <Text style={[s.toplam, { color: renk.textMuted }]}>
+          {adaylar.length} kayıt · net {turkceTutar(Math.abs(toplam))} ₺
         </Text>
         <View style={s.butonlar}>
           <Pressable style={[s.iptal, { borderColor: renk.border }]} onPress={() => router.back()}>
-            <Text style={{ color: renk.textMuted, fontWeight: "600" }}>İptal</Text>
+            <Text style={{ color: renk.textMuted, fontWeight: "700" }}>İptal</Text>
           </Pressable>
           <Pressable
-            style={[s.onay, { backgroundColor: renk.success }]}
+            style={[s.onay, { backgroundColor: renk.gelir }]}
             onPress={onayla}
             disabled={kaydediliyor}
           >
             {kaydediliyor ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>Onayla</Text>
+              <>
+                <Ionicons name="checkmark" size={18} color="#fff" />
+                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>Onayla</Text>
+              </>
             )}
           </Pressable>
         </View>
       </View>
     </SafeAreaView>
-  );
-}
-
-function Secmeli<T extends string>({
-  secenekler,
-  etiket,
-  secili,
-  onSec,
-  renk,
-}: {
-  secenekler: T[];
-  etiket: (t: T) => string;
-  secili: T;
-  onSec: (t: T) => void;
-  renk: ReturnType<typeof useRenkler>;
-}) {
-  return (
-    <View style={s.secmeli}>
-      {secenekler.map((o) => {
-        const aktif = o === secili;
-        return (
-          <Pressable
-            key={o}
-            onPress={() => onSec(o)}
-            style={[
-              s.secenek,
-              { borderColor: renk.border, backgroundColor: aktif ? renk.primary : "transparent" },
-            ]}
-          >
-            <Text style={{ color: aktif ? renk.primaryText : renk.textMuted, fontSize: 13 }}>
-              {etiket(o)}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
   );
 }
 
@@ -246,10 +212,15 @@ function KategoriSecici({
             onPress={() => onSec(k.name)}
             style={[
               s.katCip,
-              { borderColor: k.color || renk.border, backgroundColor: aktif ? (k.color || renk.primary) : "transparent" },
+              {
+                borderColor: k.color || renk.border,
+                backgroundColor: aktif ? k.color || renk.primary : "transparent",
+              },
             ]}
           >
-            <Text style={{ color: aktif ? "#fff" : renk.textMuted, fontSize: 12 }}>{k.name}</Text>
+            <Text style={{ color: aktif ? "#fff" : renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>
+              {k.name}
+            </Text>
           </Pressable>
         );
       })}
@@ -259,23 +230,29 @@ function KategoriSecici({
 
 const s = StyleSheet.create({
   safe: { flex: 1 },
-  liste: { padding: 16, gap: 14 },
-  uyariUst: { fontSize: 14, marginBottom: 2 },
-  kart: { borderWidth: 1, borderRadius: 14, padding: 14, gap: 10 },
-  satir: { flexDirection: "row", alignItems: "center", gap: 8 },
-  aciklama: { flex: 1, fontSize: 17, fontWeight: "600" },
-  tutar: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 16, minWidth: 90 },
-  birim: { fontSize: 16 },
-  kategori: { flex: 1, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15 },
-  secmeli: { flexDirection: "row", gap: 6 },
-  secenek: { flex: 1, borderWidth: 1, borderRadius: 8, paddingVertical: 8, alignItems: "center" },
-  katCip: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5 },
-  tarih: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15, alignSelf: "flex-start", minWidth: 130 },
+  liste: { padding: SP.lg, gap: SP.md },
+  uyari: { flexDirection: "row", alignItems: "center", gap: SP.sm, padding: SP.md, borderRadius: R.md },
+  kart: { borderWidth: StyleSheet.hairlineWidth, borderRadius: R.lg, padding: SP.lg, gap: SP.md },
+  satir: { flexDirection: "row", alignItems: "center", gap: SP.sm },
+  aciklama: { flex: 1, fontSize: 17, fontWeight: "700" },
+  tutarKutu: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: R.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  tutar: { fontSize: 16, minWidth: 70, fontWeight: "600" },
+  kategori: { flex: 1, borderWidth: 1, borderRadius: R.sm, paddingHorizontal: 10, paddingVertical: 9, fontSize: 15 },
+  katCip: { borderWidth: 1, borderRadius: R.pill, paddingHorizontal: 11, paddingVertical: 6 },
+  tarih: { borderWidth: 1, borderRadius: R.sm, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15, flex: 1 },
   sebepler: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  sebep: { fontSize: 12, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: "hidden" },
-  altBar: { borderTopWidth: 1, padding: 14, gap: 10 },
-  toplam: { fontSize: 15, fontWeight: "600", textAlign: "center" },
-  butonlar: { flexDirection: "row", gap: 10 },
-  iptal: { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 14, alignItems: "center" },
-  onay: { flex: 2, borderRadius: 10, paddingVertical: 14, alignItems: "center" },
+  sebep: { fontSize: 12, paddingHorizontal: 8, paddingVertical: 4, borderRadius: R.sm, overflow: "hidden" },
+  altBar: { borderTopWidth: StyleSheet.hairlineWidth, padding: SP.lg, gap: SP.sm },
+  toplam: { fontSize: 13, fontWeight: "600", textAlign: "center" },
+  butonlar: { flexDirection: "row", gap: SP.sm },
+  iptal: { flex: 1, borderWidth: 1, borderRadius: R.md, paddingVertical: 14, alignItems: "center" },
+  onay: { flex: 2, borderRadius: R.md, paddingVertical: 14, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 },
 });

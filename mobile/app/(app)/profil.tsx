@@ -1,73 +1,145 @@
+import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { DEV_NOAUTH } from "@/app/_layout";
-import { Kart } from "@/components/ui";
-import { useCategories, useMe } from "@/lib/queries";
+import { Baslik, Ekran, IkonDaire, Kart } from "@/components/base";
+import { turkceTutar } from "@/lib/format";
+import { useCategories, useMe, useSummary } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
-import { useRenkler } from "@/lib/theme";
+import { golge, R, SP, useRenkler } from "@/lib/theme";
 
 export default function Profil() {
   const renk = useRenkler();
   const router = useRouter();
   const me = useMe();
   const kategoriler = useCategories();
+  const yil = useSummary("year");
+
+  const planYazi = DEV_NOAUTH ? "Yönetici" : me.data?.plan === "pro" ? "Pro üye" : "Ücretsiz";
 
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: renk.bg }]} edges={["top"]}>
-      <ScrollView contentContainerStyle={s.icerik}>
-        <Text style={[s.baslik, { color: renk.text }]}>Profil</Text>
+    <Ekran onRefresh={() => { me.refetch(); yil.refetch(); }} refreshing={me.isRefetching}>
+      <Baslik>Profil</Baslik>
 
-        <Kart style={{ gap: 4 }}>
-          <Text style={[s.plan, { color: renk.text }]}>
-            {DEV_NOAUTH ? "Yönetici" : me.data?.plan === "pro" ? "Pro" : "Ücretsiz"}
-          </Text>
-          <Text style={{ color: renk.textMuted }}>
-            Bu ay {me.data?.ay_kayit ?? "…"} kayıt · toplam {me.data?.toplam_kayit ?? "…"}
-          </Text>
-        </Kart>
-
-        <Pressable onPress={() => router.navigate("/kategoriler")}>
-          <Kart style={s.satirKart}>
-            <View>
-              <Text style={[s.satirBaslik, { color: renk.text }]}>Kategoriler</Text>
-              <Text style={{ color: renk.textMuted, fontSize: 13 }}>
-                {kategoriler.data?.length ?? "…"} kategori · düzenle
-              </Text>
-            </View>
-            <Text style={{ color: renk.textMuted, fontSize: 20 }}>›</Text>
-          </Kart>
-        </Pressable>
-
-        <Kart style={{ gap: 6 }}>
+      <Kart seviye={2} style={s.ust}>
+        <IkonDaire ikon="person" renk={renk.primary} boyut={52} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: renk.text, fontSize: 18, fontWeight: "800" }}>{planYazi}</Text>
           <Text style={{ color: renk.textMuted, fontSize: 13 }}>
-            Kayıtların Telegram botuyla aynı veritabanında tutulur.
+            Telegram botuyla aynı veritabanı
           </Text>
-          <Text style={{ color: renk.textMuted, fontSize: 12 }}>
-            Sürüm {Constants.expoConfig?.version ?? "0.1.0"}
-          </Text>
-        </Kart>
+        </View>
+      </Kart>
 
-        {!DEV_NOAUTH && (
-          <Pressable
-            style={[s.cikis, { borderColor: renk.danger }]}
-            onPress={() => supabase.auth.signOut()}
-          >
-            <Text style={{ color: renk.danger, fontWeight: "700" }}>Çıkış yap</Text>
-          </Pressable>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+      <View style={s.istatSira}>
+        <Istat etiket="Bu ay" deger={`${me.data?.ay_kayit ?? "…"}`} alt="kayıt" />
+        <Istat etiket="Toplam" deger={`${me.data?.toplam_kayit ?? "…"}`} alt="kayıt" />
+        <Istat
+          etiket="Bu yıl"
+          deger={yil.data ? turkceTutar(yil.data.bu_donem.toplam_gider) : "…"}
+          alt="₺ gider"
+        />
+      </View>
+
+      <Text style={[s.grupBaslik, { color: renk.textFaint }]}>YÖNETİM</Text>
+      <Kart style={{ padding: 0 }}>
+        <Satir
+          ikon="pricetags-outline"
+          baslik="Kategoriler"
+          alt={`${kategoriler.data?.length ?? "…"} kategori`}
+          onPress={() => router.navigate("/kategoriler")}
+        />
+      </Kart>
+
+      <Text style={[s.grupBaslik, { color: renk.textFaint }]}>UYGULAMA</Text>
+      <Kart style={{ padding: 0 }}>
+        <Satir ikon="information-circle-outline" baslik="Sürüm" alt={Constants.expoConfig?.version ?? "0.1.0"} son />
+      </Kart>
+
+      {!DEV_NOAUTH && (
+        <Pressable
+          style={[s.cikis, { borderColor: renk.danger }]}
+          onPress={() =>
+            Alert.alert("Çıkış", "Çıkış yapılsın mı?", [
+              { text: "Vazgeç", style: "cancel" },
+              { text: "Çıkış", style: "destructive", onPress: () => supabase.auth.signOut() },
+            ])
+          }
+        >
+          <Ionicons name="log-out-outline" size={18} color={renk.danger} />
+          <Text style={{ color: renk.danger, fontWeight: "700" }}>Çıkış yap</Text>
+        </Pressable>
+      )}
+    </Ekran>
+  );
+}
+
+function Istat({ etiket, deger, alt }: { etiket: string; deger: string; alt: string }) {
+  const renk = useRenkler();
+  return (
+    <View style={[s.istat, { backgroundColor: renk.card, borderColor: renk.border }, golge(1)]}>
+      <Text style={{ color: renk.textFaint, fontSize: 11, fontWeight: "600" }}>{etiket}</Text>
+      <Text style={{ color: renk.text, fontSize: 17, fontWeight: "800" }} numberOfLines={1}>
+        {deger}
+      </Text>
+      <Text style={{ color: renk.textFaint, fontSize: 10 }}>{alt}</Text>
+    </View>
+  );
+}
+
+function Satir({
+  ikon,
+  baslik,
+  alt,
+  onPress,
+  son,
+}: {
+  ikon: keyof typeof Ionicons.glyphMap;
+  baslik: string;
+  alt?: string;
+  onPress?: () => void;
+  son?: boolean;
+}) {
+  const renk = useRenkler();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [
+        s.satir,
+        !son && { borderBottomColor: renk.hairline, borderBottomWidth: StyleSheet.hairlineWidth },
+        pressed && { backgroundColor: renk.cardAlt },
+      ]}
+    >
+      <Ionicons name={ikon} size={20} color={renk.textMuted} />
+      <Text style={{ color: renk.text, flex: 1, fontSize: 15, fontWeight: "500" }}>{baslik}</Text>
+      {alt && <Text style={{ color: renk.textFaint, fontSize: 13 }}>{alt}</Text>}
+      {onPress && <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />}
+    </Pressable>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1 },
-  icerik: { padding: 16, gap: 14 },
-  baslik: { fontSize: 26, fontWeight: "800" },
-  plan: { fontSize: 22, fontWeight: "800" },
-  satirKart: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  satirBaslik: { fontSize: 16, fontWeight: "700" },
-  cikis: { borderWidth: 1, borderRadius: 12, padding: 16, alignItems: "center", marginTop: 8 },
+  ust: { flexDirection: "row", alignItems: "center", gap: SP.md },
+  istatSira: { flexDirection: "row", gap: SP.sm },
+  istat: {
+    flex: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: R.md,
+    padding: SP.md,
+    gap: 2,
+  },
+  grupBaslik: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, marginTop: SP.md, marginLeft: 4 },
+  satir: { flexDirection: "row", alignItems: "center", gap: SP.md, paddingHorizontal: SP.lg, paddingVertical: 15 },
+  cikis: {
+    flexDirection: "row",
+    gap: SP.sm,
+    borderWidth: 1,
+    borderRadius: R.md,
+    padding: SP.lg,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: SP.lg,
+  },
 });
