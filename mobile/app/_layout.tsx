@@ -1,11 +1,10 @@
 import {
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
   useFonts,
-} from "@expo-google-fonts/plus-jakarta-sans";
+} from "@expo-google-fonts/poppins";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -46,7 +45,7 @@ function Kapi() {
     headerShown: true,
     headerStyle: { backgroundColor: renk.card },
     headerTintColor: renk.text,
-    headerTitleStyle: { fontFamily: "PlusJakartaSans_700Bold" },
+    headerTitleStyle: { fontFamily: "Poppins_700Bold" },
     headerShadowVisible: false,
   } as const;
 
@@ -69,11 +68,10 @@ function TemaliDurumCubugu() {
 
 export default function RootLayout() {
   const [fontHazir] = useFonts({
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    PlusJakartaSans_800ExtraBold,
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
   });
 
   const yerlesimHazir = useCallback(async () => {

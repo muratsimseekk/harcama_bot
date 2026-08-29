@@ -6,7 +6,7 @@ import { FONT } from "@/lib/theme";
  * Text sarmalayıcı: style'daki fontWeight'e göre doğru Plus Jakarta Sans ailesini enjekte eder.
  * fontWeight verilmezse 500 (Medium) varsayılır.
  */
-const ESLE: Record<string, string> = { normal: "400", bold: "700" };
+const ESLE: Record<string, string> = { normal: "400", bold: "700", "800": "700", "900": "700" };
 
 export const Metin = forwardRef<RNText, TextProps>(function Metin({ style, ...rest }, ref) {
   const d = StyleSheet.flatten(style) as TextStyle | undefined;

@@ -6,3 +6,5 @@ web-build/
 .env
 .DS_Store
 expo-env.d.ts
+
+tasarim-referans/
