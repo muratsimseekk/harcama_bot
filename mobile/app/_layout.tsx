@@ -15,6 +15,7 @@ import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Giris } from "@/components/Giris";
+import { HataSiniri } from "@/components/HataSiniri";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { TemaProvider, useEtkinSema } from "@/lib/tema";
 import { useRenkler } from "@/lib/theme";
@@ -106,7 +107,7 @@ export default function RootLayout() {
             <AuthProvider>
               <TemaliDurumCubugu />
               <View style={{ flex: 1 }} onLayout={yerlesimHazir}>
-                {fontHazir ? <Kapi /> : <Giris />}
+                <HataSiniri>{fontHazir ? <Kapi /> : <Giris />}</HataSiniri>
               </View>
             </AuthProvider>
           </QueryClientProvider>

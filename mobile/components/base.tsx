@@ -10,7 +10,6 @@ import {
   View,
   type ViewStyle,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Metin as Text } from "@/components/Metin";
 import { kiyas, turkceTutar } from "@/lib/format";
@@ -39,21 +38,16 @@ export function Sayac({ deger, sure = 650, style, ...rest }: { deger: number; su
   );
 }
 
-/** Kademeli beliren sarmalayıcı — liste/kart giriş animasyonu */
+/** Sarmalayıcı (animasyon kaldırıldı — sadelik) */
 export function Beliren({
   children,
-  sira = 0,
   style,
 }: {
   children: React.ReactNode;
   sira?: number;
   style?: ViewStyle;
 }) {
-  return (
-    <Animated.View entering={FadeInDown.duration(340).delay(sira * 55)} style={style}>
-      {children}
-    </Animated.View>
-  );
+  return <View style={style}>{children}</View>;
 }
 
 /** Sayfa iskeleti: SafeAreaView + kaydırılabilir içerik + opsiyonel yenileme. */
