@@ -187,9 +187,11 @@ async def pending_set_message(pending_id: str, chat_id: int, message_id: int) ->
 # --------------------------------------------------------------------------- #
 # categories (düzenlenebilir kategori sistemi)
 # --------------------------------------------------------------------------- #
+# Mobil uygulama paletiyle aynı sıra (mobile/lib/theme.ts PALET) — kategori
+# renkleri hem grafikte hem listede tutarlı görünsün.
 PALET = [
-    "#2563EB", "#7C3AED", "#DB2777", "#EA580C", "#D97706", "#16A34A",
-    "#0891B2", "#DC2626", "#9333EA", "#65A30D", "#0D9488", "#E11D48",
+    "#D97757", "#C15F3C", "#7A9E7E", "#61758A", "#C99A4E", "#9B8FB0",
+    "#A56E5A", "#6E8B8A", "#B0894B", "#5F8A6B", "#8C6D9C", "#7C8B3E",
 ]
 
 VARSAYILAN_KATEGORILER: dict[str, list[str]] = {

@@ -35,10 +35,6 @@ export function useBudgets() {
   return useQuery({ queryKey: ["budgets"], queryFn: () => api.listBudgets() });
 }
 
-export function useGoal() {
-  return useQuery({ queryKey: ["goal"], queryFn: () => api.getGoal() });
-}
-
 export function useNotifications() {
   return useQuery({ queryKey: ["notifications"], queryFn: () => api.notifications() });
 }

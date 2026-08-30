@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Cip } from "@/components/base";
 import { Buton } from "@/components/Buton";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
@@ -54,9 +55,9 @@ export default function Ara() {
       <ScrollView style={[s.mint, { backgroundColor: renk.bg }]} contentContainerStyle={s.icerik}>
         <Text style={[T.label, { color: renk.text }]}>Kategori</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-          <Cip yazi="Hepsi" aktif={kat === null} onPress={() => setKat(null)} renk={renk} />
+          <Cip yazi="Hepsi" aktif={kat === null} onPress={() => setKat(null)} />
           {(kategoriler.data ?? []).map((k) => (
-            <Cip key={k.id} yazi={k.name} aktif={kat === k.name} onPress={() => setKat(k.name)} renk={renk} />
+            <Cip key={k.id} yazi={k.name} aktif={kat === k.name} onPress={() => setKat(k.name)} />
           ))}
         </ScrollView>
 
@@ -91,32 +92,6 @@ export default function Ara() {
   );
 }
 
-function Cip({
-  yazi,
-  aktif,
-  onPress,
-  renk,
-}: {
-  yazi: string;
-  aktif: boolean;
-  onPress: () => void;
-  renk: ReturnType<typeof useRenkler>;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        s.cip,
-        { backgroundColor: aktif ? renk.aksan : renk.card, borderColor: renk.border },
-      ]}
-    >
-      <Text style={{ color: aktif ? renk.aksanUstu : renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>
-        {yazi}
-      </Text>
-    </Pressable>
-  );
-}
-
 const s = StyleSheet.create({
   kok: { flex: 1 },
   ustPad: { paddingHorizontal: SP.lg, paddingTop: SP.sm, paddingBottom: SP.md },
@@ -131,6 +106,5 @@ const s = StyleSheet.create({
   aramaInput: { flex: 1, fontSize: 15, fontFamily: FONT["500"] },
   mint: { flex: 1, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl },
   icerik: { padding: SP.lg, gap: SP.sm, paddingBottom: 60 },
-  cip: { borderWidth: 1, borderRadius: R.pill, paddingHorizontal: 13, paddingVertical: 7 },
   radio: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: SP.sm },
 });

@@ -2,9 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
-import { Kart } from "@/components/base";
+import { Kart, Sekmeli } from "@/components/base";
 import { IkiliCubukGrafik } from "@/components/charts";
-import { DonemSekmeleri } from "@/components/DonemSekmeleri";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { IlerlemeCubugu } from "@/components/IlerlemeCubugu";
 import { IslemSatiri } from "@/components/IslemSatiri";
@@ -107,7 +106,7 @@ export default function Analiz() {
         ) : undefined
       }
     >
-      <DonemSekmeleri
+      <Sekmeli
         secenekler={["day", "week", "month", "year"] as const}
         etiket={(x) => ETIKET[x]}
         secili={sekme}

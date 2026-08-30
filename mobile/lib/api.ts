@@ -151,16 +151,8 @@ export const api = {
     return jsonReq(`/v1/budgets/${id}`, "DELETE");
   },
 
-  getGoal(): Promise<Hedef | null> {
-    return jsonReq<Hedef | null>("/v1/goals", "GET");
-  },
-
   setGoal(hedef_amount: number): Promise<Hedef> {
     return jsonReq<Hedef>("/v1/goals", "PUT", { hedef_amount });
-  },
-
-  deleteGoal(): Promise<{ silindi: boolean }> {
-    return jsonReq("/v1/goals", "DELETE");
   },
 
   notifications(): Promise<{ bildirimler: Bildirim[] }> {

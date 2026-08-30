@@ -1,9 +1,8 @@
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { Kart, Yukleniyor } from "@/components/base";
+import { Kart, Sekmeli, Yukleniyor } from "@/components/base";
 import { PastaGrafik } from "@/components/charts";
-import { DonemSekmeleri } from "@/components/DonemSekmeleri";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
@@ -81,7 +80,7 @@ export default function AnaSayfa() {
         </View>
       </Kart>
 
-      <DonemSekmeleri secenekler={GRAN} etiket={(x) => ETIKET[x]} secili={gran} onSec={setGran} />
+      <Sekmeli secenekler={GRAN} etiket={(x) => ETIKET[x]} secili={gran} onSec={setGran} />
 
       <Kart>
         <Text style={[T.heading, { color: renk.text, marginBottom: SP.md }]}>

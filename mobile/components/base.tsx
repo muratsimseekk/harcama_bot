@@ -1,104 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef, useState } from "react";
-import {
-  Pressable,
-  type PressableProps,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  type TextProps,
-  View,
-  type ViewStyle,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 import { Metin as Text } from "@/components/Metin";
-import { kiyas, turkceTutar } from "@/lib/format";
 import { golge, R, SP, T, useRenkler } from "@/lib/theme";
-
-/** 0'dan hedefe animasyonlu sayan para metni */
-export function Sayac({ deger, sure = 650, style, ...rest }: { deger: number; sure?: number } & TextProps) {
-  const [n, setN] = useState(0);
-  const bas = useRef<number | null>(null);
-  useEffect(() => {
-    bas.current = null;
-    let raf = 0;
-    const adim = (t: number) => {
-      if (bas.current === null) bas.current = t;
-      const p = Math.min(1, (t - bas.current) / sure);
-      setN(deger * (1 - Math.pow(1 - p, 3)));
-      if (p < 1) raf = requestAnimationFrame(adim);
-    };
-    raf = requestAnimationFrame(adim);
-    return () => cancelAnimationFrame(raf);
-  }, [deger, sure]);
-  return (
-    <Text style={style} {...rest}>
-      {turkceTutar(n)}
-    </Text>
-  );
-}
-
-/** Sarmalayıcı (animasyon kaldırıldı — sadelik) */
-export function Beliren({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  sira?: number;
-  style?: ViewStyle;
-}) {
-  return <View style={style}>{children}</View>;
-}
-
-/** Sayfa iskeleti: SafeAreaView + kaydırılabilir içerik + opsiyonel yenileme. */
-export function Ekran({
-  children,
-  onRefresh,
-  refreshing = false,
-  scroll = true,
-  pad = true,
-}: {
-  children: React.ReactNode;
-  onRefresh?: () => void;
-  refreshing?: boolean;
-  scroll?: boolean;
-  pad?: boolean;
-}) {
-  const renk = useRenkler();
-  const inner = <View style={pad ? s.padli : undefined}>{children}</View>;
-  return (
-    <SafeAreaView style={[s.safe, { backgroundColor: renk.bg }]} edges={["top"]}>
-      {scroll ? (
-        <ScrollView
-          contentContainerStyle={s.scrollIcerik}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            onRefresh ? (
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={renk.primary} />
-            ) : undefined
-          }
-        >
-          {inner}
-        </ScrollView>
-      ) : (
-        <View style={{ flex: 1 }}>{inner}</View>
-      )}
-    </SafeAreaView>
-  );
-}
-
-export function Baslik({ children, alt, sag }: { children: string; alt?: string; sag?: React.ReactNode }) {
-  const renk = useRenkler();
-  return (
-    <View style={s.baslikSatir}>
-      <View style={{ flex: 1 }}>
-        <Text style={[T.title, { color: renk.text }]}>{children}</Text>
-        {alt && <Text style={[T.caption, { color: renk.textFaint, marginTop: 2 }]}>{alt}</Text>}
-      </View>
-      {sag}
-    </View>
-  );
-}
 
 export function Kart({
   children,
@@ -121,17 +24,6 @@ export function Kart({
     );
   }
   return <View style={stil}>{children}</View>;
-}
-
-export function KartBaslik({ children, ikon, sag }: { children: string; ikon?: keyof typeof Ionicons.glyphMap; sag?: React.ReactNode }) {
-  const renk = useRenkler();
-  return (
-    <View style={s.kartBaslikSatir}>
-      {ikon && <Ionicons name={ikon} size={15} color={renk.textFaint} />}
-      <Text style={[T.overline, { color: renk.textFaint, flex: 1 }]}>{children}</Text>
-      {sag}
-    </View>
-  );
 }
 
 export function Yukleniyor({ yukseklik = 120 }: { yukseklik?: number }) {
@@ -163,6 +55,7 @@ export function BosDurum({
   );
 }
 
+/** Hap segmentli seçici (Günlük/Haftalık… veya Kişisel/İşletme/Yatırım). */
 export function Sekmeli<T extends string>({
   secenekler,
   etiket,
@@ -215,7 +108,7 @@ export function Cip({
   onPress: () => void;
 }) {
   const renk = useRenkler();
-  const ana = renkli || renk.primary;
+  const ana = renkli || renk.aksan;
   return (
     <Pressable
       onPress={onPress}
@@ -232,24 +125,6 @@ export function Cip({
       </Text>
     </Pressable>
   );
-}
-
-export function Rozet({ yazi, renk: c, ikon }: { yazi: string; renk: string; ikon?: keyof typeof Ionicons.glyphMap }) {
-  return (
-    <View style={[s.rozet, { backgroundColor: c + "22" }]}>
-      {ikon && <Ionicons name={ikon} size={12} color={c} />}
-      <Text style={{ color: c, fontSize: 12, fontWeight: "700" }}>{yazi}</Text>
-    </View>
-  );
-}
-
-export function KiyasRozet({ bu, onceki }: { bu: number; onceki: number }) {
-  const renk = useRenkler();
-  const { yazi, yon } = kiyas(bu, onceki);
-  if (yon === 0 && yazi === "—") return null;
-  const c = yon === 1 ? renk.danger : yon === -1 ? renk.success : renk.textMuted;
-  const ikon = yon === 1 ? "trending-up" : yon === -1 ? "trending-down" : "remove";
-  return <Rozet yazi={`${yazi} geçen döneme göre`} renk={c} ikon={ikon} />;
 }
 
 export function IkonDaire({
@@ -329,31 +204,8 @@ export function AyarSatir({
   );
 }
 
-export function BasilabilirSatir({
-  children,
-  style,
-  ...rest
-}: PressableProps & { children: React.ReactNode; style?: ViewStyle }) {
-  return (
-    <Pressable style={({ pressed }) => [style as ViewStyle, pressed && { opacity: 0.6 }]} {...rest}>
-      {children}
-    </Pressable>
-  );
-}
-
 const s = StyleSheet.create({
-  safe: { flex: 1 },
-  scrollIcerik: { paddingBottom: 48 },
-  padli: { paddingHorizontal: SP.lg, paddingTop: SP.sm, gap: SP.md },
-  baslikSatir: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: SP.sm,
-    paddingBottom: SP.xs,
-  },
   kart: { borderRadius: R.lg, padding: SP.lg },
-  kartBaslikSatir: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: SP.md },
   bos: { alignItems: "center", justifyContent: "center", paddingVertical: SP.xl, gap: SP.md },
   bosDaire: { width: 60, height: 60, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   iskeletCizgi: { height: 14, borderRadius: 7 },
@@ -363,13 +215,4 @@ const s = StyleSheet.create({
   grupKart: { borderRadius: R.md, overflow: "hidden" },
   ayarSatir: { flexDirection: "row", alignItems: "center", gap: SP.md, paddingHorizontal: SP.lg, paddingVertical: 12 },
   ayarIkon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  rozet: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    alignSelf: "flex-start",
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: R.pill,
-  },
 });

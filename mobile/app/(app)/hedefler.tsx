@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
-import { Kart } from "@/components/base";
+import { Kart, Sekmeli } from "@/components/base";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { HedefHalkasi } from "@/components/HedefHalkasi";
 import { Metin as Text } from "@/components/Metin";
@@ -142,25 +142,13 @@ export default function Hedefler() {
         </Pressable>
       </View>
 
-      <View style={s.tipSira}>
-        {TIPLER.map((t) => (
-          <Pressable
-            key={t}
-            onPress={() => setKatTip(t)}
-            style={[s.tipSek, { backgroundColor: t === katTip ? renk.aksan : renk.card }]}
-          >
-            <Text
-              style={{
-                color: t === katTip ? renk.aksanUstu : renk.textMuted,
-                fontSize: 13,
-                fontWeight: t === katTip ? "700" : "500",
-              }}
-            >
-              {TIP_ETIKET[t]}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <Sekmeli
+        secenekler={TIPLER}
+        etiket={(t) => TIP_ETIKET[t]}
+        secili={katTip}
+        onSec={setKatTip}
+        kucuk
+      />
 
       <View style={{ gap: SP.sm }}>
         {(kategoriler.data ?? []).filter((k) => k.tip === katTip).length === 0 && (
@@ -261,8 +249,6 @@ const s = StyleSheet.create({
   genelUst: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: SP.md },
   ray: { height: 10, borderRadius: R.pill, overflow: "hidden" },
   katBaslikSatir: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: SP.xs },
-  tipSira: { flexDirection: "row", gap: SP.xs },
-  tipSek: { flex: 1, paddingVertical: 9, borderRadius: R.pill, alignItems: "center" },
   katSatir: { flexDirection: "row", alignItems: "center", gap: SP.md, padding: SP.md, borderRadius: R.md },
   katIkon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   katRay: { height: 6, borderRadius: R.pill, overflow: "hidden", marginTop: 5 },
