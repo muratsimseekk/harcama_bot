@@ -17,6 +17,9 @@ import {
   useSummary,
 } from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
+import { TIP_ETIKET, type Tip } from "@/lib/types";
+
+const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
 
 export default function Hedefler() {
   const renk = useRenkler();
@@ -56,6 +59,7 @@ export default function Hedefler() {
   }
 
   const [dialog, setDialog] = useState<{ baslik: string; deger: string; kaydet: (n: number) => void } | null>(null);
+  const [katTip, setKatTip] = useState<Tip>("kisisel");
 
   return (
     <EkranBasligi
@@ -138,8 +142,33 @@ export default function Hedefler() {
         </Pressable>
       </View>
 
+      <View style={s.tipSira}>
+        {TIPLER.map((t) => (
+          <Pressable
+            key={t}
+            onPress={() => setKatTip(t)}
+            style={[s.tipSek, { backgroundColor: t === katTip ? renk.green : renk.card }]}
+          >
+            <Text
+              style={{
+                color: t === katTip ? renk.onGreen : renk.textMuted,
+                fontSize: 13,
+                fontWeight: t === katTip ? "700" : "500",
+              }}
+            >
+              {TIP_ETIKET[t]}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
       <View style={{ gap: SP.sm }}>
-        {(kategoriler.data ?? []).map((k) => {
+        {(kategoriler.data ?? []).filter((k) => k.tip === katTip).length === 0 && (
+          <Text style={{ color: renk.textFaint, fontSize: 13, paddingVertical: SP.md, textAlign: "center" }}>
+            Bu türde kategori yok.
+          </Text>
+        )}
+        {(kategoriler.data ?? []).filter((k) => k.tip === katTip).map((k) => {
           const b = katLimit(k.name);
           const harcanan = katHarcama(k.name);
           const oran = b ? (harcanan / b.limit_amount) * 100 : 0;
@@ -232,6 +261,8 @@ const s = StyleSheet.create({
   genelUst: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: SP.md },
   ray: { height: 10, borderRadius: R.pill, overflow: "hidden" },
   katBaslikSatir: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: SP.xs },
+  tipSira: { flexDirection: "row", gap: SP.xs },
+  tipSek: { flex: 1, paddingVertical: 9, borderRadius: R.pill, alignItems: "center" },
   katSatir: { flexDirection: "row", alignItems: "center", gap: SP.md, padding: SP.md, borderRadius: R.md },
   katIkon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   katRay: { height: 6, borderRadius: R.pill, overflow: "hidden", marginTop: 5 },
