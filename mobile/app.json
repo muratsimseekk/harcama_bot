@@ -21,7 +21,8 @@
         {
           "microphonePermission": "Harcamalarını sesle eklemek için mikrofon erişimi gerekir."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

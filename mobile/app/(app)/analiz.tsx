@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { IkiliCubukGrafik } from "@/components/charts";
 import { EkranBasligi } from "@/components/EkranBasligi";
@@ -9,7 +9,7 @@ import { IlerlemeCubugu } from "@/components/IlerlemeCubugu";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
 import { kisaGun, turkceTutar } from "@/lib/format";
-import { useDeleteTransaction, useSummary, useTransactions } from "@/lib/queries";
+import { useSummary, useTransactions } from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 import type { Granularity, Islem } from "@/lib/types";
 
@@ -33,7 +33,6 @@ function granOf(s: Sekme): Granularity {
 export default function Analiz() {
   const renk = useRenkler();
   const router = useRouter();
-  const sil = useDeleteTransaction();
   const [sekme, setSekme] = useState<Sekme>("month");
   const gran = granOf(sekme);
 
@@ -72,12 +71,8 @@ export default function Analiz() {
   const genelHedef = ozet.data?.hedefler.find((h) => h.kapsam === "genel");
   const katHedefler = (ozet.data?.hedefler ?? []).filter((h) => h.kapsam !== "genel");
 
-  function islemMenu(t: Islem) {
-    Alert.alert(t.aciklama, `${turkceTutar(t.tutar)} ₺ · ${t.kategori}`, [
-      { text: "Kapat", style: "cancel" },
-      { text: "Sil", style: "destructive", onPress: () => sil.mutate(t.id) },
-    ]);
-  }
+  const islemAc = (t: Islem) =>
+    router.push({ pathname: "/islem-form", params: { islem: JSON.stringify(t) } });
 
   return (
     <EkranBasligi
@@ -175,7 +170,7 @@ export default function Analiz() {
           <View key={tarih}>
             <Text style={[s.gunBaslik, { color: renk.textMuted }]}>{tarihUzun(tarih)}</Text>
             {list.map((t) => (
-              <IslemSatiri key={t.id} islem={t} onPress={() => islemMenu(t)} />
+              <IslemSatiri key={t.id} islem={t} onPress={() => islemAc(t)} />
             ))}
           </View>
         ))}

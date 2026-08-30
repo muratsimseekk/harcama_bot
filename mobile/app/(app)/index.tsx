@@ -100,7 +100,11 @@ export default function AnaSayfa() {
       ) : (
         <View>
           {(sonlar.data ?? []).map((t) => (
-            <IslemSatiri key={t.id} islem={t} onPress={() => router.navigate("/(app)/analiz")} />
+            <IslemSatiri
+              key={t.id}
+              islem={t}
+              onPress={() => router.push({ pathname: "/islem-form", params: { islem: JSON.stringify(t) } })}
+            />
           ))}
           {(sonlar.data ?? []).length === 0 && (
             <Text style={{ color: renk.textFaint, textAlign: "center", paddingVertical: SP.xl }}>

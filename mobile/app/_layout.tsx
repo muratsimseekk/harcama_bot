@@ -79,6 +79,7 @@ function Kapi() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(app)" />
       <Stack.Screen name="confirm" options={{ ...baslik, presentation: "modal", title: "Onayla" }} />
+      <Stack.Screen name="islem-form" options={{ presentation: "modal" }} />
       <Stack.Screen name="bildirimler" />
       <Stack.Screen name="ara" options={{ presentation: "modal" }} />
       <Stack.Screen name="kategori-yonet" options={{ ...baslik, title: "Kategoriler" }} />

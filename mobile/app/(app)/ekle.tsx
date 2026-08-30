@@ -172,17 +172,23 @@ export default function Ekle() {
           </Text>
 
           {durum === "bos" && (
-            <View style={s.ornekler}>
-              {ORNEKLER.map((o) => (
-                <Pressable
-                  key={o}
-                  onPress={() => setMetin(o)}
-                  style={[s.ornek, { backgroundColor: renk.aksanSoft }]}
-                >
-                  <Text style={{ color: renk.textMuted, fontSize: 12.5 }}>{o}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <>
+              <View style={s.ornekler}>
+                {ORNEKLER.map((o) => (
+                  <Pressable
+                    key={o}
+                    onPress={() => setMetin(o)}
+                    style={[s.ornek, { backgroundColor: renk.aksanSoft }]}
+                  >
+                    <Text style={{ color: renk.textMuted, fontSize: 12.5 }}>{o}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Pressable onPress={() => router.push("/islem-form")} style={s.elle} hitSlop={8}>
+                <Ionicons name="create-outline" size={16} color={renk.aksan} />
+                <Text style={{ color: renk.aksan, fontSize: 13.5, fontWeight: "700" }}>Elle gir</Text>
+              </Pressable>
+            </>
           )}
         </View>
 
@@ -220,6 +226,7 @@ const s = StyleSheet.create({
   ipucu: { fontSize: 13, textAlign: "center", maxWidth: 280 },
   ornekler: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: SP.sm, marginTop: SP.lg },
   ornek: { borderRadius: R.pill, paddingHorizontal: 12, paddingVertical: 7 },
+  elle: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: SP.lg, paddingVertical: 6 },
   altBar: {
     flexDirection: "row",
     gap: SP.sm,
