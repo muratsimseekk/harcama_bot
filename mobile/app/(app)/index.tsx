@@ -2,17 +2,23 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Kart, Yukleniyor } from "@/components/base";
+import { PastaGrafik } from "@/components/charts";
 import { DonemSekmeleri } from "@/components/DonemSekmeleri";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
-import { selamlama, turkceTutar } from "@/lib/format";
-import { useSummary, useTransactions } from "@/lib/queries";
+import { birlestirKategori, selamlama, turkceTutar } from "@/lib/format";
+import { useCategories, useSummary, useTransactions } from "@/lib/queries";
 import { SP, T, useRenkler } from "@/lib/theme";
 import type { Granularity } from "@/lib/types";
 
 const GRAN: Granularity[] = ["week", "month", "year"];
 const ETIKET: Record<Granularity, string> = { week: "Haftalık", month: "Aylık", year: "Yıllık" };
+const DAGILIM_BASLIK: Record<Granularity, string> = {
+  week: "Bu hafta nereye gitti",
+  month: "Bu ay nereye gitti",
+  year: "Bu yıl nereye gitti",
+};
 
 export default function AnaSayfa() {
   const renk = useRenkler();
@@ -21,6 +27,7 @@ export default function AnaSayfa() {
   const ozet = useSummary(gran);
   const ayOzet = useSummary("month");
   const sonlar = useTransactions({ limit: 5 });
+  const kategoriler = useCategories();
 
   const g = ozet.data?.bu_donem;
   const ay = ayOzet.data?.bu_donem;
@@ -30,6 +37,14 @@ export default function AnaSayfa() {
     const gun = Math.max(1, new Date().getDate());
     return ay.toplam_gider / gun;
   }, [ay]);
+
+  const dilimler = useMemo(() => {
+    const renkHarita = new Map((kategoriler.data ?? []).map((k) => [k.name, k.color]));
+    return birlestirKategori(g?.kategori_kirilim ?? []).map((d) => ({
+      ...d,
+      renk: renkHarita.get(d.ad) ?? null,
+    }));
+  }, [g?.kategori_kirilim, kategoriler.data]);
 
   return (
     <EkranBasligi
@@ -47,24 +62,6 @@ export default function AnaSayfa() {
             <Text style={[T.title, { color: renk.onGreen }]}>{selamlama()}</Text>
             <Text style={[s.selamAlt, { color: renk.text }]}>Tekrar hoş geldin</Text>
           </View>
-
-          {g && (
-            <View style={s.ggSatir}>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.ggEtiket, { color: renk.onGreen }]}>↗ Bu ay gelir</Text>
-                <Text style={[s.ggDeger, { color: renk.onGreen }]}>
-                  {turkceTutar(g.toplam_gelir)} ₺
-                </Text>
-              </View>
-              <View style={s.ggAyrac} />
-              <View style={{ flex: 1 }}>
-                <Text style={[s.ggEtiket, { color: renk.blue }]}>↘ Bu ay harcama</Text>
-                <Text style={[s.ggDeger, { color: renk.blue }]}>
-                  -{turkceTutar(g.toplam_gider)} ₺
-                </Text>
-              </View>
-            </View>
-          )}
         </View>
       }
     >
@@ -88,6 +85,19 @@ export default function AnaSayfa() {
 
       <DonemSekmeleri secenekler={GRAN} etiket={(x) => ETIKET[x]} secili={gran} onSec={setGran} />
 
+      <Kart>
+        <Text style={[T.heading, { color: renk.text, marginBottom: SP.md }]}>
+          {DAGILIM_BASLIK[gran]}
+        </Text>
+        {ozet.isLoading ? (
+          <Yukleniyor yukseklik={150} />
+        ) : (
+          <PastaGrafik dilimler={dilimler} />
+        )}
+      </Kart>
+
+      <Text style={[T.heading, { color: renk.text, marginTop: SP.xs }]}>Son işlemler</Text>
+
       {sonlar.isLoading ? (
         <Yukleniyor yukseklik={120} />
       ) : (
@@ -109,10 +119,6 @@ export default function AnaSayfa() {
 const s = StyleSheet.create({
   selam: {},
   selamAlt: { fontSize: 13, fontWeight: "500", marginTop: -2 },
-  ggSatir: { flexDirection: "row", alignItems: "center" },
-  ggEtiket: { fontSize: 12.5, fontWeight: "600" },
-  ggDeger: { fontSize: 20, fontWeight: "800", marginTop: 2, letterSpacing: -0.4 },
-  ggAyrac: { width: 1, height: 38, backgroundColor: "rgba(9,48,48,0.25)", marginHorizontal: SP.md },
   hcEtiket: { fontSize: 13, fontWeight: "600" },
   hcDeger: { fontSize: 30, fontWeight: "800", marginTop: 2, letterSpacing: -0.6 },
   hcAyrac: { height: 1, marginVertical: SP.md },
