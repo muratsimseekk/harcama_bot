@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Sekmeli } from "@/components/base";
 import { Buton } from "@/components/Buton";
 import { Metin as Text } from "@/components/Metin";
 import {
@@ -43,19 +44,7 @@ export default function KategoriYonet() {
           value={ad}
           onChangeText={setAd}
         />
-        <View style={s.tipSira}>
-          {TIPLER.map((t) => (
-            <Pressable
-              key={t}
-              onPress={() => setTip(t)}
-              style={[s.tipSec, { backgroundColor: t === tip ? renk.aksan : renk.bg }]}
-            >
-              <Text style={{ color: renk.text, fontSize: 12.5, fontWeight: t === tip ? "700" : "500" }}>
-                {TIP_ETIKET[t]}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <Sekmeli secenekler={TIPLER} etiket={(t) => TIP_ETIKET[t]} secili={tip} onSec={setTip} kucuk />
         <View style={s.palet}>
           {PALET.map((c) => (
             <Pressable
@@ -135,8 +124,6 @@ const s = StyleSheet.create({
   icerik: { padding: SP.lg, gap: SP.md, paddingBottom: 60 },
   form: { borderRadius: R.md, padding: SP.lg, gap: SP.md },
   input: { borderRadius: R.sm, padding: 12, fontSize: 15, fontFamily: FONT["500"] },
-  tipSira: { flexDirection: "row", gap: SP.sm },
-  tipSec: { flex: 1, borderRadius: R.sm, paddingVertical: 9, alignItems: "center" },
   palet: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   renkNok: { width: 26, height: 26, borderRadius: 13, borderWidth: 3 },
   satir: { flexDirection: "row", alignItems: "center", gap: SP.md, padding: 13, borderRadius: R.sm },

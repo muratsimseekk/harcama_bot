@@ -7,18 +7,16 @@ import { R, SP, useRenkler } from "@/lib/theme";
 export function IlerlemeCubugu({
   oran,
   hedef,
-  zeminBeyaz = true,
 }: {
   oran: number; // 0–100
   hedef?: number;
-  zeminBeyaz?: boolean;
 }) {
   const renk = useRenkler();
   const p = Math.max(0, Math.min(100, oran));
   const asti = p >= 100;
 
   return (
-    <View style={[s.ray, { backgroundColor: zeminBeyaz ? "#FFFFFF" : renk.aksanSoft }]}>
+    <View style={[s.ray, { backgroundColor: renk.cardAlt }]}>
       <View
         style={[
           s.dolu,
@@ -28,7 +26,7 @@ export function IlerlemeCubugu({
           },
         ]}
       >
-        <Text style={[s.yuzde, { color: "#FFFFFF" }]}>%{Math.round(p)}</Text>
+        <Text style={[s.yuzde, { color: renk.card }]}>%{Math.round(p)}</Text>
       </View>
       {hedef != null && (
         <Text style={[s.hedef, { color: renk.text }]} numberOfLines={1}>

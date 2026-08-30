@@ -106,7 +106,7 @@ export default function Hedefler() {
               )
             }
           >
-            <Text style={{ color: renk.accent, fontWeight: "700", fontSize: 13 }}>
+            <Text style={{ color: renk.aksan, fontWeight: "700", fontSize: 13 }}>
               {genel ? "Değiştir" : "Belirle"}
             </Text>
           </Pressable>
@@ -138,7 +138,7 @@ export default function Hedefler() {
       <View style={s.katBaslikSatir}>
         <Text style={[T.heading, { color: renk.text }]}>Kategori limitleri</Text>
         <Pressable onPress={() => router.navigate("/kategori-yonet")}>
-          <Text style={{ color: renk.accent, fontWeight: "700", fontSize: 13 }}>Kategorileri düzenle</Text>
+          <Text style={{ color: renk.aksan, fontWeight: "700", fontSize: 13 }}>Kategorileri düzenle</Text>
         </Pressable>
       </View>
 

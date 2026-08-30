@@ -31,7 +31,7 @@ export default function Gorunum() {
             onPress={() => setMod(o.mod)}
             sag={
               mod === o.mod ? (
-                <Ionicons name="checkmark-circle" size={20} color={renk.primary} />
+                <Ionicons name="checkmark-circle" size={20} color={renk.aksan} />
               ) : (
                 <View style={[s.bosDaire, { borderColor: renk.border }]} />
               )
