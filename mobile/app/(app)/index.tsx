@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Kart, Yukleniyor } from "@/components/base";
 import { DonemSekmeleri } from "@/components/DonemSekmeleri";
 import { EkranBasligi } from "@/components/EkranBasligi";
@@ -71,7 +71,7 @@ export default function AnaSayfa() {
               </View>
 
               {genelHedef ? (
-                <>
+                <Pressable onPress={() => router.navigate("/(app)/hedefler")}>
                   <IlerlemeCubugu oran={genelHedef.oran} hedef={genelHedef.limit} />
                   <Text style={[s.hedefNot, { color: renk.text }]}>
                     {genelHedef.durum === "asti"
@@ -80,11 +80,16 @@ export default function AnaSayfa() {
                           genelHedef.durum === "yaklasti" ? "dikkatli ol." : "iyi gidiyorsun."
                         }`}
                   </Text>
-                </>
+                </Pressable>
               ) : (
-                <Text style={[s.hedefNot, { color: renk.text }]}>
-                  Aylık harcama hedefi belirlemek için Analiz → Hedeflerim.
-                </Text>
+                <Pressable
+                  onPress={() => router.navigate("/(app)/hedefler")}
+                  style={[s.hedefKur, { borderColor: renk.onGreen }]}
+                >
+                  <Text style={[s.hedefNot, { color: renk.onGreen, fontWeight: "700" }]}>
+                    + Aylık harcama hedefi belirle
+                  </Text>
+                </Pressable>
               )}
             </>
           )}
@@ -142,6 +147,7 @@ const s = StyleSheet.create({
   ggDeger: { fontSize: 20, fontWeight: "800", marginTop: 2, letterSpacing: -0.4 },
   ggAyrac: { width: 1, height: 38, backgroundColor: "rgba(9,48,48,0.25)", marginHorizontal: SP.md },
   hedefNot: { fontSize: 13, fontWeight: "500" },
+  hedefKur: { borderWidth: 1.5, borderRadius: 999, paddingVertical: 10, alignItems: "center" },
   hedefKart: { flexDirection: "row", alignItems: "center", gap: SP.lg },
   hedefBaslik: { fontSize: 13, fontWeight: "700", textAlign: "center", lineHeight: 16 },
   hedefDikey: { width: 1, alignSelf: "stretch", marginVertical: 4 },

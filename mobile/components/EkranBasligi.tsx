@@ -42,7 +42,9 @@ export function EkranBasligi({
   const renk = useRenkler();
   const router = useRouter();
 
-  const govde = <View style={[s.icerik, icerikStil]}>{children}</View>;
+  const govde = (
+    <View style={[s.icerik, !kaydir && s.icerikDolu, icerikStil]}>{children}</View>
+  );
 
   return (
     <View style={[s.kok, { backgroundColor: renk.green }]}>
@@ -113,4 +115,5 @@ const s = StyleSheet.create({
   },
   scroll: { paddingBottom: 40 },
   icerik: { padding: SP.lg, gap: SP.md },
+  icerikDolu: { flex: 1 },
 });

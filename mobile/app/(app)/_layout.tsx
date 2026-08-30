@@ -7,7 +7,7 @@ export default function AppLayout() {
       <Tabs.Screen name="index" />
       <Tabs.Screen name="analiz" />
       <Tabs.Screen name="ekle" />
-      <Tabs.Screen name="kategori" />
+      <Tabs.Screen name="hedefler" />
       <Tabs.Screen name="profil" />
     </Tabs>
   );

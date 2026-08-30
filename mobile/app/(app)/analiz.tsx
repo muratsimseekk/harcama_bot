@@ -127,9 +127,12 @@ export default function Analiz() {
         <IkiliCubukGrafik etiketler={grafik.etiketler} gelir={grafik.gelir} gider={grafik.gider} />
       </Kart>
 
-      {katHedefler.length > 0 && (
-        <Kart>
-          <Text style={[T.heading, { color: renk.text, marginBottom: SP.md }]}>Hedeflerim</Text>
+      {katHedefler.length > 0 ? (
+        <Kart onPress={() => router.navigate("/(app)/hedefler")}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: SP.md }}>
+            <Text style={[T.heading, { color: renk.text }]}>Hedeflerim</Text>
+            <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />
+          </View>
           <View style={{ gap: SP.md }}>
             {katHedefler.map((h) => (
               <View key={`${h.kapsam}-${h.kapsam_deger}`} style={{ gap: 6 }}>
@@ -152,6 +155,18 @@ export default function Analiz() {
                 </View>
               </View>
             ))}
+          </View>
+        </Kart>
+      ) : (
+        <Kart onPress={() => router.navigate("/(app)/hedefler")}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[T.heading, { color: renk.text }]}>Hedeflerim</Text>
+              <Text style={{ color: renk.textFaint, fontSize: 13, marginTop: 2 }}>
+                Aylık bütçe ve kategori limitleri koy
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />
           </View>
         </Kart>
       )}

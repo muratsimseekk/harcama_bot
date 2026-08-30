@@ -29,6 +29,7 @@ export default function Profil() {
 
   const satirlar: Satir[] = [
     { ikon: "person-outline", ad: "Profili Düzenle", git: "/ayarlar/profil-duzenle" },
+    { ikon: "pricetags-outline", ad: "Kategoriler", git: "/kategori-yonet" },
     { ikon: "shield-checkmark-outline", ad: "Güvenlik", git: "/ayarlar/guvenlik" },
     { ikon: "settings-outline", ad: "Ayarlar", git: "/ayarlar" },
     ...(DEV_NOAUTH ? [] : [{ ikon: "log-out-outline" as const, ad: "Çıkış", tehlike: true, onPress: cikis }]),

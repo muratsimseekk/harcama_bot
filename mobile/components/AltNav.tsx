@@ -8,7 +8,7 @@ const IKON: Record<string, { acik: keyof typeof Ionicons.glyphMap; kapali: keyof
   index: { acik: "home", kapali: "home-outline" },
   analiz: { acik: "stats-chart", kapali: "stats-chart-outline" },
   ekle: { acik: "add", kapali: "add" },
-  kategori: { acik: "grid", kapali: "grid-outline" },
+  hedefler: { acik: "flag", kapali: "flag-outline" },
   profil: { acik: "person", kapali: "person-outline" },
 };
 

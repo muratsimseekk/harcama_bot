@@ -30,15 +30,17 @@ async def summary(
 
     hedefler: list[HedefIlerlemeModel] = []
     yatirim: YatirimModel | None = None
+    hedef_tutar = 0.0
     try:
         butceler = await repo.budgets_list(user_id)
         if butceler:
             hedefler = [HedefIlerlemeModel.from_h(h) for h in hedef_ilerleme(bu_txs, butceler)]
         g = await repo.goal_get(user_id, "yatirim")
-        if g:
-            yatirim = YatirimModel(**yatirim_ilerleme(bu_txs, g.hedef_amount))
+        hedef_tutar = g.hedef_amount if g else 0.0
     except Exception:  # bütçe tabloları henüz yoksa özet yine dönsün
         pass
+    # yatırım kartı: hedef olmasa bile bu ay birikeni göster
+    yatirim = YatirimModel(**yatirim_ilerleme(bu_txs, hedef_tutar))
 
     return OzetModel(
         period=period,

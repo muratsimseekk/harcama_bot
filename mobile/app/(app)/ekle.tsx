@@ -129,7 +129,7 @@ export default function Ekle() {
   const sn = Math.floor(rState.durationMillis / 1000);
 
   return (
-    <EkranBasligi baslik="Ekle" zil={false} kaydir={false}>
+    <EkranBasligi baslik="Ekle" zil={false} kaydir={false} icerikStil={{ padding: 0, gap: 0 }}>
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={s.orta}>
           <View style={s.micSar}>
