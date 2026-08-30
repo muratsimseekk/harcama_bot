@@ -36,11 +36,23 @@ export default function Kayit() {
     });
     setYukleniyor(false);
     if (error) return Alert.alert("Kayıt başarısız", error.message);
-    if (!data.session) {
-      Alert.alert("Neredeyse tamam", "E-postana gönderilen bağlantıyla hesabını onayla, sonra giriş yap.", [
-        { text: "Tamam", onPress: () => router.replace("/(auth)/giris") },
+
+    // Supabase, e-posta zaten kayıtlıysa (enumeration koruması) user döndürür
+    // ama identities boş olur ve hiçbir e-posta gitmez.
+    if (data.user && (data.user.identities?.length ?? 0) === 0) {
+      return Alert.alert("Bu e-posta zaten kayıtlı", "Giriş ekranından şifrenle devam et.", [
+        { text: "Giriş Yap", onPress: () => router.replace("/(auth)/giris") },
       ]);
     }
+
+    if (data.session) {
+      router.replace("/(app)");
+      return;
+    }
+
+    Alert.alert("Neredeyse tamam", "E-postana gönderilen bağlantıyla hesabını onayla, sonra giriş yap.", [
+      { text: "Tamam", onPress: () => router.replace("/(auth)/giris") },
+    ]);
   }
 
   return (

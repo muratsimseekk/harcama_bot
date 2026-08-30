@@ -67,6 +67,34 @@ async def test_suresi_gecmis_401():
     assert e.value.status_code == 401
 
 
+async def test_es256_jwks_ile_dogrular(monkeypatch):
+    """Supabase'in yeni asimetrik jetonları (ES256) JWKS açık anahtarıyla çözülür."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    ozel = ec.generate_private_key(ec.SECP256R1())
+    pem_ozel = ozel.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    tok = jwt.encode(
+        {"sub": "es-user", "aud": "authenticated", "exp": int(time.time()) + 60},
+        pem_ozel,
+        algorithm="ES256",
+    )
+
+    class _SahteAnahtar:
+        key = ozel.public_key()
+
+    class _SahteJwks:
+        def get_signing_key_from_jwt(self, _t):
+            return _SahteAnahtar()
+
+    monkeypatch.setattr(auth, "_jwks", lambda: _SahteJwks())
+    assert await auth.current_user(f"Bearer {tok}") == "es-user"
+
+
 async def test_cache_calisiyor(monkeypatch):
     tok = _token(sub="cache-me")
     assert await auth.current_user(f"Bearer {tok}") == "cache-me"

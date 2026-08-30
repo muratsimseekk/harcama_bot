@@ -1,21 +1,41 @@
 """Supabase erişim jetonu doğrulama.
 
-İki yol:
-- `SUPABASE_JWT_SECRET` tanımlıysa jeton yerelde HS256 ile doğrulanır (ağ çağrısı yok).
-- Değilse Supabase `/auth/v1/user` uç noktasına sorulur (kısa süreli önbellekli).
+Jeton yerelde imza doğrulaması ile çözülür (kullanıcı başına ağ çağrısı yok):
+- `ES256` / `RS256` (Supabase asimetrik "JWT signing keys" — yeni varsayılan):
+  açık anahtarlar `/{auth}/.well-known/jwks.json` üzerinden alınır (saatlik önbellek).
+- `HS256` (eski paylaşımlı sır): `SUPABASE_JWT_SECRET` ile doğrulanır.
+`SUPABASE_JWT_SECRET` hiç yoksa Supabase `/auth/v1/user` uç noktasına sorulur.
 """
 from __future__ import annotations
 
+import ssl
 import time
 
+import certifi
 import httpx
 import jwt
 from fastapi import Header, HTTPException, status
+from jwt import PyJWKClient
 
 from core.config import settings
 
 _cache: dict[str, tuple[float, str]] = {}  # token -> (expiry_ts, user_id)
 _CACHE_TTL = 60.0
+
+_jwks_client: PyJWKClient | None = None
+
+
+def _jwks() -> PyJWKClient:
+    global _jwks_client
+    if _jwks_client is None:
+        url = settings.SUPABASE_URL.rstrip("/") + "/auth/v1/.well-known/jwks.json"
+        _jwks_client = PyJWKClient(
+            url,
+            cache_keys=True,
+            lifespan=3600,
+            ssl_context=ssl.create_default_context(cafile=certifi.where()),
+        )
+    return _jwks_client
 
 
 def _bearer(authorization: str | None) -> str:
@@ -28,12 +48,24 @@ def _bearer(authorization: str | None) -> str:
 
 def _verify_local(token: str) -> str:
     try:
-        veri = jwt.decode(
-            token,
-            settings.SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
+        alg = jwt.get_unverified_header(token).get("alg", "")
+        if alg == "HS256":
+            if not settings.SUPABASE_JWT_SECRET:
+                raise jwt.InvalidTokenError("HS256 jetonu ama SUPABASE_JWT_SECRET yok")
+            veri = jwt.decode(
+                token,
+                settings.SUPABASE_JWT_SECRET,
+                algorithms=["HS256"],
+                audience="authenticated",
+            )
+        else:
+            anahtar = _jwks().get_signing_key_from_jwt(token).key
+            veri = jwt.decode(
+                token,
+                anahtar,
+                algorithms=["ES256", "RS256"],
+                audience="authenticated",
+            )
     except jwt.PyJWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Geçersiz jeton: {e}"
