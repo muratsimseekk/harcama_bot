@@ -28,7 +28,9 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 15_000 } },
 });
 
-export const DEV_NOAUTH = process.env.EXPO_PUBLIC_DEV_NOAUTH === "1";
+// Şimdilik giriş/kayıt akışı kapalı — herkes yönetici olarak girer.
+// Auth testine dönmek için mobile/.env'de EXPO_PUBLIC_DEV_NOAUTH=0 yap.
+export const DEV_NOAUTH = process.env.EXPO_PUBLIC_DEV_NOAUTH !== "0";
 const ONBOARD_ANAHTAR = "onboard.goruldu";
 
 export async function onboardTamamla() {
