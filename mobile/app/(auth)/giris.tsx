@@ -24,9 +24,9 @@ export default function Giris() {
   }
 
   return (
-    <View style={[s.kok, { backgroundColor: renk.green }]}>
+    <View style={[s.kok, { backgroundColor: renk.bg }]}>
       <SafeAreaView edges={["top"]} style={s.ust}>
-        <Text style={[T.display, { color: renk.onGreen, textAlign: "center" }]}>Hoş Geldin</Text>
+        <Text style={[T.display, { color: renk.text, textAlign: "center" }]}>Hoş Geldin</Text>
       </SafeAreaView>
 
       <KeyboardAvoidingView

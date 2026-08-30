@@ -24,7 +24,7 @@ import {
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { Metin as Text } from "@/components/Metin";
 import { api, ApiError } from "@/lib/api";
-import { R, SP, T, useRenkler } from "@/lib/theme";
+import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
 import type { CaptureYanit } from "@/lib/types";
 
 type Durum = "bos" | "hazirlaniyor" | "kayit" | "gonderiliyor";
@@ -138,7 +138,7 @@ export default function Ekle() {
                 style={[
                   s.dalga,
                   {
-                    borderColor: renk.green,
+                    borderColor: renk.aksan,
                     opacity: halka.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }),
                     transform: [{ scale: halka.interpolate({ inputRange: [0, 1], outputRange: [1, 2] }) }],
                   },
@@ -148,12 +148,12 @@ export default function Ekle() {
             <Pressable
               onPress={mikTikla}
               disabled={mesgul}
-              style={[s.mic, { backgroundColor: kayitta ? renk.danger : renk.green, opacity: mesgul ? 0.6 : 1 }]}
+              style={[s.mic, { backgroundColor: kayitta ? renk.danger : renk.aksan, opacity: mesgul ? 0.6 : 1 }]}
             >
               {mesgul ? (
-                <ActivityIndicator color={renk.onGreen} size="large" />
+                <ActivityIndicator color={renk.aksanUstu} size="large" />
               ) : (
-                <Ionicons name={kayitta ? "stop" : "mic"} size={52} color={renk.onGreen} />
+                <Ionicons name={kayitta ? "stop" : "mic"} size={52} color={renk.aksanUstu} />
               )}
             </Pressable>
           </View>
@@ -177,7 +177,7 @@ export default function Ekle() {
                 <Pressable
                   key={o}
                   onPress={() => setMetin(o)}
-                  style={[s.ornek, { backgroundColor: renk.greenSoft }]}
+                  style={[s.ornek, { backgroundColor: renk.aksanSoft }]}
                 >
                   <Text style={{ color: renk.textMuted, fontSize: 12.5 }}>{o}</Text>
                 </Pressable>
@@ -186,7 +186,7 @@ export default function Ekle() {
           )}
         </View>
 
-        <View style={[s.altBar, { backgroundColor: renk.greenSoft }]}>
+        <View style={[s.altBar, { backgroundColor: renk.aksanSoft }]}>
           <TextInput
             style={[s.input, { color: renk.text }]}
             placeholder="yazarak ekle…"
@@ -199,11 +199,11 @@ export default function Ekle() {
             multiline
           />
           <Pressable
-            style={[s.gonder, { backgroundColor: metin.trim() ? renk.green : renk.border }]}
+            style={[s.gonder, { backgroundColor: metin.trim() ? renk.aksan : renk.border }]}
             onPress={metinGonder}
             disabled={!metin.trim() || durum !== "bos"}
           >
-            <Ionicons name="arrow-up" size={20} color={renk.onGreen} />
+            <Ionicons name="arrow-up" size={20} color={renk.aksanUstu} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -228,6 +228,6 @@ const s = StyleSheet.create({
     alignItems: "flex-end",
     margin: SP.lg,
   },
-  input: { flex: 1, fontSize: 15.5, paddingHorizontal: SP.md, paddingVertical: 12, maxHeight: 100, fontFamily: "Poppins_500Medium" },
+  input: { flex: 1, fontSize: 15.5, paddingHorizontal: SP.md, paddingVertical: 12, maxHeight: 100, fontFamily: FONT["500"] },
   gonder: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
 });

@@ -6,7 +6,7 @@ import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
 import { api } from "@/lib/api";
 import { useCategories } from "@/lib/queries";
-import { R, SP, T, useRenkler } from "@/lib/theme";
+import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
 import type { Islem, Yon } from "@/lib/types";
 
 export default function Ara() {
@@ -36,7 +36,7 @@ export default function Ara() {
   }
 
   return (
-    <View style={[s.kok, { backgroundColor: renk.green }]}>
+    <View style={[s.kok, { backgroundColor: renk.bg }]}>
       <View style={s.ustPad}>
         <View style={[s.aramaKutu, { backgroundColor: renk.card }]}>
           <Ionicons name="search" size={18} color={renk.textMuted} />
@@ -67,7 +67,7 @@ export default function Ara() {
               <Ionicons
                 name={yon === y ? "radio-button-on" : "radio-button-off"}
                 size={20}
-                color={renk.green}
+                color={renk.aksan}
               />
               <Text style={{ color: renk.text, fontSize: 15 }}>{y === "gelir" ? "Gelir" : "Harcama"}</Text>
             </Pressable>
@@ -107,10 +107,10 @@ function Cip({
       onPress={onPress}
       style={[
         s.cip,
-        { backgroundColor: aktif ? renk.green : renk.card, borderColor: renk.border },
+        { backgroundColor: aktif ? renk.aksan : renk.card, borderColor: renk.border },
       ]}
     >
-      <Text style={{ color: aktif ? renk.onGreen : renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>
+      <Text style={{ color: aktif ? renk.aksanUstu : renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>
         {yazi}
       </Text>
     </Pressable>
@@ -128,7 +128,7 @@ const s = StyleSheet.create({
     paddingHorizontal: SP.lg,
     height: 48,
   },
-  aramaInput: { flex: 1, fontSize: 15, fontFamily: "Poppins_500Medium" },
+  aramaInput: { flex: 1, fontSize: 15, fontFamily: FONT["500"] },
   mint: { flex: 1, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl },
   icerik: { padding: SP.lg, gap: SP.sm, paddingBottom: 60 },
   cip: { borderWidth: 1, borderRadius: R.pill, paddingHorizontal: 13, paddingVertical: 7 },

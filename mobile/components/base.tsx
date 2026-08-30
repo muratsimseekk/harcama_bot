@@ -227,7 +227,7 @@ export function Cip({
         },
       ]}
     >
-      <Text style={{ color: aktif ? "#fff" : renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>
+      <Text style={{ color: aktif ? renk.aksanUstu : renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>
         {yazi}
       </Text>
     </Pressable>

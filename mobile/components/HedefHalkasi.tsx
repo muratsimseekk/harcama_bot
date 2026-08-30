@@ -22,7 +22,7 @@ export function HedefHalkasi({
   return (
     <View style={{ width: boyut, height: boyut, alignItems: "center", justifyContent: "center" }}>
       <Svg width={boyut} height={boyut} style={{ position: "absolute" }}>
-        <Circle cx={boyut / 2} cy={boyut / 2} r={r} stroke={renk.greenSoft} strokeWidth={kalinlik} fill="none" />
+        <Circle cx={boyut / 2} cy={boyut / 2} r={r} stroke={renk.aksanSoft} strokeWidth={kalinlik} fill="none" />
         <Circle
           cx={boyut / 2}
           cy={boyut / 2}

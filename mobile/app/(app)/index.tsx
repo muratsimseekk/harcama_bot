@@ -56,29 +56,27 @@ export default function AnaSayfa() {
         sonlar.refetch();
       }}
       refreshing={ozet.isRefetching}
-      yesilAlan={
-        <View style={{ gap: SP.md, paddingBottom: SP.md }}>
-          <View style={s.selam}>
-            <Text style={[T.title, { color: renk.onGreen }]}>{selamlama()}</Text>
-            <Text style={[s.selamAlt, { color: renk.text }]}>Tekrar hoş geldin</Text>
-          </View>
+      ustAlan={
+        <View style={s.selam}>
+          <Text style={[T.title, { color: renk.text }]}>{selamlama()}</Text>
+          <Text style={[s.selamAlt, { color: renk.textMuted }]}>Tekrar hoş geldin</Text>
         </View>
       }
     >
-      <Kart style={{ backgroundColor: renk.green }}>
-        <Text style={[s.hcEtiket, { color: renk.onGreen }]}>Bu ay toplam harcama</Text>
-        <Text style={[s.hcDeger, { color: renk.onGreen }]}>
+      <Kart style={{ backgroundColor: renk.aksan }}>
+        <Text style={[s.hcEtiket, { color: renk.aksanUstu }]}>Bu ay toplam harcama</Text>
+        <Text style={[s.hcDeger, { color: renk.aksanUstu }]}>
           {turkceTutar(ay?.toplam_gider ?? 0)} ₺
         </Text>
-        <View style={[s.hcAyrac, { backgroundColor: "rgba(9,48,48,0.2)" }]} />
+        <View style={[s.hcAyrac, { backgroundColor: "rgba(255,255,255,0.25)" }]} />
         <View style={s.hcAlt}>
           <View>
-            <Text style={[s.miniEtiket, { color: renk.onGreen }]}>İşlem</Text>
-            <Text style={[s.miniDeger, { color: renk.onGreen }]}>{ay?.adet ?? 0}</Text>
+            <Text style={[s.miniEtiket, { color: renk.aksanUstu }]}>İşlem</Text>
+            <Text style={[s.miniDeger, { color: renk.aksanUstu }]}>{ay?.adet ?? 0}</Text>
           </View>
           <View>
-            <Text style={[s.miniEtiket, { color: renk.onGreen }]}>Günlük ortalama</Text>
-            <Text style={[s.miniDeger, { color: renk.onGreen }]}>{turkceTutar(gunlukOrt)} ₺</Text>
+            <Text style={[s.miniEtiket, { color: renk.aksanUstu }]}>Günlük ortalama</Text>
+            <Text style={[s.miniDeger, { color: renk.aksanUstu }]}>{turkceTutar(gunlukOrt)} ₺</Text>
           </View>
         </View>
       </Kart>

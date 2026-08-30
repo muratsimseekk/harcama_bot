@@ -6,7 +6,7 @@ import { DEV_NOAUTH } from "@/app/_layout";
 import { Metin as Text } from "@/components/Metin";
 import { useMe } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
-import { golge, R, SP, T, useRenkler } from "@/lib/theme";
+import { golge, R, SERIF, SP, T, useRenkler } from "@/lib/theme";
 
 type Satir = {
   ikon: keyof typeof Ionicons.glyphMap;
@@ -36,46 +36,43 @@ export default function Profil() {
   ];
 
   return (
-    <View style={[s.kok, { backgroundColor: renk.green }]}>
+    <View style={[s.kok, { backgroundColor: renk.bg }]}>
       <SafeAreaView edges={["top"]} style={s.ust}>
         <View style={s.baslikSatir}>
           <View style={{ width: 26 }} />
-          <Text style={[T.title, { color: renk.onGreen }]}>Profil</Text>
-          <Pressable onPress={() => router.navigate("/bildirimler")} style={[s.zil, { backgroundColor: renk.greenSoft }]}>
+          <Text style={[T.title, { color: renk.text }]}>Profil</Text>
+          <Pressable onPress={() => router.navigate("/bildirimler")} style={[s.zil, { backgroundColor: renk.cardAlt }]}>
             <Ionicons name="notifications-outline" size={19} color={renk.text} />
           </Pressable>
         </View>
       </SafeAreaView>
 
-      <View style={[s.avatarSar, { backgroundColor: renk.green }]}>
-        <View style={[s.avatar, { backgroundColor: renk.greenSoft, borderColor: renk.bg }]}>
-          <Ionicons name="person" size={44} color={renk.text} />
+      <View style={s.avatarSar}>
+        <View style={[s.avatar, { backgroundColor: renk.aksanSoft }]}>
+          <Ionicons name="person" size={44} color={renk.aksan} />
         </View>
-      </View>
-
-      <View style={[s.mint, { backgroundColor: renk.bg }]}>
         <Text style={[s.isim, { color: renk.text }]}>
           {DEV_NOAUTH ? "Yönetici" : me.data?.plan === "pro" ? "Pro Üye" : "Kullanıcı"}
         </Text>
         <Text style={[s.id, { color: renk.textMuted }]}>
           {me.data ? `${me.data.toplam_kayit} kayıt · bu ay ${me.data.ay_kayit}` : "…"}
         </Text>
+      </View>
 
-        <View style={s.liste}>
-          {satirlar.map((r) => (
-            <Pressable
-              key={r.ad}
-              onPress={r.onPress ?? (() => r.git && router.navigate(r.git as never))}
-              style={({ pressed }) => [s.satir, pressed && { opacity: 0.6 }]}
-            >
-              <View style={[s.ikonKutu, { backgroundColor: r.tehlike ? renk.dangerSoft : renk.blueSoft }]}>
-                <Ionicons name={r.ikon} size={22} color={r.tehlike ? renk.danger : "#FFFFFF"} />
-              </View>
-              <Text style={[s.satirAd, { color: r.tehlike ? renk.danger : renk.text }]}>{r.ad}</Text>
-              <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />
-            </Pressable>
-          ))}
-        </View>
+      <View style={s.liste}>
+        {satirlar.map((r) => (
+          <Pressable
+            key={r.ad}
+            onPress={r.onPress ?? (() => r.git && router.navigate(r.git as never))}
+            style={({ pressed }) => [s.satir, { backgroundColor: renk.card }, golge(1), pressed && { opacity: 0.6 }]}
+          >
+            <View style={[s.ikonKutu, { backgroundColor: r.tehlike ? renk.dangerSoft : renk.aksanSoft }]}>
+              <Ionicons name={r.ikon} size={20} color={r.tehlike ? renk.danger : renk.aksan} />
+            </View>
+            <Text style={[s.satirAd, { color: r.tehlike ? renk.danger : renk.text }]}>{r.ad}</Text>
+            <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />
+          </Pressable>
+        ))}
       </View>
     </View>
   );
@@ -86,22 +83,19 @@ const s = StyleSheet.create({
   ust: { paddingHorizontal: SP.lg },
   baslikSatir: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: SP.sm },
   zil: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  avatarSar: { alignItems: "center", paddingTop: SP.sm, zIndex: 2 },
+  avatarSar: { alignItems: "center", paddingTop: SP.lg, paddingBottom: SP.xl, gap: 6 },
   avatar: {
     width: 92,
     height: 92,
     borderRadius: 46,
-    borderWidth: 5,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: -46,
+    marginBottom: SP.sm,
   },
-  mint: { flex: 1, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl, marginTop: SP.md, paddingTop: 58, alignItems: "center" },
-  isim: { fontSize: 22, fontWeight: "800" },
+  isim: { fontSize: 22, fontFamily: SERIF["700"] },
   id: { fontSize: 13, marginTop: 2 },
-  liste: { alignSelf: "stretch", padding: SP.lg, gap: SP.md, marginTop: SP.lg },
-  satir: { flexDirection: "row", alignItems: "center", gap: SP.md },
-  ikonKutu: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  liste: { padding: SP.lg, gap: SP.sm },
+  satir: { flexDirection: "row", alignItems: "center", gap: SP.md, padding: SP.md, borderRadius: R.md },
+  ikonKutu: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   satirAd: { flex: 1, fontSize: 16, fontWeight: "600" },
-  _g: golge(1),
 });

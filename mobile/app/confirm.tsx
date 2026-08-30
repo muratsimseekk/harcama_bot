@@ -170,11 +170,11 @@ export default function Confirm() {
             disabled={kaydediliyor}
           >
             {kaydediliyor ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={renk.aksanUstu} />
             ) : (
               <>
-                <Ionicons name="checkmark" size={18} color="#fff" />
-                <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>Onayla</Text>
+                <Ionicons name="checkmark" size={18} color={renk.aksanUstu} />
+                <Text style={{ color: renk.aksanUstu, fontWeight: "800", fontSize: 16 }}>Onayla</Text>
               </>
             )}
           </Pressable>
@@ -218,7 +218,7 @@ function KategoriSecici({
               },
             ]}
           >
-            <Text style={{ color: aktif ? "#fff" : renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>
+            <Text style={{ color: aktif ? renk.aksanUstu : renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>
               {k.name}
             </Text>
           </Pressable>

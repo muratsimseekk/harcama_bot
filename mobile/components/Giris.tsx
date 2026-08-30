@@ -8,8 +8,8 @@ export function Giris() {
   return (
     <View style={[s.kap, { backgroundColor: renk.bg }]}>
       <View style={s.orta}>
-        <View style={[s.marka, { backgroundColor: renk.primary }]}>
-          <Ionicons name="wallet" size={40} color="#fff" />
+        <View style={[s.marka, { backgroundColor: renk.aksan }]}>
+          <Ionicons name="wallet" size={40} color={renk.aksanUstu} />
         </View>
         <ActivityIndicator color={renk.textFaint} style={{ marginTop: SP.xl }} />
       </View>

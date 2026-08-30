@@ -56,9 +56,9 @@ export default function Kayit() {
   }
 
   return (
-    <View style={[s.kok, { backgroundColor: renk.green }]}>
+    <View style={[s.kok, { backgroundColor: renk.bg }]}>
       <SafeAreaView edges={["top"]} style={s.ust}>
-        <Text style={[T.display, { color: renk.onGreen, textAlign: "center" }]}>Hesap Oluştur</Text>
+        <Text style={[T.display, { color: renk.text, textAlign: "center" }]}>Hesap Oluştur</Text>
       </SafeAreaView>
 
       <KeyboardAvoidingView

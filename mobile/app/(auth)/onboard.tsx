@@ -30,9 +30,9 @@ export default function Onboard() {
   }
 
   return (
-    <View style={[s.kok, { backgroundColor: renk.green }]}>
+    <View style={[s.kok, { backgroundColor: renk.bg }]}>
       <SafeAreaView edges={["top"]} style={s.ust}>
-        <Text style={[T.title, { color: renk.onGreen, textAlign: "center" }]}>
+        <Text style={[T.title, { color: renk.text, textAlign: "center" }]}>
           {SLAYTLAR[i].baslik}
         </Text>
       </SafeAreaView>
@@ -47,8 +47,8 @@ export default function Onboard() {
         >
           {SLAYTLAR.map((sl, k) => (
             <View key={k} style={[s.slayt, { width }]}>
-              <View style={[s.gorsel, { backgroundColor: renk.greenSoft }]}>
-                <Ionicons name={sl.ikon} size={92} color={renk.green} />
+              <View style={[s.gorsel, { backgroundColor: renk.aksanSoft }]}>
+                <Ionicons name={sl.ikon} size={92} color={renk.aksan} />
               </View>
               <Text style={[s.metin, { color: renk.textMuted }]}>{sl.metin}</Text>
             </View>
@@ -65,7 +65,7 @@ export default function Onboard() {
             {SLAYTLAR.map((_, k) => (
               <View
                 key={k}
-                style={[s.nokta, { backgroundColor: k === i ? renk.green : renk.border }]}
+                style={[s.nokta, { backgroundColor: k === i ? renk.aksan : renk.border }]}
               />
             ))}
           </View>

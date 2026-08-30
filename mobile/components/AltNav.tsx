@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { golge, R, SP, useRenkler } from "@/lib/theme";
+import { golge, SP, useRenkler } from "@/lib/theme";
 
 const IKON: Record<string, { acik: keyof typeof Ionicons.glyphMap; kapali: keyof typeof Ionicons.glyphMap }> = {
   index: { acik: "home", kapali: "home-outline" },
@@ -15,8 +15,8 @@ const IKON: Record<string, { acik: keyof typeof Ionicons.glyphMap; kapali: keyof
 export function AltNav({ state, navigation }: BottomTabBarProps) {
   const renk = useRenkler();
   return (
-    <SafeAreaView edges={["bottom"]} style={[s.kap, { backgroundColor: renk.bg }]}>
-      <View style={[s.bar, { backgroundColor: renk.greenSoft }, golge(2)]}>
+    <SafeAreaView edges={["bottom"]} style={[s.kap, { backgroundColor: renk.card, borderTopColor: renk.hairline }]}>
+      <View style={s.bar}>
         {state.routes.map((route, i) => {
           const odakli = state.index === i;
           const ik = IKON[route.name] ?? IKON.index;
@@ -30,15 +30,15 @@ export function AltNav({ state, navigation }: BottomTabBarProps) {
           return (
             <Pressable key={route.key} onPress={bas} style={s.oge} hitSlop={6}>
               {merkez ? (
-                <View style={[s.fab, { backgroundColor: renk.green }, golge(2)]}>
-                  <Ionicons name="add" size={28} color={renk.onGreen} />
+                <View style={[s.fab, { backgroundColor: renk.aksan }, golge(2)]}>
+                  <Ionicons name="add" size={28} color={renk.aksanUstu} />
                 </View>
               ) : (
-                <View style={[s.kutu, odakli && { backgroundColor: renk.green }]}>
+                <View style={[s.kutu, odakli && { backgroundColor: renk.aksanSoft }]}>
                   <Ionicons
                     name={odakli ? ik.acik : ik.kapali}
                     size={23}
-                    color={odakli ? renk.onGreen : renk.text}
+                    color={odakli ? renk.aksan : renk.textFaint}
                   />
                 </View>
               )}
@@ -51,14 +51,12 @@ export function AltNav({ state, navigation }: BottomTabBarProps) {
 }
 
 const s = StyleSheet.create({
-  kap: { paddingHorizontal: SP.lg },
+  kap: { paddingHorizontal: SP.sm, borderTopWidth: StyleSheet.hairlineWidth },
   bar: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: R.xl,
     paddingVertical: SP.sm,
     paddingHorizontal: SP.xs,
-    marginBottom: SP.sm,
   },
   oge: { flex: 1, alignItems: "center", justifyContent: "center" },
   kutu: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },

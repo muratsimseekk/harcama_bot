@@ -16,14 +16,14 @@ export function DonemSekmeleri<T extends string>({
 }) {
   const renk = useRenkler();
   return (
-    <View style={[s.kap, { backgroundColor: renk.greenSoft }]}>
+    <View style={[s.kap, { backgroundColor: renk.aksanSoft }]}>
       {secenekler.map((o) => {
         const aktif = o === secili;
         return (
           <Pressable
             key={o}
             onPress={() => onSec(o)}
-            style={[s.oge, aktif && [{ backgroundColor: renk.green }, golge(1)]]}
+            style={[s.oge, aktif && [{ backgroundColor: renk.aksan }, golge(1)]]}
           >
             <Text style={{ color: renk.text, fontSize: 13.5, fontWeight: aktif ? "700" : "500" }}>
               {etiket(o)}

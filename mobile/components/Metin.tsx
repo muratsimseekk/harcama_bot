@@ -3,8 +3,9 @@ import { StyleSheet, Text as RNText, type TextProps, type TextStyle } from "reac
 import { FONT } from "@/lib/theme";
 
 /**
- * Text sarmalayıcı: style'daki fontWeight'e göre doğru Plus Jakarta Sans ailesini enjekte eder.
- * fontWeight verilmezse 500 (Medium) varsayılır.
+ * Text sarmalayıcı: style'da açık fontFamily yoksa fontWeight'e göre doğru Inter
+ * ailesini enjekte eder. fontWeight verilmezse 500 (Medium) varsayılır.
+ * Serif başlıklar T.display/title/heading içinde fontFamily'yi doğrudan verir.
  */
 const ESLE: Record<string, string> = { normal: "400", bold: "700", "800": "700", "900": "700" };
 

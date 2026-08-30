@@ -88,17 +88,17 @@ export default function Analiz() {
         txQ.refetch();
       }}
       refreshing={ozet.isRefetching}
-      yesilAlan={
+      ustAlan={
         g ? (
-          <View style={{ gap: SP.md, paddingBottom: SP.md }}>
+          <View style={{ gap: SP.md }}>
             <View style={s.ggSatir}>
               <View>
-                <Text style={[s.ggEtiket, { color: renk.onGreen }]}>↗ Gelir</Text>
-                <Text style={[s.ggDeger, { color: renk.onGreen }]}>{turkceTutar(g.toplam_gelir)} ₺</Text>
+                <Text style={[s.ggEtiket, { color: renk.textMuted }]}>↗ Gelir</Text>
+                <Text style={[s.ggDeger, { color: renk.success }]}>{turkceTutar(g.toplam_gelir)} ₺</Text>
               </View>
-              <View style={s.ggAyrac} />
+              <View style={[s.ggAyrac, { backgroundColor: renk.hairline }]} />
               <View>
-                <Text style={[s.ggEtiket, { color: renk.blue }]}>↘ Harcama</Text>
+                <Text style={[s.ggEtiket, { color: renk.textMuted }]}>↘ Harcama</Text>
                 <Text style={[s.ggDeger, { color: renk.blue }]}>-{turkceTutar(g.toplam_gider)} ₺</Text>
               </View>
             </View>
@@ -114,14 +114,14 @@ export default function Analiz() {
         onSec={setSekme}
       />
 
-      <Kart style={{ backgroundColor: renk.greenSoft }}>
+      <Kart style={{ backgroundColor: renk.aksanSoft }}>
         <View style={s.grafikBaslik}>
           <Text style={[T.heading, { color: renk.text }]}>Gelir & Gider</Text>
           <Pressable
             onPress={() => router.navigate("/ara")}
-            style={[s.yesilBtn, { backgroundColor: renk.green }]}
+            style={[s.yesilBtn, { backgroundColor: renk.aksan }]}
           >
-            <Ionicons name="search" size={16} color={renk.onGreen} />
+            <Ionicons name="search" size={16} color={renk.aksanUstu} />
           </Pressable>
         </View>
         <IkiliCubukGrafik etiketler={grafik.etiketler} gelir={grafik.gelir} gider={grafik.gider} />
@@ -149,7 +149,7 @@ export default function Analiz() {
                       height: "100%",
                       borderRadius: R.pill,
                       backgroundColor:
-                        h.durum === "asti" ? renk.danger : h.durum === "yaklasti" ? "#E8A44C" : renk.green,
+                        h.durum === "asti" ? renk.danger : h.durum === "yaklasti" ? renk.warn : renk.aksan,
                     }}
                   />
                 </View>
@@ -194,7 +194,7 @@ const s = StyleSheet.create({
   ggSatir: { flexDirection: "row", alignItems: "center", gap: SP.lg },
   ggEtiket: { fontSize: 12.5, fontWeight: "600" },
   ggDeger: { fontSize: 18, fontWeight: "700", marginTop: 2 },
-  ggAyrac: { width: 1, height: 34, backgroundColor: "rgba(9,48,48,0.25)" },
+  ggAyrac: { width: 1, height: 34 },
   grafikBaslik: {
     flexDirection: "row",
     justifyContent: "space-between",

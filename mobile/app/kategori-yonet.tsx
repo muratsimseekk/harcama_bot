@@ -9,7 +9,7 @@ import {
   useDeleteCategory,
   usePatchCategory,
 } from "@/lib/queries";
-import { PALET, R, SP, T, useRenkler } from "@/lib/theme";
+import { FONT, PALET, R, SP, T, useRenkler } from "@/lib/theme";
 import { type Kategori, TIP_ETIKET, type Tip } from "@/lib/types";
 
 const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
@@ -35,7 +35,7 @@ export default function KategoriYonet() {
 
   return (
     <ScrollView style={{ backgroundColor: renk.bg }} contentContainerStyle={s.icerik}>
-      <View style={[s.form, { backgroundColor: renk.greenSoft }]}>
+      <View style={[s.form, { backgroundColor: renk.aksanSoft }]}>
         <TextInput
           style={[s.input, { color: renk.text, backgroundColor: renk.bg }]}
           placeholder="Yeni kategori adı"
@@ -48,7 +48,7 @@ export default function KategoriYonet() {
             <Pressable
               key={t}
               onPress={() => setTip(t)}
-              style={[s.tipSec, { backgroundColor: t === tip ? renk.green : renk.bg }]}
+              style={[s.tipSec, { backgroundColor: t === tip ? renk.aksan : renk.bg }]}
             >
               <Text style={{ color: renk.text, fontSize: 12.5, fontWeight: t === tip ? "700" : "500" }}>
                 {TIP_ETIKET[t]}
@@ -134,7 +134,7 @@ function Satir({ kat }: { kat: Kategori }) {
 const s = StyleSheet.create({
   icerik: { padding: SP.lg, gap: SP.md, paddingBottom: 60 },
   form: { borderRadius: R.md, padding: SP.lg, gap: SP.md },
-  input: { borderRadius: R.sm, padding: 12, fontSize: 15, fontFamily: "Poppins_500Medium" },
+  input: { borderRadius: R.sm, padding: 12, fontSize: 15, fontFamily: FONT["500"] },
   tipSira: { flexDirection: "row", gap: SP.sm },
   tipSec: { flex: 1, borderRadius: R.sm, paddingVertical: 9, alignItems: "center" },
   palet: { flexDirection: "row", flexWrap: "wrap", gap: 10 },

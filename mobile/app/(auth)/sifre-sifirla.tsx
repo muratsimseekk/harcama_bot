@@ -26,9 +26,9 @@ export default function SifreSifirla() {
   }
 
   return (
-    <View style={[s.kok, { backgroundColor: renk.green }]}>
+    <View style={[s.kok, { backgroundColor: renk.bg }]}>
       <SafeAreaView edges={["top"]} style={s.ust}>
-        <Text style={[T.display, { color: renk.onGreen, textAlign: "center" }]}>Şifre Sıfırla</Text>
+        <Text style={[T.display, { color: renk.text, textAlign: "center" }]}>Şifre Sıfırla</Text>
       </SafeAreaView>
       <KeyboardAvoidingView
         style={[s.mint, { backgroundColor: renk.bg }]}

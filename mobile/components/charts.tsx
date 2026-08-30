@@ -119,7 +119,7 @@ export function IkiliCubukGrafik({
   const enBuyuk = Math.max(...hepsi, 1);
   const n = etiketler.length;
   const data = etiketler.flatMap((et, i) => [
-    { value: gelir[i] ?? 0, frontColor: renk.green, spacing: 3, label: "" },
+    { value: gelir[i] ?? 0, frontColor: renk.aksan, spacing: 3, label: "" },
     { value: gider[i] ?? 0, frontColor: renk.blue, spacing: n > 8 ? 8 : 16, label: et },
   ]);
 

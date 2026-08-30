@@ -16,7 +16,7 @@ import {
   useSetGoal,
   useSummary,
 } from "@/lib/queries";
-import { R, SP, T, useRenkler } from "@/lib/theme";
+import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
 import { TIP_ETIKET, type Tip } from "@/lib/types";
 
 const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
@@ -71,21 +71,21 @@ export default function Hedefler() {
       refreshing={butceler.isRefetching}
     >
       {/* Yatırım hedefi */}
-      <Kart style={{ backgroundColor: renk.green }}>
+      <Kart style={{ backgroundColor: renk.aksan }}>
         <View style={s.yatirimSatir}>
           <HedefHalkasi oran={yatirim?.oran ?? 0} ikon="trending-up-outline" boyut={92} />
           <View style={{ flex: 1, gap: 4 }}>
-            <Text style={[s.kEtiket, { color: renk.onGreen }]}>Aylık yatırım hedefi</Text>
-            <Text style={[s.kDeger, { color: renk.onGreen }]}>
+            <Text style={[s.kEtiket, { color: renk.aksanUstu }]}>Aylık yatırım hedefi</Text>
+            <Text style={[s.kDeger, { color: renk.aksanUstu }]}>
               {yatirim && yatirim.hedef > 0 ? `${turkceTutar(yatirim.hedef)} ₺` : "belirlenmedi"}
             </Text>
-            <Text style={[s.kAlt, { color: renk.onGreen }]}>
+            <Text style={[s.kAlt, { color: renk.aksanUstu }]}>
               Bu ay biriken: {turkceTutar(yatirim?.birikmis ?? 0)} ₺
               {yatirim && yatirim.hedef > 0 ? ` · kalan ${turkceTutar(yatirim.kalan)} ₺` : ""}
             </Text>
             <Pressable
               onPress={() => tutarSor("Yatırım hedefi", yatirim?.hedef, (n) => setGoal.mutate(n))}
-              style={[s.miniBtn, { backgroundColor: renk.greenSoft }]}
+              style={[s.miniBtn, { backgroundColor: renk.aksanSoft }]}
             >
               <Text style={{ color: renk.text, fontSize: 12.5, fontWeight: "700" }}>
                 {yatirim && yatirim.hedef > 0 ? "Değiştir" : "Belirle"}
@@ -119,7 +119,7 @@ export default function Hedefler() {
                   width: `${Math.min(100, Math.max(3, genelH.oran))}%`,
                   height: "100%",
                   borderRadius: R.pill,
-                  backgroundColor: genelH.durum === "asti" ? renk.danger : genelH.durum === "yaklasti" ? "#E0A63E" : renk.green,
+                  backgroundColor: genelH.durum === "asti" ? renk.danger : genelH.durum === "yaklasti" ? renk.warn : renk.aksan,
                 }}
               />
             </View>
@@ -147,11 +147,11 @@ export default function Hedefler() {
           <Pressable
             key={t}
             onPress={() => setKatTip(t)}
-            style={[s.tipSek, { backgroundColor: t === katTip ? renk.green : renk.card }]}
+            style={[s.tipSek, { backgroundColor: t === katTip ? renk.aksan : renk.card }]}
           >
             <Text
               style={{
-                color: t === katTip ? renk.onGreen : renk.textMuted,
+                color: t === katTip ? renk.aksanUstu : renk.textMuted,
                 fontSize: 13,
                 fontWeight: t === katTip ? "700" : "500",
               }}
@@ -195,7 +195,7 @@ export default function Hedefler() {
                           width: `${Math.min(100, Math.max(2, oran))}%`,
                           height: "100%",
                           borderRadius: R.pill,
-                          backgroundColor: oran >= 100 ? renk.danger : oran >= 80 ? "#E0A63E" : renk.green,
+                          backgroundColor: oran >= 100 ? renk.danger : oran >= 80 ? renk.warn : renk.aksan,
                         }}
                       />
                     </View>
@@ -222,7 +222,7 @@ export default function Hedefler() {
           <View style={[s.dialog, { backgroundColor: renk.card }]}>
             <Text style={[T.heading, { color: renk.text }]}>{dialog.baslik}</Text>
             <TextInput
-              style={[s.dialogInput, { color: renk.text, backgroundColor: renk.greenSoft }]}
+              style={[s.dialogInput, { color: renk.text, backgroundColor: renk.aksanSoft }]}
               keyboardType="numeric"
               autoFocus
               defaultValue={dialog.deger}
@@ -235,14 +235,14 @@ export default function Hedefler() {
                 <Text style={{ color: renk.textMuted, fontWeight: "700" }}>Vazgeç</Text>
               </Pressable>
               <Pressable
-                style={[s.dialogBtn, { backgroundColor: renk.green }]}
+                style={[s.dialogBtn, { backgroundColor: renk.aksan }]}
                 onPress={() => {
                   const n = Number(dialog.deger.replace(",", "."));
                   if (n > 0) dialog.kaydet(n);
                   setDialog(null);
                 }}
               >
-                <Text style={{ color: renk.onGreen, fontWeight: "700" }}>Kaydet</Text>
+                <Text style={{ color: renk.aksanUstu, fontWeight: "700" }}>Kaydet</Text>
               </Pressable>
             </View>
           </View>
@@ -275,6 +275,6 @@ const s = StyleSheet.create({
     padding: SP.xl,
   },
   dialog: { width: "100%", borderRadius: R.lg, padding: SP.lg, gap: SP.md },
-  dialogInput: { borderRadius: R.sm, padding: 12, fontSize: 16, fontFamily: "Poppins_600SemiBold" },
+  dialogInput: { borderRadius: R.sm, padding: 12, fontSize: 16, fontFamily: FONT["600"] },
   dialogBtn: { flex: 1, borderWidth: 1, borderRadius: R.sm, paddingVertical: 12, alignItems: "center" },
 });

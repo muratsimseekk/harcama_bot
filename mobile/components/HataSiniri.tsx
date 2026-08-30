@@ -35,9 +35,9 @@ export class HataSiniri extends React.Component<P, S> {
 }
 
 const s = StyleSheet.create({
-  kap: { flex: 1, backgroundColor: "#0C2A28" },
+  kap: { flex: 1, backgroundColor: "#1F1E1D" },
   icerik: { padding: 24, paddingTop: 80, gap: 12 },
-  baslik: { color: "#E97460", fontSize: 20, fontWeight: "700" },
-  mesaj: { color: "#E7F3EF", fontSize: 14 },
-  stack: { color: "#7B9A93", fontSize: 11, fontFamily: "monospace" },
+  baslik: { color: "#E0866A", fontSize: 20, fontWeight: "700" },
+  mesaj: { color: "#E8E6DC", fontSize: 14 },
+  stack: { color: "#8F8B80", fontSize: 11, fontFamily: "monospace" },
 });

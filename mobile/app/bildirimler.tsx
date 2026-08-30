@@ -27,7 +27,7 @@ export default function Bildirimler() {
   return (
     <EkranBasligi baslik="Bildirimler" geri zil={false} onRefresh={q.refetch} refreshing={q.isRefetching}>
       {q.isLoading ? (
-        <ActivityIndicator color={renk.green} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={renk.aksan} style={{ marginTop: 40 }} />
       ) : list.length === 0 ? (
         <BosDurum ikon="notifications-outline" yazi="Şimdilik bildirim yok" />
       ) : (
@@ -39,7 +39,7 @@ export default function Bildirimler() {
                 <View
                   style={[
                     s.ikon,
-                    { backgroundColor: b.tur === "uyari" ? renk.dangerSoft : renk.greenSoft },
+                    { backgroundColor: b.tur === "uyari" ? renk.dangerSoft : renk.aksanSoft },
                   ]}
                 >
                   <Ionicons
@@ -54,7 +54,7 @@ export default function Bildirimler() {
                 </View>
               </View>
             ))}
-            <View style={[s.cizgi, { backgroundColor: renk.green }]} />
+            <View style={[s.cizgi, { backgroundColor: renk.aksan }]} />
           </View>
         ))
       )}

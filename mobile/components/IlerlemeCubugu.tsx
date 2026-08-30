@@ -18,7 +18,7 @@ export function IlerlemeCubugu({
   const asti = p >= 100;
 
   return (
-    <View style={[s.ray, { backgroundColor: zeminBeyaz ? "#FFFFFF" : renk.greenSoft }]}>
+    <View style={[s.ray, { backgroundColor: zeminBeyaz ? "#FFFFFF" : renk.aksanSoft }]}>
       <View
         style={[
           s.dolu,

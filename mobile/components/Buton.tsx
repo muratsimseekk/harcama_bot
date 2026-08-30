@@ -20,8 +20,8 @@ export function Buton({
 }) {
   const renk = useRenkler();
   const zemin =
-    varyant === "birincil" ? renk.green : varyant === "ikincil" ? renk.greenSoft : "transparent";
-  const metin = varyant === "hayalet" ? renk.green : renk.onGreen;
+    varyant === "birincil" ? renk.aksan : varyant === "ikincil" ? renk.aksanSoft : "transparent";
+  const metin = varyant === "hayalet" ? renk.aksan : renk.aksanUstu;
 
   return (
     <Pressable
@@ -33,7 +33,7 @@ export function Buton({
       style={({ pressed }) => [
         s.b,
         { backgroundColor: zemin },
-        varyant === "hayalet" && { borderWidth: 1.5, borderColor: renk.green },
+        varyant === "hayalet" && { borderWidth: 1.5, borderColor: renk.aksan },
         (pasif || yukleniyor) && { opacity: 0.55 },
         pressed && { opacity: 0.8 },
         style,
