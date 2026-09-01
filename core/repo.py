@@ -348,16 +348,31 @@ async def budget_get(bid: str) -> Budget | None:
 
 
 async def budget_upsert(user_id: str, kapsam: str, kapsam_deger: str | None, limit_amount: float) -> Budget:
-    row = {
-        "user_id": user_id, "kapsam": kapsam,
-        "kapsam_deger": kapsam_deger, "limit_amount": round(float(limit_amount), 2),
-        "updated_at": now().isoformat(),
-    }
+    """Kapsam başına tek satır: varsa güncelle, yoksa ekle.
+
+    (budgets tablosundaki benzersizlik `coalesce(kapsam_deger,'')` ifade indeksi
+    olduğu için PostgREST `on_conflict` kullanılamıyor — elle upsert.)
+    """
+    tutar = round(float(limit_amount), 2)
 
     def _run() -> dict:
+        db = _db()
+        q = db.table("budgets").select("id").eq("user_id", user_id).eq("kapsam", kapsam)
+        q = q.is_("kapsam_deger", "null") if kapsam_deger is None else q.eq("kapsam_deger", kapsam_deger)
+        mevcut = q.limit(1).execute().data
+        if mevcut:
+            return (
+                db.table("budgets")
+                .update({"limit_amount": tutar, "updated_at": now().isoformat()})
+                .eq("id", mevcut[0]["id"])
+                .execute().data[0]
+            )
         return (
-            _db().table("budgets")
-            .upsert(row, on_conflict="user_id,kapsam,kapsam_deger")
+            db.table("budgets")
+            .insert({
+                "user_id": user_id, "kapsam": kapsam,
+                "kapsam_deger": kapsam_deger, "limit_amount": tutar,
+            })
             .execute().data[0]
         )
 

@@ -31,12 +31,19 @@ export default function Hedefler() {
   const delBudget = useDeleteBudget();
   const setGoal = useSetGoal();
 
+  const hataGoster = {
+    onError: (e: unknown) =>
+      Alert.alert("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene."),
+  };
+
   const g = ozet.data?.bu_donem;
   const yatirim = ozet.data?.yatirim;
   const genel = butceler.data?.find((b) => b.kapsam === "genel");
   const genelH = ozet.data?.hedefler.find((h) => h.kapsam === "genel");
   const katLimit = (ad: string) =>
     butceler.data?.find((b) => b.kapsam === "kategori" && b.kapsam_deger === ad);
+  const katHedef = (ad: string) =>
+    ozet.data?.hedefler.find((h) => h.kapsam === "kategori" && h.kapsam_deger === ad);
   const katHarcama = (ad: string) =>
     (g?.kategori_kirilim ?? []).filter((x) => x.kategori === ad).reduce((s, x) => s + x.tutar, 0);
 
@@ -84,7 +91,7 @@ export default function Hedefler() {
               {yatirim && yatirim.hedef > 0 ? ` · kalan ${turkceTutar(yatirim.kalan)} ₺` : ""}
             </Text>
             <Pressable
-              onPress={() => tutarSor("Yatırım hedefi", yatirim?.hedef, (n) => setGoal.mutate(n))}
+              onPress={() => tutarSor("Yatırım hedefi", yatirim?.hedef, (n) => setGoal.mutate(n, hataGoster))}
               style={[s.miniBtn, { backgroundColor: renk.aksanSoft }]}
             >
               <Text style={{ color: renk.text, fontSize: 12.5, fontWeight: "700" }}>
@@ -102,7 +109,7 @@ export default function Hedefler() {
           <Pressable
             onPress={() =>
               tutarSor("Aylık harcama sınırı", genel?.limit_amount, (n) =>
-                setBudget.mutate({ kapsam: "genel", limit_amount: n }),
+                setBudget.mutate({ kapsam: "genel", limit_amount: n }, hataGoster),
               )
             }
           >
@@ -158,14 +165,18 @@ export default function Hedefler() {
         )}
         {(kategoriler.data ?? []).filter((k) => k.tip === katTip).map((k) => {
           const b = katLimit(k.name);
-          const harcanan = katHarcama(k.name);
-          const oran = b ? (harcanan / b.limit_amount) * 100 : 0;
+          const h = katHedef(k.name);
+          const limit = b?.limit_amount ?? 0;
+          const harcanan = h?.harcanan ?? katHarcama(k.name);
+          const oran = h?.oran ?? (limit ? (harcanan / limit) * 100 : 0);
+          const kalan = limit - harcanan;
+          const barRenk = oran >= 100 ? renk.danger : oran >= 80 ? renk.warn : renk.aksan;
           return (
             <Pressable
               key={k.id}
               onPress={() =>
                 tutarSor(`${k.name} — aylık limit`, b?.limit_amount, (n) =>
-                  setBudget.mutate({ kapsam: "kategori", kapsam_deger: k.name, limit_amount: n }),
+                  setBudget.mutate({ kapsam: "kategori", kapsam_deger: k.name, limit_amount: n }, hataGoster),
                 )
               }
               style={[s.katSatir, { backgroundColor: renk.card }]}
@@ -174,7 +185,12 @@ export default function Hedefler() {
                 <Ionicons name={kategoriIkon(k.name)} size={18} color={k.color || renk.blue} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: renk.text, fontWeight: "600", fontSize: 14.5 }}>{k.name}</Text>
+                <View style={s.katUst}>
+                  <Text style={{ color: renk.text, fontWeight: "600", fontSize: 14.5 }}>{k.name}</Text>
+                  {b && (
+                    <Text style={{ color: barRenk, fontSize: 13, fontWeight: "800" }}>%{Math.round(oran)}</Text>
+                  )}
+                </View>
                 {b ? (
                   <>
                     <View style={[s.katRay, { backgroundColor: renk.hairline }]}>
@@ -183,20 +199,28 @@ export default function Hedefler() {
                           width: `${Math.min(100, Math.max(2, oran))}%`,
                           height: "100%",
                           borderRadius: R.pill,
-                          backgroundColor: oran >= 100 ? renk.danger : oran >= 80 ? renk.warn : renk.aksan,
+                          backgroundColor: barRenk,
                         }}
                       />
                     </View>
                     <Text style={{ color: renk.textMuted, fontSize: 11.5, marginTop: 3 }}>
-                      {turkceTutar(harcanan)} / {turkceTutar(b.limit_amount)} ₺
+                      {turkceTutar(harcanan)} / {turkceTutar(limit)} ₺
+                      <Text style={{ color: kalan >= 0 ? renk.textMuted : renk.danger }}>
+                        {"  ·  "}
+                        {kalan >= 0
+                          ? `${turkceTutar(kalan)} ₺ kaldı`
+                          : `${turkceTutar(-kalan)} ₺ aşıldı`}
+                      </Text>
                     </Text>
                   </>
                 ) : (
-                  <Text style={{ color: renk.textFaint, fontSize: 12 }}>limit yok · dokun</Text>
+                  <Text style={{ color: renk.textFaint, fontSize: 12, marginTop: 2 }}>
+                    Limit yok — dokunup ekle
+                  </Text>
                 )}
               </View>
               {b && (
-                <Pressable onPress={() => delBudget.mutate(b.id)} hitSlop={10}>
+                <Pressable onPress={() => delBudget.mutate(b.id, hataGoster)} hitSlop={10}>
                   <Ionicons name="close-circle" size={20} color={renk.textFaint} />
                 </Pressable>
               )}
@@ -251,6 +275,7 @@ const s = StyleSheet.create({
   katBaslikSatir: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: SP.xs },
   katSatir: { flexDirection: "row", alignItems: "center", gap: SP.md, padding: SP.md, borderRadius: R.md },
   katIkon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  katUst: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   katRay: { height: 6, borderRadius: R.pill, overflow: "hidden", marginTop: 5 },
   dialogArka: {
     position: "absolute",
