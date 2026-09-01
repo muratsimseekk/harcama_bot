@@ -77,11 +77,7 @@ export default function Analiz() {
   return (
     <EkranBasligi
       baslik="Analiz"
-      onRefresh={() => {
-        ozet.refetch();
-        txQ.refetch();
-      }}
-      refreshing={ozet.isRefetching}
+      onRefresh={() => Promise.all([ozet.refetch(), txQ.refetch()])}
       ustAlan={
         g ? (
           <View style={{ gap: SP.md }}>

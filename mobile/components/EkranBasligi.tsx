@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
   Pressable,
   RefreshControl,
@@ -25,7 +26,6 @@ export function EkranBasligi({
   ustAlan,
   children,
   onRefresh,
-  refreshing = false,
   icerikStil,
   kaydir = true,
 }: {
@@ -35,8 +35,7 @@ export function EkranBasligi({
   onZil?: () => void;
   ustAlan?: React.ReactNode;
   children: React.ReactNode;
-  onRefresh?: () => void;
-  refreshing?: boolean;
+  onRefresh?: () => void | Promise<unknown>;
   icerikStil?: ViewStyle;
   kaydir?: boolean;
 }) {
@@ -45,6 +44,19 @@ export function EkranBasligi({
   const bildirim = useNotifications();
   const uyariVar =
     zil && (bildirim.data?.bildirimler ?? []).some((b) => b.tur === "uyari");
+
+  // Spinner YALNIZCA kullanıcı çekince görünür — react-query'nin arkaplan
+  // refetch'lerinden (sayfa geçişi/invalidate) bağımsız. Bu, "spinner takılı
+  // kalıyor" bug'ının kaynağıydı.
+  const [yenileniyor, setYenileniyor] = useState(false);
+  const cek = async () => {
+    setYenileniyor(true);
+    try {
+      await onRefresh?.();
+    } finally {
+      setYenileniyor(false);
+    }
+  };
 
   const govde = (
     <View style={[s.icerik, !kaydir && s.icerikDolu, icerikStil]}>{children}</View>
@@ -87,7 +99,7 @@ export function EkranBasligi({
             showsVerticalScrollIndicator={false}
             refreshControl={
               onRefresh ? (
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={renk.aksan} />
+                <RefreshControl refreshing={yenileniyor} onRefresh={cek} tintColor={renk.aksan} />
               ) : undefined
             }
           >

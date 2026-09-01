@@ -71,11 +71,7 @@ export default function Hedefler() {
   return (
     <EkranBasligi
       baslik="Hedefler"
-      onRefresh={() => {
-        ozet.refetch();
-        butceler.refetch();
-      }}
-      refreshing={butceler.isRefetching}
+      onRefresh={() => Promise.all([ozet.refetch(), butceler.refetch()])}
     >
       {/* Yatırım hedefi */}
       <Kart style={{ backgroundColor: renk.aksan }}>

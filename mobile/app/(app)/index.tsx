@@ -49,12 +49,7 @@ export default function AnaSayfa() {
     <EkranBasligi
       baslik=""
       zil
-      onRefresh={() => {
-        ozet.refetch();
-        ayOzet.refetch();
-        sonlar.refetch();
-      }}
-      refreshing={ozet.isRefetching}
+      onRefresh={() => Promise.all([ozet.refetch(), ayOzet.refetch(), sonlar.refetch()])}
       ustAlan={
         <View style={s.selam}>
           <Text style={[T.title, { color: renk.text }]}>{selamlama()}</Text>

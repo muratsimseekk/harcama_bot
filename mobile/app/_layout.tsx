@@ -31,7 +31,12 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 setTimeout(() => SplashScreen.hideAsync().catch(() => {}), 3000);
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 15_000 } },
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 60_000, // sayfa geçişlerinde gereksiz arkaplan refetch'i azalt
+    },
+  },
 });
 
 // Şimdilik giriş/kayıt akışı kapalı — herkes yönetici olarak girer.

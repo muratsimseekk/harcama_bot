@@ -25,7 +25,7 @@ export default function Bildirimler() {
   }, {});
 
   return (
-    <EkranBasligi baslik="Bildirimler" geri zil={false} onRefresh={q.refetch} refreshing={q.isRefetching}>
+    <EkranBasligi baslik="Bildirimler" geri zil={false} onRefresh={() => q.refetch()}>
       {q.isLoading ? (
         <ActivityIndicator color={renk.aksan} style={{ marginTop: 40 }} />
       ) : list.length === 0 ? (
