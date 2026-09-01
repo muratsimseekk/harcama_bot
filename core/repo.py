@@ -422,3 +422,56 @@ async def goal_delete(user_id: str, tip: str = "yatirim") -> bool:
         )
 
     return await asyncio.to_thread(_run)
+
+
+# --------------------------------------------------------------------------- #
+# push_tokens & notifications_sent (bildirim altyapısı)
+# --------------------------------------------------------------------------- #
+async def push_token_upsert(user_id: str, token: str, platform: str | None) -> None:
+    def _run() -> None:
+        _db().table("push_tokens").upsert(
+            {"user_id": user_id, "token": token, "platform": platform,
+             "updated_at": now().isoformat()},
+            on_conflict="token",
+        ).execute()
+
+    await asyncio.to_thread(_run)
+
+
+async def push_token_delete(token: str) -> None:
+    def _run() -> None:
+        _db().table("push_tokens").delete().eq("token", token).execute()
+
+    await asyncio.to_thread(_run)
+
+
+async def push_tokens_all() -> list[dict]:
+    """Tüm kayıtlı token'lar (cron için). [{user_id, token, platform}]"""
+    def _run() -> list[dict]:
+        try:
+            return _db().table("push_tokens").select("user_id,token,platform").execute().data
+        except Exception:
+            return []
+
+    return await asyncio.to_thread(_run)
+
+
+async def bildirim_gonderildi_mi(user_id: str, anahtar: str) -> bool:
+    def _run() -> bool:
+        res = (
+            _db().table("notifications_sent").select("anahtar")
+            .eq("user_id", user_id).eq("anahtar", anahtar).limit(1).execute()
+        )
+        return bool(res.data)
+
+    return await asyncio.to_thread(_run)
+
+
+async def bildirim_isaretle(user_id: str, anahtar: str) -> None:
+    def _run() -> None:
+        _db().table("notifications_sent").upsert(
+            {"user_id": user_id, "anahtar": anahtar, "gonderildi_at": now().isoformat()},
+            on_conflict="user_id,anahtar",
+        ).execute()
+
+    await asyncio.to_thread(_run)

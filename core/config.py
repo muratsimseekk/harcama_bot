@@ -47,6 +47,11 @@ class Settings:
     # Dev/yönetici modu: ayarlıysa, Authorization başlığı olmayan istekler bu
     # kullanıcı id'siyle çalışır (kimlik doğrulama atlanır). PROD'DA BOŞ BIRAK.
     DEV_BYPASS_USER_ID: str = os.environ.get("DEV_BYPASS_USER_ID", "")
+    # Planlı push işini (/v1/push/run) tetikleyen cron'un paylaşılan sırrı.
+    CRON_SECRET: str = os.environ.get("CRON_SECRET", "")
+
+    # --- Hata izleme ---
+    SENTRY_DSN: str = os.environ.get("SENTRY_DSN", "")
 
     # --- Sunucu / keepalive ---
     PORT: int = _int("PORT", 10000)

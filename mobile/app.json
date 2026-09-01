@@ -6,12 +6,24 @@
     "orientation": "portrait",
     "scheme": "harcama",
     "userInterfaceStyle": "automatic",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "enabled": true,
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.harcama.mobil"
+      "bundleIdentifier": "com.harcama.mobil",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.harcama.mobil"
+      "package": "com.harcama.mobil",
+      "versionCode": 1
     },
     "plugins": [
       "expo-router",
@@ -22,7 +34,14 @@
           "microphonePermission": "Harcamalarını sesle eklemek için mikrofon erişimi gerekir."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "color": "#D97757"
+        }
+      ],
+      "@sentry/react-native"
     ]
   }
 }

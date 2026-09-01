@@ -158,4 +158,12 @@ export const api = {
   notifications(): Promise<{ bildirimler: Bildirim[] }> {
     return jsonReq<{ bildirimler: Bildirim[] }>("/v1/notifications", "GET");
   },
+
+  pushTokenKaydet(token: string, platform: string): Promise<{ ok: boolean }> {
+    return jsonReq("/v1/push/token", "PUT", { token, platform });
+  },
+
+  pushTokenSil(token: string): Promise<{ ok: boolean }> {
+    return jsonReq("/v1/push/token", "DELETE", { token });
+  },
 };

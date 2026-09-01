@@ -1,5 +1,6 @@
+import * as Sentry from "@sentry/react-native";
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text } from "react-native";
 
 interface P {
   children: React.ReactNode;
@@ -18,6 +19,7 @@ export class HataSiniri extends React.Component<P, S> {
 
   componentDidCatch(hata: Error, info: React.ErrorInfo) {
     console.error("HataSiniri:", hata, info.componentStack);
+    Sentry.captureException(hata, { extra: { componentStack: info.componentStack } });
   }
 
   render() {

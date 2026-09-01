@@ -12,6 +12,7 @@ import {
   Newsreader_700Bold,
 } from "@expo-google-fonts/newsreader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Sentry from "@sentry/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -22,9 +23,17 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Giris } from "@/components/Giris";
 import { HataSiniri } from "@/components/HataSiniri";
+import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { izinVeToken, platformAdi } from "@/lib/bildirim";
+import { supabase } from "@/lib/supabase";
 import { TemaProvider, useEtkinSema } from "@/lib/tema";
 import { useRenkler } from "@/lib/theme";
+
+const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (SENTRY_DSN) {
+  Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1, sendDefaultPii: false });
+}
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 // Ne olursa olsun splash'i 3 sn içinde kaldır (beyaz ekranda kalma).
@@ -70,6 +79,29 @@ function Kapi() {
     else if (session && grup === "(auth)") router.replace("/(app)");
   }, [session, yukleniyor, segments, onboardGoruldu]);
 
+  // Şifre sıfırlama bağlantısıyla dönüşte yeni şifre ekranına git
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((olay) => {
+      if (olay === "PASSWORD_RECOVERY") router.replace("/(auth)/sifre-yenile");
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // Push token'ı kaydet (oturum açıkken ya da yönetici modunda)
+  useEffect(() => {
+    if (!DEV_NOAUTH && !session) return;
+    (async () => {
+      const token = await izinVeToken();
+      if (token) {
+        try {
+          await api.pushTokenKaydet(token, platformAdi);
+        } catch {
+          /* sessiz */
+        }
+      }
+    })();
+  }, [session]);
+
   if (!DEV_NOAUTH && (yukleniyor || onboardGoruldu === null)) return <Giris />;
 
   const baslik = {
@@ -101,7 +133,7 @@ function TemaliDurumCubugu() {
   return <StatusBar style={koyu ? "light" : "dark"} />;
 }
 
-export default function RootLayout() {
+function RootLayout() {
   useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -136,3 +168,5 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+export default SENTRY_DSN ? Sentry.wrap(RootLayout) : RootLayout;

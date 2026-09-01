@@ -1,4 +1,3 @@
-import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
@@ -9,29 +8,29 @@ import { Metin as Text } from "@/components/Metin";
 import { supabase } from "@/lib/supabase";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 
-export default function SifreSifirla() {
+export default function SifreYenile() {
   const renk = useRenkler();
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [sifre, setSifre] = useState("");
+  const [sifre2, setSifre2] = useState("");
   const [yukleniyor, setYukleniyor] = useState(false);
 
-  async function gonder() {
+  const gecerli = sifre.length >= 6 && sifre === sifre2;
+
+  async function kaydet() {
     setYukleniyor(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: Linking.createURL("/sifre-yenile"),
-    });
+    const { error } = await supabase.auth.updateUser({ password: sifre });
     setYukleniyor(false);
-    Alert.alert(
-      error ? "Hata" : "Gönderildi",
-      error ? error.message : "Şifre sıfırlama bağlantısı e-postana gönderildi.",
-      [{ text: "Tamam", onPress: () => !error && router.back() }],
-    );
+    if (error) return Alert.alert("Hata", error.message);
+    Alert.alert("Şifren güncellendi", "Yeni şifrenle giriş yapabilirsin.", [
+      { text: "Tamam", onPress: () => router.replace("/(auth)/giris") },
+    ]);
   }
 
   return (
     <View style={[s.kok, { backgroundColor: renk.bg }]}>
       <SafeAreaView edges={["top"]} style={s.ust}>
-        <Text style={[T.display, { color: renk.text, textAlign: "center" }]}>Şifre Sıfırla</Text>
+        <Text style={[T.display, { color: renk.text, textAlign: "center" }]}>Yeni Şifre</Text>
       </SafeAreaView>
       <KeyboardAvoidingView
         style={[s.mint, { backgroundColor: renk.bg }]}
@@ -39,21 +38,15 @@ export default function SifreSifirla() {
       >
         <View style={s.form}>
           <Text style={[s.aciklama, { color: renk.textMuted }]}>
-            Hesabına bağlı e-postayı gir; sıfırlama bağlantısı gönderelim.
+            Hesabın için yeni bir şifre belirle.
           </Text>
-          <Alan
-            etiket="E-posta"
-            placeholder="ornek@eposta.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
-          />
+          <Alan etiket="Yeni şifre" sifre placeholder="en az 6 karakter" value={sifre} onChangeText={setSifre} />
+          <Alan etiket="Şifre (tekrar)" sifre placeholder="••••••••" value={sifre2} onChangeText={setSifre2} />
           <Buton
-            yazi="Bağlantı Gönder"
-            onPress={gonder}
+            yazi="Kaydet"
+            onPress={kaydet}
             yukleniyor={yukleniyor}
-            pasif={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())}
+            pasif={!gecerli}
             style={{ marginTop: SP.md }}
           />
         </View>

@@ -6,8 +6,22 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import budgets, capture, categories, me, notifications, summary, transactions
+from api.routes import (
+    budgets,
+    capture,
+    categories,
+    me,
+    notifications,
+    push,
+    summary,
+    transactions,
+)
 from core.config import settings
+
+if settings.SENTRY_DSN:
+    import sentry_sdk
+
+    sentry_sdk.init(dsn=settings.SENTRY_DSN, traces_sample_rate=0.1, send_default_pii=False)
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -30,6 +44,7 @@ app.include_router(categories.router)
 app.include_router(summary.router)
 app.include_router(budgets.router)
 app.include_router(notifications.router)
+app.include_router(push.router)
 app.include_router(me.router)
 
 
