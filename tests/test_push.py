@@ -60,7 +60,7 @@ def test_push_run_butce_uyarisi_bir_kez(client, monkeypatch):
         return anahtar in gonderilenler
 
     async def sahte_push(tokens, baslik, govde, veri=None):
-        return (len(tokens), 0)
+        return (len(tokens), 0, [])
 
     monkeypatch.setattr(rota.repo, "push_tokens_all", tokens_all)
     monkeypatch.setattr(rota.repo, "list_period", list_period)

@@ -92,11 +92,20 @@ async def _butce_uyarilari(uid: str, tokens: list[str], b: date) -> int:
         else:
             baslik = f"{h.etiket}: limitin %{round(h.oran)}'i doldu"
             govde = f"{turkce_tutar(h.kalan)} ₺ kaldı"
-        ok, _ = await push.expo_push_gonder(tokens, baslik, govde, {"tur": "butce"})
+        ok, _, olu = await push.expo_push_gonder(tokens, baslik, govde, {"tur": "butce"})
+        await _olu_temizle(olu)
         if ok:
             await repo.bildirim_isaretle(uid, anahtar)
             n += 1
     return n
+
+
+async def _olu_temizle(olu: list[str]) -> None:
+    for t in olu:
+        try:
+            await repo.push_token_delete(t)
+        except Exception:
+            pass
 
 
 async def _gunluk_ozet(uid: str, tokens: list[str], b: date) -> int:
@@ -107,10 +116,11 @@ async def _gunluk_ozet(uid: str, tokens: list[str], b: date) -> int:
     if not giderler:
         return 0
     toplam = sum(t.tutar for t in giderler)
-    ok, _ = await push.expo_push_gonder(
+    ok, _, olu = await push.expo_push_gonder(
         tokens, "Bugünkü harcaman",
         f"{len(giderler)} işlem · {turkce_tutar(toplam)} ₺", {"tur": "gunluk"},
     )
+    await _olu_temizle(olu)
     if ok:
         await repo.bildirim_isaretle(uid, anahtar)
         return 1
@@ -126,11 +136,12 @@ async def _haftalik_ozet(uid: str, tokens: list[str], b: date) -> int:
     if not giderler:
         return 0
     toplam = sum(t.tutar for t in giderler)
-    ok, _ = await push.expo_push_gonder(
+    ok, _, olu = await push.expo_push_gonder(
         tokens, "Geçen hafta özeti",
         f"{len(giderler)} işlem · {turkce_tutar(toplam)} ₺. Bu hafta bütçeni gözden geçir.",
         {"tur": "haftalik"},
     )
+    await _olu_temizle(olu)
     if ok:
         await repo.bildirim_isaretle(uid, anahtar)
         return 1

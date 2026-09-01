@@ -29,8 +29,9 @@ def _mesajlar(tokens: list[str], baslik: str, govde: str, veri: dict | None) -> 
     ]
 
 
-def _gonder_sync(mesajlar: list[dict]) -> tuple[int, int]:
+def _gonder_sync(mesajlar: list[dict]) -> tuple[int, int, list[str]]:
     ok = hata = 0
+    olu: list[str] = []  # DeviceNotRegistered — silinmeli
     with httpx.Client(timeout=15.0) as c:
         for i in range(0, len(mesajlar), _CHUNK):
             parca = mesajlar[i : i + _CHUNK]
@@ -41,23 +42,25 @@ def _gonder_sync(mesajlar: list[dict]) -> tuple[int, int]:
                     headers={"Content-Type": "application/json", "Accept": "application/json"},
                 )
                 r.raise_for_status()
-                for sonuc in r.json().get("data", []):
+                for msj, sonuc in zip(parca, r.json().get("data", []), strict=False):
                     if sonuc.get("status") == "ok":
                         ok += 1
                     else:
                         hata += 1
                         logger.warning("Expo push hata: %s", sonuc)
+                        if (sonuc.get("details") or {}).get("error") == "DeviceNotRegistered":
+                            olu.append(msj["to"])
             except httpx.HTTPError as e:
                 hata += len(parca)
                 logger.error("Expo push isteği başarısız: %s", e)
-    return ok, hata
+    return ok, hata, olu
 
 
 async def expo_push_gonder(
     tokens: list[str], baslik: str, govde: str, veri: dict | None = None
-) -> tuple[int, int]:
-    """(basarili, basarisiz) sayısını döndürür."""
+) -> tuple[int, int, list[str]]:
+    """(basarili, basarisiz, olu_token'lar) döndürür."""
     mesajlar = _mesajlar(tokens, baslik, govde, veri)
     if not mesajlar:
-        return 0, 0
+        return 0, 0, []
     return await asyncio.to_thread(_gonder_sync, mesajlar)
