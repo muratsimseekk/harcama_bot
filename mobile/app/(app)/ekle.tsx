@@ -21,6 +21,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { Metin as Text } from "@/components/Metin";
 import { api, ApiError } from "@/lib/api";
@@ -34,9 +35,11 @@ const ORNEKLER = ["market 250, dün benzin 600", "kahve 90", "maaş geldi 45000"
 export default function Ekle() {
   const renk = useRenkler();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const rState = useAudioRecorderState(recorder);
   const [metin, setMetin] = useState("");
+  const [yaziyor, setYaziyor] = useState(false);
   const [durum, setDurum] = useState<Durum>("bos");
   const basladiRef = useRef(0);
   const halka = useRef(new Animated.Value(0)).current;
@@ -130,7 +133,11 @@ export default function Ekle() {
 
   return (
     <EkranBasligi baslik="Ekle" zil={false} kaydir={false} icerikStil={{ padding: 0, gap: 0 }}>
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView
+        style={s.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={insets.top + 56}
+      >
         <View style={s.orta}>
           <View style={s.micSar}>
             {kayitta && (
@@ -167,11 +174,13 @@ export default function Ekle() {
                   ? "Analiz ediliyor…"
                   : "Kaydı başlatmak için dokun"}
           </Text>
-          <Text style={[s.ipucu, { color: renk.textFaint }]}>
-            {kayitta ? "Bitince tekrar dokun" : "Sesli ya da yazılı — birden çok kalem tek seferde"}
-          </Text>
+          {!yaziyor && (
+            <Text style={[s.ipucu, { color: renk.textFaint }]}>
+              {kayitta ? "Bitince tekrar dokun" : "Sesli ya da yazılı — birden çok kalem tek seferde"}
+            </Text>
+          )}
 
-          {durum === "bos" && (
+          {durum === "bos" && !yaziyor && (
             <>
               <View style={s.ornekler}>
                 {ORNEKLER.map((o) => (
@@ -199,6 +208,8 @@ export default function Ekle() {
             placeholderTextColor={renk.textFaint}
             value={metin}
             onChangeText={setMetin}
+            onFocus={() => setYaziyor(true)}
+            onBlur={() => setYaziyor(false)}
             onSubmitEditing={metinGonder}
             returnKeyType="send"
             editable={durum === "bos"}
