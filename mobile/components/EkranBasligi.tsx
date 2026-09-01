@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Metin as Text } from "@/components/Metin";
+import { useNotifications } from "@/lib/queries";
 import { SP, T, useRenkler } from "@/lib/theme";
 
 /**
@@ -41,6 +42,9 @@ export function EkranBasligi({
 }) {
   const renk = useRenkler();
   const router = useRouter();
+  const bildirim = useNotifications();
+  const uyariVar =
+    zil && (bildirim.data?.bildirimler ?? []).some((b) => b.tur === "uyari");
 
   const govde = (
     <View style={[s.icerik, !kaydir && s.icerikDolu, icerikStil]}>{children}</View>
@@ -66,6 +70,7 @@ export function EkranBasligi({
                 hitSlop={8}
               >
                 <Ionicons name="notifications-outline" size={19} color={renk.text} />
+                {uyariVar && <View style={[s.nokta, { backgroundColor: renk.danger, borderColor: renk.bg }]} />}
               </Pressable>
             ) : (
               <View style={{ width: 36 }} />
@@ -106,6 +111,7 @@ const s = StyleSheet.create({
     paddingVertical: SP.sm,
   },
   zil: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  nokta: { position: "absolute", top: 6, right: 6, width: 9, height: 9, borderRadius: 5, borderWidth: 1.5 },
   ustAlan: { paddingBottom: SP.md },
   govde: { flex: 1, borderTopWidth: StyleSheet.hairlineWidth },
   scroll: { paddingBottom: 40 },

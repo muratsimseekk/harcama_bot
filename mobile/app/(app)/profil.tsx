@@ -4,7 +4,7 @@ import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DEV_NOAUTH } from "@/app/_layout";
 import { Metin as Text } from "@/components/Metin";
-import { useMe } from "@/lib/queries";
+import { useMe, useNotifications } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
 import { golge, R, SERIF, SP, T, useRenkler } from "@/lib/theme";
 
@@ -20,6 +20,8 @@ export default function Profil() {
   const renk = useRenkler();
   const router = useRouter();
   const me = useMe();
+  const bildirim = useNotifications();
+  const uyariVar = (bildirim.data?.bildirimler ?? []).some((b) => b.tur === "uyari");
 
   const cikis = () =>
     Alert.alert("Çıkış", "Çıkış yapılsın mı?", [
@@ -43,6 +45,7 @@ export default function Profil() {
           <Text style={[T.title, { color: renk.text }]}>Profil</Text>
           <Pressable onPress={() => router.navigate("/bildirimler")} style={[s.zil, { backgroundColor: renk.cardAlt }]}>
             <Ionicons name="notifications-outline" size={19} color={renk.text} />
+            {uyariVar && <View style={[s.nokta, { backgroundColor: renk.danger, borderColor: renk.bg }]} />}
           </Pressable>
         </View>
       </SafeAreaView>
@@ -83,6 +86,7 @@ const s = StyleSheet.create({
   ust: { paddingHorizontal: SP.lg },
   baslikSatir: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: SP.sm },
   zil: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  nokta: { position: "absolute", top: 6, right: 6, width: 9, height: 9, borderRadius: 5, borderWidth: 1.5 },
   avatarSar: { alignItems: "center", paddingTop: SP.lg, paddingBottom: SP.xl, gap: 6 },
   avatar: {
     width: 92,
