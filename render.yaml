@@ -1,0 +1,40 @@
+# Render Blueprint — mobil API (faz-m1-mobil dalı).
+# Kök Dockerfile Telegram botunu (`python main.py`) çalıştırır; bu blueprint
+# `runtime: python` ile onu görmezden gelir ve FastAPI servisini ayağa kaldırır.
+#
+# Kurulum: Render → New → Blueprint → repoyu bağla → branch `faz-m1-mobil` → Apply.
+# `sync: false` olan env'ler Apply sırasında dashboard'da elle girilir (değerler .env'de).
+services:
+  - type: web
+    name: harcama-api
+    runtime: python
+    plan: free
+    branch: faz-m1-mobil
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: TZ
+        value: Europe/Istanbul
+      - key: FREE_AYLIK_LIMIT
+        value: "50"
+      # Prod'da kimlik doğrulama atlanmamalı → boş.
+      - key: DEV_BYPASS_USER_ID
+        value: ""
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: SENTRY_DSN
+        sync: false

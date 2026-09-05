@@ -242,11 +242,13 @@ bundle/build · şema değişince Supabase güvenlik taraması · Telegram botu 
 **KULLANICI ADIMLARI** (detaylı runbook artifact — bkz §7):
 1. ✅ `scripts/schema_push.sql` Supabase'de çalıştırıldı
 2. ✅ Expo hesabı + `eas login` + `eas init --force` (projectId bağlandı, commit'lendi)
-3. ⬜ **API'yi Render'a deploy et** — YENİ web service, branch `faz-m1-mobil`, **Python runtime (Docker DEĞİL)**,
-   build `pip install -r requirements.txt`, start `uvicorn api.main:app --host 0.0.0.0 --port $PORT`.
-   Env: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET`,
-   `GROQ_API_KEY`, `CRON_SECRET`, `FREE_AYLIK_LIMIT=50`, `DEV_BYPASS_USER_ID=` (boş).
-   → `curl https://<url>/health` = `{"durum":"ok"}`
+3. ⬜ **API'yi Render'a deploy et** — repo köküne `render.yaml` blueprint eklendi (commit `71a4373` sonrası).
+   Render → **New → Blueprint** → repoyu bağla → branch `faz-m1-mobil` → **Apply**.
+   Blueprint `runtime: python` diyor (kök Dockerfile = Telegram botu, ondan kaçınılıyor);
+   build/start/health hazır. Apply sırasında `sync: false` env'ler sorulur — değerleri
+   yerel `.env`'den gir: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_ANON_KEY`,
+   `SUPABASE_JWT_SECRET` (boş olabilir), `GROQ_API_KEY`, `CRON_SECRET`, `SENTRY_DSN` (boş olabilir).
+   → `curl https://<url>/health` = `{"durum":"ok","eksik":[]}`. URL'i §7'ye yaz.
 4. ⬜ EAS env değişkenleri (preview + production scope): `EXPO_PUBLIC_API_URL` (Render API URL),
    `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_SENTRY_DSN`
    → `eas env:create` veya expo.dev dashboard
