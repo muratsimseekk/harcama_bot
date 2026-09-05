@@ -4,6 +4,7 @@ supabase==2.31.0
 matplotlib==3.9.0
 numpy==1.26.4
 python-dotenv==1.0.1
+tzdata==2025.2  # Windows'ta IANA saat dilimi verisi yok; zoneinfo (core/dates.py) için şart
 
 # --- Mobil API (FastAPI servisi) ---
 fastapi==0.115.6

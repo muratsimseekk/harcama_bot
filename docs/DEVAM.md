@@ -7,7 +7,16 @@
 > `~/.claude/` altındaki hafıza ve plan dosyaları makineye özeldir, taşınmaz — bu dosya
 > onların yerine geçer. Güncel tutulmalı: her önemli adımdan sonra Claude bunu günceller.
 
-Son güncelleme: 2026-09-03 · Dal: `faz-m1-mobil` · Son commit: `e0d72e9`
+Son güncelleme: 2026-09-06 · Dal: `faz-m1-mobil` · Son commit: `71ec2c7`
+
+> **2026-09-06 — Geliştirme makinesi değişti: MacBook → Windows 11 PC.** Ortam bu PC'ye
+> yeniden kuruldu (bkz §1.1). Python 3.11.9 + Node 24.19 (LTS) + eas-cli 23.2 kurulu,
+> `.venv` ve `mobile/node_modules` hazır. Doğrulama bu makinede geçti:
+> `pytest` 70/70 · `tsc --noEmit` temiz · `expo-doctor` 18/18. `requirements.txt`'e
+> `tzdata` eklendi (Windows'ta zoneinfo için şart). `.env` + `mobile/.env` dolduruldu ve
+> doğrulandı: `/health` → `ok`, `/v1/summary` gerçek Supabase verisi, Groq
+> `parse_transactions` çalışıyor. `CRON_SECRET` üretildi. Boş kalan opsiyoneller:
+> `SUPABASE_JWT_SECRET`, `SENTRY_DSN`. **Sıradaki: §5 — API'yi Render'a deploy.**
 
 ---
 
@@ -21,7 +30,7 @@ Son güncelleme: 2026-09-03 · Dal: `faz-m1-mobil` · Son commit: `e0d72e9`
 | **Deploy durumu** | API **henüz Render'a deploy edilmedi** (sadece yerelde çalışıyor). Mobil **henüz build alınmadı** (EAS projesi bağlandı ama build yok). |
 | **Şu an hangi fazdayız** | **Faz 0** (yayına hazır teknik temel). Kod bitti; hesap/deploy adımları sürüyor. |
 | **Sıradaki somut adım** | API'yi Render'a deploy et → EAS env değişkenleri → ilk Android build. (Bkz. §5) |
-| **Testler** | `PYTHONPATH=. .venv/bin/pytest -q` → 70 geçiyor · `cd mobile && npx tsc --noEmit` temiz · `npx expo-doctor` 18/18 |
+| **Testler** | Windows: `$env:PYTHONPATH="."; .venv\Scripts\python -m pytest -q` → 70 geçiyor · `cd mobile; npx tsc --noEmit` temiz · `npx expo-doctor` 18/18 |
 
 ---
 
@@ -40,6 +49,47 @@ python3.11 -m venv .venv            # Python 3.11 şart
 cd mobile && npm install && cd ..
 npm install -g eas-cli             # EAS CLI (paket adı eas-cli, "eas" değil)
 ```
+
+### 1.1 Windows 11 kurulumu (bu makinenin gerçek adımları — 2026-09-06)
+
+Bu PC'de yapıldı. Kabuk: PowerShell (veya Git Bash).
+
+```powershell
+# Araçlar (winget) — Python 3.11 + Node LTS
+winget install --id Python.Python.3.11 -e --scope user
+winget install --id OpenJS.NodeJS.LTS -e            # Node 24.19 kuruldu; Node 20+ yeterli
+npm install -g eas-cli
+
+# Backend
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements-dev.txt   # requirements.txt + pytest/ruff
+
+# Mobil
+cd mobile; npm install; cd ..
+```
+
+**Windows tuzakları:**
+- **`tzdata` şart.** Windows'ta IANA saat dilimi verisi yok → `core/dates.py`'deki
+  `ZoneInfo("Europe/Istanbul")` patlar (`ZoneInfoNotFoundError`). `requirements.txt`'e
+  eklendi; venv'de kuruluysa sorun yok.
+- **`py -3.11` launcher** winget `--scope user` ile gelmeyebilir; `.venv\Scripts\python`
+  doğrudan çalışır. Bare `python` Microsoft Store stub'ına gidebilir — venv'i kullan.
+- **`@sentry/cli` postinstall** npm 11'in allow-scripts korumasıyla çalışmadı. Yerel
+  geliştirme/tsc/doctor için gerekmez; EAS build'de sourcemap yüklemesi lazımsa
+  `cd mobile; npx sentry-cli --version` ilk çağrıda binary'i indirir, ya da
+  `npm approve-scripts @sentry/cli`.
+- **Sunucuları çalıştırma (PowerShell):**
+  ```powershell
+  # API — .env'i yükle, uvicorn'u başlat
+  Get-Content .env | Where-Object { $_ -match '=' -and $_ -notmatch '^\s*#' } | ForEach-Object { $k,$v = $_ -split '=',2; [Environment]::SetEnvironmentVariable($k.Trim(), $v.Trim()) }
+  .venv\Scripts\uvicorn api.main:app --host 0.0.0.0 --port 8000
+  # Metro (ayrı pencere)
+  cd mobile; npx expo start --lan --port 8083 --clear
+  ```
+  Doğrula: `curl http://localhost:8000/health` → `{"durum":"ok"}`
+- **Bu PC'nin LAN IP'si:** Wi-Fi `192.168.1.18` (aktif), Ethernet `192.168.1.100`.
+  `mobile/.env` → `EXPO_PUBLIC_API_URL=http://192.168.1.18:8000`. IP değişirse
+  PowerShell'de `Get-NetIPAddress -AddressFamily IPv4` ile bak, `mobile/.env`'i güncelle.
 
 ### Ortam değişkenleri
 
