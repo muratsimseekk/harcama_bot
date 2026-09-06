@@ -31,8 +31,15 @@ Son güncelleme: 2026-09-06 · Dal: `faz-m1-mobil` · Son commit: `bbf0029`
 > `https://expo.dev/artifacts/eas/m57uGwSxZIxBHZKGOxiTSPqkJy80QLpNZf01bO8RGx0.apk`
 > (build `0ed0825f`). Auth: `EXPO_TOKEN` (expo.dev access token). Sentry config plugin
 > `app.json`'dan çıkarıldı (`SentryUpload` gradle task'ı authToken'sız build'i düşürüyordu —
-> adım 6'da geri eklenecek). **Sıradaki: APK'yı telefona kurup e-posta/şifre auth + işlem
-> ekleme testi; sonra adım 6-7 (Sentry, GitHub cron).**
+> adım 6'da geri eklenecek).
+>
+> **2026-09-06 — Android emülatör kuruldu + uygulama yönetici modunda çalışıyor (bkz §9).**
+> Emülatörde Ana Sayfa gerçek Supabase verisiyle açılıyor (aylık 3.965 ₺, 6 işlem, pasta
+> grafik, son işlemler). **Bug bulundu + düzeltildi (`cd41a36`):** `DEV_NOAUTH=1` iken uygulama
+> `(auth)/giris` ekranında takılıyordu (`_layout` yönlendirmesi erken return + expo-router
+> kökü ilk Stack.Screen `(auth)`'a bağlıyor). Kayıt/giriş akışı henüz TEST EDİLMEDİ (kullanıcı
+> isteği: en sona). **Sıradaki: emülatörde ekranları gez (analiz, hedefler, işlem ekle/düzenle,
+> AI ekleme), sonra adım 6-7 (Sentry, GitHub cron), en son auth akışı.**
 
 ---
 
@@ -347,9 +354,11 @@ politikası sayfası · ekran görüntüleri · ilk mağaza gönderimi. `profile
    `EXPO_TOKEN` ile auth (expo.dev access token, `setx` ile kalıcı + bu session'da inline).
    İlk deneme (`e3ac4a33`) Sentry `SentryUpload` task'ında patladı → plugin çıkarıldı (`3360105`).
    Keystore EAS'te bulutta üretildi (`Build Credentials dDTQpsTwEm`).
-   ⬜ KALAN: APK'yı telefona kur → e-posta/şifre kayıt + giriş + işlem ekleme testi.
-   (Render free cold-start ilk istek ~30 sn — normal.)
-4. Sonra Sentry (6), GitHub secrets + cron (7), Firebase/push (8) — paralel.
+4. ✅ **Android emülatör kuruldu** (§9) — uygulama yönetici modunda emülatörde çalışıyor,
+   Ana Sayfa gerçek veriyle açılıyor. Yönlendirme bug'ı düzeltildi (`cd41a36`).
+   ⬜ KALAN: emülatörde diğer ekranları test et (analiz, hedefler, işlem form, AI ekleme,
+   bildirimler, ara, kategoriler, ayarlar). Auth akışı EN SONA.
+5. Sonra Sentry (6), GitHub secrets + cron (7), Firebase/push (8) — paralel.
 
 Kısır döngü kırıldığında: "Faz 0 doğrulandı" → doğrulama listesini geç → **Faz 0.5** planı.
 
@@ -376,3 +385,46 @@ Pro (~149 TL/ay veya ~999 TL/yıl, 7 gün deneme): sınırsız YZ · fiş okuma 
 gelişmiş raporlar · CSV/Excel/PDF export · tekrarlayan/taksit · çoklu hedef + borç · hane.
 200 TL abonelikte: −%20 KDV −%15 mağaza = eline ~141 TL; gelir vergisi sonrası ~110–141 TL
 (genç girişimci istisnasıyla üst uç). Başa baş ~12–18 abone (Bağ-Kur hariç).
+
+---
+
+## 9. Android emülatör (bu Windows PC — 2026-09-06 kuruldu)
+
+Fiziksel Android telefon yok → emülatörde test. Kurulum tamamlandı, kalıcı.
+
+**Kurulu bileşenler:**
+- JDK 17: `C:\Program Files\Microsoft\jdk-17.0.20.101-hotspot` (`JAVA_HOME` yazıldı)
+- Android SDK: `%LOCALAPPDATA%\Android\Sdk` (`ANDROID_HOME` + `ANDROID_SDK_ROOT` yazıldı,
+  PATH'e `platform-tools;emulator;cmdline-tools\latest\bin` eklendi)
+  — cmdline-tools + platform-tools + emulator + `platforms;android-34` + `system-images;android-34;google_apis;x86_64`
+- **Donanım hızlandırma: AEHD 2.2** (Android Emulator Hypervisor Driver) — WHPX/Hyper-V
+  GEREKMEDİ, yeniden başlatma yok. `emulator -accel-check` → `accel:0 ... usable`.
+  Sürücü: `sc query aehd` → RUNNING.
+- AVD: **`harcama_pixel`** (Pixel 6, API 34, 3 GB RAM, hw keyboard açık)
+- Expo Go SDK 54 APK: emülatöre kuruldu (`host.exp.exponent`), kaynak
+  `github.com/expo/expo-go-releases` `Expo-Go-54.0.8`
+
+**Çalıştırma (PowerShell / Git Bash — yeni shell'de env'ler hazır):**
+```bash
+# 1) Emülatör (GUI pencere açılır)
+emulator -avd harcama_pixel -no-snapshot-save -gpu auto &
+adb wait-for-device
+
+# 2) Yerel API (yönetici modu — DEV_BYPASS_USER_ID .env'de dolu olmalı)
+cd C:/Users/murat/Desktop/harcama_bot-faz-m1-mobil
+export PYTHONPATH=.
+set -a && source <(grep -E '^[A-Z_]+=' .env) && set +a
+.venv/Scripts/python.exe -m uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+
+# 3) Metro (offline — Expo hesabı gerekmez)
+cd mobile && npx expo start --port 8081 --offline &
+
+# 4) Bağla + uygulamayı aç
+adb reverse tcp:8081 tcp:8081 && adb reverse tcp:8000 tcp:8000
+adb shell am start -a android.intent.action.VIEW -d "exp://127.0.0.1:8081" host.exp.exponent
+```
+- `mobile/.env` → `EXPO_PUBLIC_API_URL=http://10.0.2.2:8000` (emülatör→host loopback),
+  `EXPO_PUBLIC_DEV_NOAUTH=1`. Fiziksel telefona dönerken LAN IP'ye çevir.
+- Ekran görüntüsü: `adb exec-out screencap -p > shot.png` · dokunma: `adb shell input tap X Y`
+- Push bildirimleri Expo Go'da çalışmaz (SDK 53+ kaldırdı) — dev build gerekir; test için sorun değil.
+- Metro'yu `CI=1` ile başlatma → "Input is required" hatası verir; `--offline` kullan.
