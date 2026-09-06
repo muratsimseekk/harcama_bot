@@ -72,7 +72,12 @@ function Kapi() {
   }, []);
 
   useEffect(() => {
-    if (DEV_NOAUTH || yukleniyor || onboardGoruldu === null) return;
+    // Yönetici modu: expo-router kökü ilk grup olan (auth)'a bağlıyor; uygulamaya geç.
+    if (DEV_NOAUTH) {
+      if (segments[0] === "(auth)") router.replace("/(app)");
+      return;
+    }
+    if (yukleniyor || onboardGoruldu === null) return;
     const grup = segments[0];
     if (!onboardGoruldu && grup !== "(auth)") router.replace("/(auth)/onboard");
     else if (onboardGoruldu && !session && grup !== "(auth)") router.replace("/(auth)/giris");
