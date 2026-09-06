@@ -7,7 +7,7 @@
 > `~/.claude/` altındaki hafıza ve plan dosyaları makineye özeldir, taşınmaz — bu dosya
 > onların yerine geçer. Güncel tutulmalı: her önemli adımdan sonra Claude bunu günceller.
 
-Son güncelleme: 2026-09-06 · Dal: `faz-m1-mobil` · Son commit: `71ec2c7`
+Son güncelleme: 2026-09-06 · Dal: `faz-m1-mobil` · Son commit: `bbf0029`
 
 > **2026-09-06 — Geliştirme makinesi değişti: MacBook → Windows 11 PC.** Ortam bu PC'ye
 > yeniden kuruldu (bkz §1.1). Python 3.11.9 + Node 24.19 (LTS) + eas-cli 23.2 kurulu,
@@ -16,7 +16,17 @@ Son güncelleme: 2026-09-06 · Dal: `faz-m1-mobil` · Son commit: `71ec2c7`
 > `tzdata` eklendi (Windows'ta zoneinfo için şart). `.env` + `mobile/.env` dolduruldu ve
 > doğrulandı: `/health` → `ok`, `/v1/summary` gerçek Supabase verisi, Groq
 > `parse_transactions` çalışıyor. `CRON_SECRET` üretildi. Boş kalan opsiyoneller:
-> `SUPABASE_JWT_SECRET`, `SENTRY_DSN`. **Sıradaki: §5 — API'yi Render'a deploy.**
+> `SUPABASE_JWT_SECRET`, `SENTRY_DSN`.
+>
+> **2026-09-06 — §5 adım 1 TAMAM: API Render'da canlı.**
+> `https://harcama-api.onrender.com` (servis `harcama-api`, `srv-daeh4gn40ujc73f79nhg`,
+> blueprint `render.yaml`, dal `faz-m1-mobil`, free plan). `.env` yeni Groq key ile
+> güncellendi. Doğrulama: `/health` → `{"durum":"ok","eksik":[]}` · `/docs` 200 ·
+> `/v1/summary` token'sız → 401 (prod auth zorunlu) · pytest 70/70 · Supabase 502 kayıt.
+>
+> **2026-09-06 — §5 adım 2 TAMAM: EAS env `mobile/eas.json`'a gömüldü** (preview+production:
+> `EXPO_PUBLIC_API_URL` = Render, `SUPABASE_URL`, `SUPABASE_ANON_KEY`). tsc temiz.
+> **Sıradaki: §5 adım 3 — `eas login` + ilk Android preview build.**
 
 ---
 
@@ -27,9 +37,9 @@ Son güncelleme: 2026-09-06 · Dal: `faz-m1-mobil` · Son commit: `71ec2c7`
 | **Ne yapıyoruz** | Telegram harcama botunun mantığını, satılabilir bir **mobil uygulamaya** (Expo/React Native) + **FastAPI backend**'e taşıyoruz. App Store + Play Store, abonelikli. |
 | **Telegram botu** | `main` dalında, Render'da canlı, **DONDURULDU**. Bu projeyle karışmıyor. Asla `main`'e merge etme. |
 | **Bu proje** | `faz-m1-mobil` dalı. Backend (`core/` + `api/`) + mobil (`mobile/`) burada. GitHub'a push edildi. |
-| **Deploy durumu** | API **henüz Render'a deploy edilmedi** (sadece yerelde çalışıyor). Mobil **henüz build alınmadı** (EAS projesi bağlandı ama build yok). |
+| **Deploy durumu** | API **Render'da canlı**: `https://harcama-api.onrender.com` (`/health` ok). Mobil **henüz build alınmadı** (EAS projesi bağlandı ama build yok). |
 | **Şu an hangi fazdayız** | **Faz 0** (yayına hazır teknik temel). Kod bitti; hesap/deploy adımları sürüyor. |
-| **Sıradaki somut adım** | API'yi Render'a deploy et → EAS env değişkenleri → ilk Android build. (Bkz. §5) |
+| **Sıradaki somut adım** | EAS env değişkenleri (`EXPO_PUBLIC_API_URL` = Render URL) → ilk Android build. (Bkz. §5) |
 | **Testler** | Windows: `$env:PYTHONPATH="."; .venv\Scripts\python -m pytest -q` → 70 geçiyor · `cd mobile; npx tsc --noEmit` temiz · `npx expo-doctor` 18/18 |
 
 ---
@@ -242,16 +252,14 @@ bundle/build · şema değişince Supabase güvenlik taraması · Telegram botu 
 **KULLANICI ADIMLARI** (detaylı runbook artifact — bkz §7):
 1. ✅ `scripts/schema_push.sql` Supabase'de çalıştırıldı
 2. ✅ Expo hesabı + `eas login` + `eas init --force` (projectId bağlandı, commit'lendi)
-3. ⬜ **API'yi Render'a deploy et** — repo köküne `render.yaml` blueprint eklendi (commit `71a4373` sonrası).
-   Render → **New → Blueprint** → repoyu bağla → branch `faz-m1-mobil` → **Apply**.
-   Blueprint `runtime: python` diyor (kök Dockerfile = Telegram botu, ondan kaçınılıyor);
-   build/start/health hazır. Apply sırasında `sync: false` env'ler sorulur — değerleri
-   yerel `.env`'den gir: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_ANON_KEY`,
-   `SUPABASE_JWT_SECRET` (boş olabilir), `GROQ_API_KEY`, `CRON_SECRET`, `SENTRY_DSN` (boş olabilir).
-   → `curl https://<url>/health` = `{"durum":"ok","eksik":[]}`. URL'i §7'ye yaz.
-4. ⬜ EAS env değişkenleri (preview + production scope): `EXPO_PUBLIC_API_URL` (Render API URL),
-   `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_SENTRY_DSN`
-   → `eas env:create` veya expo.dev dashboard
+3. ✅ **API Render'da canlı** — `https://harcama-api.onrender.com` (blueprint `render.yaml`,
+   servis `harcama-api`, dal `faz-m1-mobil`, free plan). `sync: false` env'ler dashboard'dan
+   girildi (yeni Groq key dahil). `/health` → `{"durum":"ok","eksik":[]}`.
+   ⚠️ Free plan: 15 dk trafiksizlikte uyur, ilk istek ~30-50 sn (cold start).
+4. ✅ EAS env değişkenleri — `mobile/eas.json`'un `preview` + `production` env bloklarına
+   gömüldü: `EXPO_PUBLIC_API_URL=https://harcama-api.onrender.com`,
+   `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (anon = public, RLS koruyor).
+   `EXPO_PUBLIC_SENTRY_DSN` boş — DSN gelince eklenir. tsc temiz, JSON geçerli.
 5. ⬜ İlk build: `cd mobile && eas build -p android --profile preview` → APK telefona →
    e-posta/şifre kayıt + giriş çalışıyor mu?
 6. ⬜ Sentry: 2 proje (React Native + Python) → DSN'ler → `mobile/.env` + Render env
@@ -321,9 +329,10 @@ politikası sayfası · ekran görüntüleri · ilk mağaza gönderimi. `profile
 
 ## 5. HEMEN SIRADAKİ ADIM
 
-1. **API'yi Render'a deploy et** (Faz 0 adım 3 — §4). URL'i bu dosyaya yaz.
-2. **EAS env değişkenleri** (adım 4) — `EXPO_PUBLIC_API_URL` = Render API URL'i.
-3. **`cd mobile && eas build -p android --profile preview`** → APK → telefonda auth testi.
+1. ✅ API Render'da canlı — `https://harcama-api.onrender.com` (`/health` ok).
+2. ✅ EAS env — `mobile/eas.json` preview+production bloklarına gömüldü.
+3. **İlk build:** `! eas login` (Expo hesabı) → `cd mobile; eas build -p android --profile preview`
+   → APK telefona → e-posta/şifre kayıt + giriş çalışıyor mu? (İlk API isteği cold-start ~40 sn.)
 4. Sonra Sentry (6), GitHub secrets + cron (7), Firebase/push (8) — paralel.
 
 Kısır döngü kırıldığında: "Faz 0 doğrulandı" → doğrulama listesini geç → **Faz 0.5** planı.
@@ -334,6 +343,8 @@ Kısır döngü kırıldığında: "Faz 0 doğrulandı" → doğrulama listesini
 Banka SMS okuma · işletme/KDV modu.
 
 ## 7. Referanslar
+- **Canlı API:** `https://harcama-api.onrender.com` · Render servis `srv-daeh4gn40ujc73f79nhg`
+  (dashboard: https://dashboard.render.com/web/srv-daeh4gn40ujc73f79nhg)
 - **Faz 0 kurulum runbook** (işaretlenebilir checklist): https://claude.ai/code/artifact/90ed60eb-46ab-4d93-8f59-76c1bd7bfc17
 - **QA test planı** (14 bölüm): https://claude.ai/code/artifact/fedceb4c-2264-4ad0-85f6-8407e88a081f
 - GitHub: https://github.com/muratsimseekk/harcama_bot/tree/faz-m1-mobil

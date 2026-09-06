@@ -19,7 +19,10 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_DEV_NOAUTH": "0"
+        "EXPO_PUBLIC_DEV_NOAUTH": "0",
+        "EXPO_PUBLIC_API_URL": "https://harcama-api.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://mwuuicgxxruoesutbicv.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13dXVpY2d4eHJ1b2VzdXRiaWN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODgyNzgsImV4cCI6MjEwMzQ2NDI3OH0.n-AllUR9gBUC2L6Ks7C2lGJSJ_mVgI8j1OkAJhaSrf4"
       },
       "android": {
         "buildType": "apk"
@@ -29,7 +32,10 @@
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_DEV_NOAUTH": "0"
+        "EXPO_PUBLIC_DEV_NOAUTH": "0",
+        "EXPO_PUBLIC_API_URL": "https://harcama-api.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://mwuuicgxxruoesutbicv.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13dXVpY2d4eHJ1b2VzdXRiaWN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4ODgyNzgsImV4cCI6MjEwMzQ2NDI3OH0.n-AllUR9gBUC2L6Ks7C2lGJSJ_mVgI8j1OkAJhaSrf4"
       }
     }
   },
