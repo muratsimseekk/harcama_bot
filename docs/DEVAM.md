@@ -26,7 +26,13 @@ Son güncelleme: 2026-09-06 · Dal: `faz-m1-mobil` · Son commit: `bbf0029`
 >
 > **2026-09-06 — §5 adım 2 TAMAM: EAS env `mobile/eas.json`'a gömüldü** (preview+production:
 > `EXPO_PUBLIC_API_URL` = Render, `SUPABASE_URL`, `SUPABASE_ANON_KEY`). tsc temiz.
-> **Sıradaki: §5 adım 3 — `eas login` + ilk Android preview build.**
+>
+> **2026-09-06 — §5 adım 3 TAMAM: ilk Android preview APK hazır.**
+> `https://expo.dev/artifacts/eas/m57uGwSxZIxBHZKGOxiTSPqkJy80QLpNZf01bO8RGx0.apk`
+> (build `0ed0825f`). Auth: `EXPO_TOKEN` (expo.dev access token). Sentry config plugin
+> `app.json`'dan çıkarıldı (`SentryUpload` gradle task'ı authToken'sız build'i düşürüyordu —
+> adım 6'da geri eklenecek). **Sıradaki: APK'yı telefona kurup e-posta/şifre auth + işlem
+> ekleme testi; sonra adım 6-7 (Sentry, GitHub cron).**
 
 ---
 
@@ -37,9 +43,9 @@ Son güncelleme: 2026-09-06 · Dal: `faz-m1-mobil` · Son commit: `bbf0029`
 | **Ne yapıyoruz** | Telegram harcama botunun mantığını, satılabilir bir **mobil uygulamaya** (Expo/React Native) + **FastAPI backend**'e taşıyoruz. App Store + Play Store, abonelikli. |
 | **Telegram botu** | `main` dalında, Render'da canlı, **DONDURULDU**. Bu projeyle karışmıyor. Asla `main`'e merge etme. |
 | **Bu proje** | `faz-m1-mobil` dalı. Backend (`core/` + `api/`) + mobil (`mobile/`) burada. GitHub'a push edildi. |
-| **Deploy durumu** | API **Render'da canlı**: `https://harcama-api.onrender.com` (`/health` ok). Mobil **henüz build alınmadı** (EAS projesi bağlandı ama build yok). |
+| **Deploy durumu** | API **Render'da canlı**: `https://harcama-api.onrender.com` (`/health` ok). **İlk Android preview APK hazır** (build `0ed0825f`). |
 | **Şu an hangi fazdayız** | **Faz 0** (yayına hazır teknik temel). Kod bitti; hesap/deploy adımları sürüyor. |
-| **Sıradaki somut adım** | EAS env değişkenleri (`EXPO_PUBLIC_API_URL` = Render URL) → ilk Android build. (Bkz. §5) |
+| **Sıradaki somut adım** | APK'yı telefona kur → e-posta/şifre auth + işlem ekleme testi → Sentry (§4 adım 6) + GitHub cron (adım 7). |
 | **Testler** | Windows: `$env:PYTHONPATH="."; .venv\Scripts\python -m pytest -q` → 70 geçiyor · `cd mobile; npx tsc --noEmit` temiz · `npx expo-doctor` 18/18 |
 
 ---
@@ -262,7 +268,12 @@ bundle/build · şema değişince Supabase güvenlik taraması · Telegram botu 
    `EXPO_PUBLIC_SENTRY_DSN` boş — DSN gelince eklenir. tsc temiz, JSON geçerli.
 5. ⬜ İlk build: `cd mobile && eas build -p android --profile preview` → APK telefona →
    e-posta/şifre kayıt + giriş çalışıyor mu?
-6. ⬜ Sentry: 2 proje (React Native + Python) → DSN'ler → `mobile/.env` + Render env
+6. ⬜ Sentry: 2 proje (React Native + Python) → DSN'ler → `mobile/.env` + Render env.
+   **Not:** `@sentry/react-native` config plugin `app.json`'dan ÇIKARILDI (commit `3360105`) —
+   `SentryUpload` gradle task'ı `SENTRY_AUTH_TOKEN` olmadan EAS build'i düşürüyordu.
+   Bu adımda geri ekle: `["@sentry/react-native/expo", { "organization": "...", "project": "...",
+   "url": "https://sentry.io/" }]` + EAS secret `SENTRY_AUTH_TOKEN` (`eas env:create --scope project
+   --visibility secret`). JS init/wrap zaten `EXPO_PUBLIC_SENTRY_DSN` guard'lı.
 7. ⬜ GitHub repo Secrets: `API_URL` (Render API), `CRON_SECRET` (aynı değer) → Actions'ta
    "Push bildirim cron" workflow'unu etkinleştir → "Run workflow" (butce) test et
 8. ⬜ Push credentials — Android: Firebase projesi → `google-services.json` → `mobile/`'a
@@ -331,8 +342,13 @@ politikası sayfası · ekran görüntüleri · ilk mağaza gönderimi. `profile
 
 1. ✅ API Render'da canlı — `https://harcama-api.onrender.com` (`/health` ok).
 2. ✅ EAS env — `mobile/eas.json` preview+production bloklarına gömüldü.
-3. **İlk build:** `! eas login` (Expo hesabı) → `cd mobile; eas build -p android --profile preview`
-   → APK telefona → e-posta/şifre kayıt + giriş çalışıyor mu? (İlk API isteği cold-start ~40 sn.)
+3. ✅ **İlk Android preview build BAŞARILI** — build `0ed0825f-c5e4-44ee-8202-895fcde32315`,
+   APK: `https://expo.dev/artifacts/eas/m57uGwSxZIxBHZKGOxiTSPqkJy80QLpNZf01bO8RGx0.apk`
+   `EXPO_TOKEN` ile auth (expo.dev access token, `setx` ile kalıcı + bu session'da inline).
+   İlk deneme (`e3ac4a33`) Sentry `SentryUpload` task'ında patladı → plugin çıkarıldı (`3360105`).
+   Keystore EAS'te bulutta üretildi (`Build Credentials dDTQpsTwEm`).
+   ⬜ KALAN: APK'yı telefona kur → e-posta/şifre kayıt + giriş + işlem ekleme testi.
+   (Render free cold-start ilk istek ~30 sn — normal.)
 4. Sonra Sentry (6), GitHub secrets + cron (7), Firebase/push (8) — paralel.
 
 Kısır döngü kırıldığında: "Faz 0 doğrulandı" → doğrulama listesini geç → **Faz 0.5** planı.
@@ -345,6 +361,10 @@ Banka SMS okuma · işletme/KDV modu.
 ## 7. Referanslar
 - **Canlı API:** `https://harcama-api.onrender.com` · Render servis `srv-daeh4gn40ujc73f79nhg`
   (dashboard: https://dashboard.render.com/web/srv-daeh4gn40ujc73f79nhg)
+- **Android preview APK:** https://expo.dev/artifacts/eas/m57uGwSxZIxBHZKGOxiTSPqkJy80QLpNZf01bO8RGx0.apk
+  (build sayfası: https://expo.dev/accounts/muratsimseekk/projects/harcama-mobil/builds/0ed0825f-c5e4-44ee-8202-895fcde32315)
+- **EAS auth:** `EXPO_TOKEN` (expo.dev → Settings → Access Tokens). `setx` ile kalıcı;
+  yeni shell'de `eas whoami` → `muratsimseekk`.
 - **Faz 0 kurulum runbook** (işaretlenebilir checklist): https://claude.ai/code/artifact/90ed60eb-46ab-4d93-8f59-76c1bd7bfc17
 - **QA test planı** (14 bölüm): https://claude.ai/code/artifact/fedceb4c-2264-4ad0-85f6-8407e88a081f
 - GitHub: https://github.com/muratsimseekk/harcama_bot/tree/faz-m1-mobil
