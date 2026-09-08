@@ -19,22 +19,36 @@ def _cat(id="c1", name="Market", tip="kisisel", user_id="u1"):
 
 
 def test_listele_bos_ise_seed_calisir(client, monkeypatch):
-    cagrildi = {"seed": 0}
+    cagrildi = {"tipler": None}
 
     async def bos_liste(uid, *, only_active=False):
-        return [] if cagrildi["seed"] == 0 else [_cat()]
+        return [] if cagrildi["tipler"] is None else [_cat()]
 
-    async def seed(uid):
-        cagrildi["seed"] = 1
-        return 20
+    async def seed(uid, tipler=None):
+        cagrildi["tipler"] = tipler
+        return 10
 
     monkeypatch.setattr(rota.repo, "categories_list", bos_liste)
     monkeypatch.setattr(rota.repo, "categories_seed", seed)
 
     r = client.get("/v1/categories")
     assert r.status_code == 200
-    assert cagrildi["seed"] == 1
+    assert cagrildi["tipler"] == ["kisisel"]  # yeni kullanıcı: sadece Kişisel
     assert r.json()[0]["name"] == "Market"
+
+
+def test_bolum_ekle(client, monkeypatch):
+    yakalanan = {}
+
+    async def seed_tip(uid, tip):
+        yakalanan["tip"] = tip
+        return 8
+
+    monkeypatch.setattr(rota.repo, "category_seed_tip", seed_tip)
+    r = client.post("/v1/categories/bolum", json={"tip": "isletme"})
+    assert r.status_code == 200
+    assert yakalanan["tip"] == "isletme"
+    assert r.json() == {"eklendi": 8}
 
 
 def test_olustur(client, monkeypatch):
@@ -63,6 +77,25 @@ def test_guncelle_baskasinin_kategorisi_404(client, monkeypatch):
     monkeypatch.setattr(rota.repo, "category_get", get)
     r = client.patch("/v1/categories/c1", json={"name": "Yeni"})
     assert r.status_code == 404
+
+
+def test_guncelle_keywords(client, monkeypatch):
+    yakalanan = {}
+
+    async def get(cid):
+        return _cat()
+
+    async def update(cid, alanlar):
+        yakalanan.update(alanlar)
+        return Category(id=cid, user_id="u1", name="Market", tip="kisisel",
+                        keywords=alanlar.get("keywords", []))
+
+    monkeypatch.setattr(rota.repo, "category_get", get)
+    monkeypatch.setattr(rota.repo, "category_update", update)
+    r = client.patch("/v1/categories/c1", json={"keywords": ["market", "bakkal"]})
+    assert r.status_code == 200
+    assert yakalanan["keywords"] == ["market", "bakkal"]
+    assert r.json()["keywords"] == ["market", "bakkal"]
 
 
 def test_sil(client, monkeypatch):

@@ -31,6 +31,13 @@ class Settings:
     GROQ_API_KEY: str = os.environ.get("GROQ_API_KEY", "")
     PARSE_MODEL: str = os.environ.get("GROQ_PARSE_MODEL", "openai/gpt-oss-120b")
     TRANSCRIBE_MODEL: str = os.environ.get("GROQ_TRANSCRIBE_MODEL", "whisper-large-v3")
+    # İşlem çıkarımında modelin akıl yürütme derinliği: low | medium | high.
+    # medium: kategori isabeti için gerekli (low, listede olmayan kategoride kötü fallback yapıyor).
+    PARSE_REASONING: str = os.environ.get("GROQ_PARSE_REASONING", "medium")
+    # Aynı anda kaç Groq isteği yapılabilir (tek anahtarın RPM'ini korur). Fazlası sıraya girer.
+    GROQ_MAX_ES: int = _int("GROQ_MAX_ES", 8)
+    # Groq HTTP çağrı zaman aşımı (saniye).
+    GROQ_TIMEOUT: float = float(os.environ.get("GROQ_TIMEOUT", "20"))
 
     # --- Supabase ---
     SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "")
@@ -42,8 +49,17 @@ class Settings:
     SUPABASE_JWT_SECRET: str = os.environ.get("SUPABASE_JWT_SECRET", "")
 
     # --- Mobil API ---
-    FREE_AYLIK_LIMIT: int = _int("FREE_AYLIK_LIMIT", 50)
+    # Base üyelikte aylık AI (sesli/yazılı) kayıt tavanı. Elle işlem ekleme sınırsız.
+    # Eski ad FREE_AYLIK_LIMIT env uyumu için okunur.
+    BASE_AI_AYLIK: int = _int("BASE_AI_AYLIK", _int("FREE_AYLIK_LIMIT", 100))
+    FREE_AYLIK_LIMIT: int = _int("FREE_AYLIK_LIMIT", 100)  # geriye dönük
+    TRIAL_GUN: int = _int("TRIAL_GUN", 7)  # referans; trigger'da sabit 7
     API_CORS_ORIGINS: str = os.environ.get("API_CORS_ORIGINS", "*")
+    # /v1/capture kişi başı hız limiti: PENCERE saniyede en çok İSTEK adet.
+    CAPTURE_LIMIT_ISTEK: int = _int("CAPTURE_LIMIT_ISTEK", 20)
+    CAPTURE_LIMIT_PENCERE: int = _int("CAPTURE_LIMIT_PENCERE", 600)
+    # IP başına genel hız limiti (dakikada istek).
+    IP_LIMIT_DK: int = _int("IP_LIMIT_DK", 90)
     # Dev/yönetici modu: ayarlıysa, Authorization başlığı olmayan istekler bu
     # kullanıcı id'siyle çalışır (kimlik doğrulama atlanır). PROD'DA BOŞ BIRAK.
     DEV_BYPASS_USER_ID: str = os.environ.get("DEV_BYPASS_USER_ID", "")

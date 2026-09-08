@@ -79,32 +79,87 @@ def test_capture_ai_hata_503(client, monkeypatch):
     assert r.status_code == 503
 
 
-def test_transactions_olustur_limit_asimi_402(client, monkeypatch):
-    async def fake_plan(uid):
-        return "free"
+def test_capture_ai_mesgul_429(client, monkeypatch):
+    async def mesgul(metin, *, kaynak="x", kategoriler=None):
+        raise capture.GroqBusy("rate limited")
+    monkeypatch.setattr(capture, "parse_transactions", mesgul)
+
+    r = client.post("/v1/capture", data={"text": "kahve 90"})
+    assert r.status_code == 429
+    assert r.headers.get("Retry-After") == "20"
+
+
+def test_capture_hiz_limiti_429(client, monkeypatch):
+    from api import deps
+
+    deps._capture_pencere.clear()
+    monkeypatch.setattr(deps.settings, "CAPTURE_LIMIT_ISTEK", 3)
+
+    async def fake_parse(metin, *, kaynak="x", kategoriler=None):
+        return []
+    monkeypatch.setattr(capture, "parse_transactions", fake_parse)
+
+    for _ in range(3):
+        assert client.post("/v1/capture", data={"text": "x"}).status_code == 200
+    r = client.post("/v1/capture", data={"text": "x"})
+    assert r.status_code == 429
+    assert r.headers.get("Retry-After") == "60"
+    deps._capture_pencere.clear()
+
+
+def _durum(etkin="base", limit=50):
+    from api.usage import PlanDurum
+    return PlanDurum(ham=etkin, etkin=etkin, trial_bitis=None, ai_limit=limit)
+
+
+def test_transactions_olustur_ai_limit_asimi_402(client, monkeypatch):
+    async def fake_durum(uid):
+        return _durum("base", 50)
     async def fake_sayac(uid):
         return 50
-    monkeypatch.setattr(usage, "plan", fake_plan)
+    monkeypatch.setattr(usage, "plan_durum", fake_durum)
     monkeypatch.setattr(usage, "ay_kayit_sayisi", fake_sayac)
-    monkeypatch.setattr(transactions.settings, "FREE_AYLIK_LIMIT", 50)
 
     r = client.post("/v1/transactions", json={"candidates": [{
-        "aciklama": "kahve", "tutar": 90, "kategori": "Kafe/Restoran", "tarih": "2026-08-28"
+        "aciklama": "kahve", "tutar": 90, "kategori": "Kafe/Restoran",
+        "tarih": "2026-08-28", "kaynak": "mobile_text",
     }]})
     assert r.status_code == 402
+
+
+def test_transactions_elle_giris_limitten_muaf(client, monkeypatch):
+    from core.models import Transaction
+
+    async def fake_durum(uid):
+        return _durum("base", 50)
+    async def fake_sayac(uid):
+        return 999  # limit çok aşılmış ama elle giriş sayılmaz
+    async def fake_add_many(adaylar, uid):
+        return [Transaction(
+            id="tx1", user_id=uid, direction=a.direction, tip=a.tip, kategori=a.kategori,
+            aciklama=a.aciklama, tutar=a.tutar, para_birimi="TRY", tarih=a.tarih, kaynak=a.kaynak,
+        ) for a in adaylar]
+    monkeypatch.setattr(usage, "plan_durum", fake_durum)
+    monkeypatch.setattr(usage, "ay_kayit_sayisi", fake_sayac)
+    monkeypatch.setattr(transactions.repo, "add_many", fake_add_many)
+
+    r = client.post("/v1/transactions", json={"candidates": [{
+        "aciklama": "kahve", "tutar": 90, "kategori": "Kafe/Restoran", "tarih": "2026-08-28",
+    }]})  # kaynak yok → varsayılan mobile_manual
+    assert r.status_code == 201
 
 
 def test_transactions_olustur_basarili(client, monkeypatch):
     from core.models import Transaction
 
-    async def fake_plan(uid):
-        return "pro"
+    async def fake_durum(uid):
+        return _durum("pro", 10**9)
     async def fake_add_many(adaylar, uid):
         return [Transaction(
             id="tx1", user_id=uid, direction=a.direction, tip=a.tip, kategori=a.kategori,
             aciklama=a.aciklama, tutar=a.tutar, para_birimi="TRY", tarih=a.tarih, kaynak="mobile",
         ) for a in adaylar]
-    monkeypatch.setattr(usage, "plan", fake_plan)
+    monkeypatch.setattr(usage, "plan_durum", fake_durum)
     monkeypatch.setattr(transactions.repo, "add_many", fake_add_many)
 
     r = client.post("/v1/transactions", json={"candidates": [{

@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import { turkceTutar } from "@/lib/format";
 import { kategoriIkon } from "@/lib/kategoriIkon";
+import { useKategoriRenk } from "@/lib/kategoriRenk";
 import { R, SP, useRenkler } from "@/lib/theme";
 import type { Islem } from "@/lib/types";
 import { IkonDaire } from "@/components/base";
@@ -15,18 +16,22 @@ function tarihEt(iso: string): string {
 
 export function IslemSatiri({ islem, onPress }: { islem: Islem; onPress?: () => void }) {
   const renk = useRenkler();
+  const katRenk = useKategoriRenk();
   const gelir = islem.direction === "gelir";
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [s.satir, pressed && onPress ? { opacity: 0.6 } : null]}
     >
-      <IkonDaire ikon={kategoriIkon(islem.kategori)} renk={renk.blueSoft} boyut={48} />
+      <IkonDaire ikon={kategoriIkon(islem.kategori)} renk={katRenk(islem.kategori)} boyut={48} />
       <View style={s.orta}>
         <Text style={[s.baslik, { color: renk.text }]} numberOfLines={1}>
           {islem.aciklama}
         </Text>
-        <Text style={[s.tarih, { color: renk.blue }]}>{tarihEt(islem.tarih)}</Text>
+        <Text style={[s.tarih, { color: renk.blue }]} numberOfLines={1}>
+          {tarihEt(islem.tarih)}
+          {islem.ekleyen ? ` · ${islem.ekleyen}` : ""}
+        </Text>
       </View>
       <View style={[s.ayrac, { backgroundColor: renk.hairline }]} />
       <Text style={[s.kategori, { color: renk.text }]} numberOfLines={1}>

@@ -7,7 +7,7 @@ import { EkranBasligi } from "@/components/EkranBasligi";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
 import { birlestirKategori, selamlama, turkceTutar } from "@/lib/format";
-import { useCategories, useSummary, useTransactions } from "@/lib/queries";
+import { useHane, useSummary, useTransactions } from "@/lib/queries";
 import { SP, T, useRenkler } from "@/lib/theme";
 import type { Granularity } from "@/lib/types";
 
@@ -26,7 +26,7 @@ export default function AnaSayfa() {
   const ozet = useSummary(gran);
   const ayOzet = useSummary("month");
   const sonlar = useTransactions({ limit: 5 });
-  const kategoriler = useCategories();
+  const hane = useHane();
 
   const g = ozet.data?.bu_donem;
   const ay = ayOzet.data?.bu_donem;
@@ -38,12 +38,19 @@ export default function AnaSayfa() {
   }, [ay]);
 
   const dilimler = useMemo(() => {
-    const renkHarita = new Map((kategoriler.data ?? []).map((k) => [k.name, k.color]));
-    return birlestirKategori(g?.kategori_kirilim ?? []).map((d) => ({
-      ...d,
-      renk: renkHarita.get(d.ad) ?? null,
-    }));
-  }, [g?.kategori_kirilim, kategoriler.data]);
+    const hepsi = birlestirKategori(g?.kategori_kirilim ?? []);
+    if (hepsi.length <= 8) return hepsi;
+    const ilk = hepsi.slice(0, 7);
+    const kalan = hepsi.slice(7);
+    return [
+      ...ilk,
+      {
+        ad: "Diğer",
+        tutar: kalan.reduce((s, d) => s + d.tutar, 0),
+        oran: kalan.reduce((s, d) => s + d.oran, 0),
+      },
+    ];
+  }, [g?.kategori_kirilim]);
 
   return (
     <EkranBasligi
@@ -53,7 +60,11 @@ export default function AnaSayfa() {
       ustAlan={
         <View style={s.selam}>
           <Text style={[T.title, { color: renk.text }]}>{selamlama()}</Text>
-          <Text style={[s.selamAlt, { color: renk.textMuted }]}>Tekrar hoş geldin</Text>
+          <Text style={[s.selamAlt, { color: renk.textMuted }]}>
+            {hane.data
+              ? `${hane.data.ad} · ${hane.data.uyeler.length} kişi · ortak görünüm`
+              : "Tekrar hoş geldin"}
+          </Text>
         </View>
       }
     >

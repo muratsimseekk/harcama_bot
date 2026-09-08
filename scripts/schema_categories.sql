@@ -15,9 +15,10 @@ create table if not exists public.categories (
     updated_at  timestamptz not null default now()
 );
 
--- aynı kullanıcıda aynı isim (büyük/küçük harf duyarsız) bir kez
-create unique index if not exists ux_categories_user_name
-    on public.categories (user_id, lower(name));
+-- aynı kullanıcıda + aynı bölümde (tip) aynı isim (büyük/küçük harf duyarsız) bir kez.
+-- Farklı bölümlerde aynı ad olabilir (örn. "Fatura" hem kişisel hem işletme).
+create unique index if not exists ux_categories_user_type_name
+    on public.categories (user_id, type, lower(name));
 create index if not exists ix_categories_user_active
     on public.categories (user_id, is_active);
 

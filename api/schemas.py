@@ -22,6 +22,8 @@ class AdayModel(BaseModel):
     tarih: date
     para_birimi: str = "TRY"
     emin: bool = True
+    neden: str = ""
+    kaynak: str = "mobile_manual"  # capture'dan gelen adaylarda mobile_text/mobile_voice
     inceleme_sebepleri: list[str] = Field(default_factory=list)
 
     @classmethod
@@ -29,14 +31,16 @@ class AdayModel(BaseModel):
         return cls(
             aciklama=c.aciklama, tutar=c.tutar, kategori=c.kategori, tip=c.tip,
             direction=c.direction, tarih=c.tarih, para_birimi=c.para_birimi,
-            emin=c.emin, inceleme_sebepleri=list(c.inceleme_sebepleri),
+            emin=c.emin, neden=c.neden, kaynak=c.kaynak,
+            inceleme_sebepleri=list(c.inceleme_sebepleri),
         )
 
-    def to_candidate(self, kaynak: str) -> Candidate:
+    def to_candidate(self, kaynak: str | None = None) -> Candidate:
         return Candidate(
             aciklama=self.aciklama, tutar=self.tutar, kategori=self.kategori, tip=self.tip,
             direction=self.direction, tarih=self.tarih, para_birimi=self.para_birimi,
-            emin=self.emin, kaynak=kaynak, inceleme_sebepleri=list(self.inceleme_sebepleri),
+            emin=self.emin, neden=self.neden, kaynak=kaynak or self.kaynak,
+            inceleme_sebepleri=list(self.inceleme_sebepleri),
         )
 
 
@@ -61,13 +65,14 @@ class IslemModel(BaseModel):
     tarih: date
     kaynak: str
     created_at: datetime | None = None
+    ekleyen: str | None = None  # hane havuzunda kaydı ekleyen başka üyenin adı
 
     @classmethod
-    def from_tx(cls, t: Transaction) -> IslemModel:
+    def from_tx(cls, t: Transaction, *, ekleyen: str | None = None) -> IslemModel:
         return cls(
             id=t.id, direction=t.direction, tip=t.tip, kategori=t.kategori,
             aciklama=t.aciklama, tutar=t.tutar, para_birimi=t.para_birimi,
-            tarih=t.tarih, kaynak=t.kaynak, created_at=t.created_at,
+            tarih=t.tarih, kaynak=t.kaynak, created_at=t.created_at, ekleyen=ekleyen,
         )
 
 
@@ -97,10 +102,14 @@ class IslemGuncelleIstek(BaseModel):
 
 
 class BenModel(BaseModel):
-    plan: str
-    ay_kayit: int
-    limit: int
+    plan: str                       # etkin plan: base | pro
+    ham_plan: str = "base"          # DB değeri: trial | base | pro
+    trial_bitis: datetime | None = None
+    ai_limit: int                   # aylık AI kayıt tavanı (pro → çok büyük)
+    ay_kayit: int                   # bu ay kullanılan AI kaydı
+    limit: int                      # geriye dönük alias (= ai_limit)
     toplam_kayit: int = 0
+    hane_rol: str | None = None     # hanedeyse rolü, değilse null
 
 
 # --------------------------------------------------------------------------- #
@@ -130,18 +139,62 @@ class KategoriOlusturIstek(BaseModel):
     keywords: list[str] = Field(default_factory=list)
 
 
+class BolumEkleIstek(BaseModel):
+    tip: Tip
+
+
 class KategoriGuncelleIstek(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=60)
     tip: Tip | None = None
     color: str | None = None
+    keywords: list[str] | None = None
     is_active: bool | None = None
     sort_order: int | None = None
 
     def kolonlar(self) -> dict:
-        m = {"name": "name", "tip": "type", "color": "color",
+        m = {"name": "name", "tip": "type", "color": "color", "keywords": "keywords",
              "is_active": "is_active", "sort_order": "sort_order"}
         return {kol: getattr(self, alan) for alan, kol in m.items()
                 if getattr(self, alan) is not None}
+
+
+# --------------------------------------------------------------------------- #
+# Hane (aile paylaşımı)
+# --------------------------------------------------------------------------- #
+HaneRol = Literal["owner", "editor", "viewer"]
+
+
+class HaneOlusturIstek(BaseModel):
+    ad: str = Field(min_length=1, max_length=60)
+    uye_adi: str = Field(default="", max_length=60)
+
+
+class HaneKatilIstek(BaseModel):
+    kod: str = Field(min_length=4, max_length=12)
+    uye_adi: str = Field(default="", max_length=60)
+
+
+class HaneAdIstek(BaseModel):
+    ad: str = Field(min_length=1, max_length=60)
+
+
+class HaneRolIstek(BaseModel):
+    rol: HaneRol
+
+
+class HaneUyeModel(BaseModel):
+    user_id: str
+    ad: str
+    rol: HaneRol
+    ben: bool
+
+
+class HaneModel(BaseModel):
+    ad: str
+    kod: str
+    rol: HaneRol
+    owner: bool
+    uyeler: list[HaneUyeModel]
 
 
 # --------------------------------------------------------------------------- #

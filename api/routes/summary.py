@@ -5,6 +5,7 @@ from datetime import date
 
 from fastapi import APIRouter, Query
 
+from api import deps
 from api.deps import CurrentUser
 from api.schemas import HedefIlerlemeModel, OzetGovde, OzetModel, YatirimModel
 from core import repo
@@ -25,8 +26,9 @@ async def summary(
     onceki_ref = donem_kaydir(period, ref, -1)  # type: ignore[arg-type]
     obas, obit = donem_araligi(period, onceki_ref)  # type: ignore[arg-type]
 
-    bu_txs = await repo.list_period(user_id, bas, bit)
-    onceki_txs = await repo.list_period(user_id, obas, obit)
+    ids = await deps.kapsam(user_id)  # hane üyesiyse tüm üyeler, değilse [user_id]
+    bu_txs = await repo.list_period(ids, bas, bit)
+    onceki_txs = await repo.list_period(ids, obas, obit)
 
     hedefler: list[HedefIlerlemeModel] = []
     yatirim: YatirimModel | None = None

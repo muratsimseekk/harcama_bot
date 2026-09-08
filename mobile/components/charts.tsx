@@ -1,8 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
 import { BarChart, PieChart } from "react-native-gifted-charts";
 import { StyleSheet, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import { tutarKisa, yuzde } from "@/lib/format";
-import { paletRenk, SP, T, useRenkler } from "@/lib/theme";
+import { kategoriIkon } from "@/lib/kategoriIkon";
+import { useDagilimRenkleri } from "@/lib/kategoriRenk";
+import { R, SP, T, useRenkler } from "@/lib/theme";
 
 export interface Dilim {
   ad: string;
@@ -13,9 +16,12 @@ export interface Dilim {
 
 export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
   const renk = useRenkler();
+  const renkDizi = useDagilimRenkleri();
   const dolu = dilimler.filter((d) => d.tutar > 0);
-  const veri = dolu.map((d, i) => ({ value: d.tutar, color: d.renk || paletRenk(i) }));
-  const toplam = dolu.reduce((s, d) => s + d.tutar, 0);
+  const paleti = renkDizi(dolu.length);
+  const parcalar = dolu.map((d, i) => ({ ...d, c: d.renk || paleti[i] }));
+  const toplam = parcalar.reduce((s, d) => s + d.tutar, 0);
+  const veri = parcalar.map((d) => ({ value: d.tutar, color: d.c }));
 
   if (veri.length === 0) {
     return (
@@ -26,30 +32,42 @@ export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
   }
 
   return (
-    <View style={s.pastaSatir}>
-      <PieChart
-        data={veri}
-        donut
-        radius={74}
-        innerRadius={52}
-        innerCircleColor={renk.card}
-        strokeWidth={2}
-        strokeColor={renk.card}
-        centerLabelComponent={() => (
-          <View style={{ alignItems: "center" }}>
-            <Text style={{ color: renk.text, fontSize: 15, fontWeight: "800" }}>{tutarKisa(toplam)}</Text>
-            <Text style={{ color: renk.textFaint, fontSize: 10, fontWeight: "600" }}>₺ toplam</Text>
-          </View>
-        )}
-      />
-      <View style={s.lejant}>
-        {dolu.slice(0, 6).map((d, i) => (
-          <View key={`${d.ad}-${i}`} style={s.lejantSatir}>
-            <View style={[s.nokta, { backgroundColor: d.renk || paletRenk(i) }]} />
-            <Text style={[s.lejantAd, { color: renk.text }]} numberOfLines={1}>
+    <View style={{ gap: SP.lg }}>
+      <View style={{ alignItems: "center" }}>
+        <PieChart
+          data={veri}
+          donut
+          radius={82}
+          innerRadius={56}
+          innerCircleColor={renk.card}
+          strokeWidth={3}
+          strokeColor={renk.card}
+          centerLabelComponent={() => (
+            <View style={{ alignItems: "center" }}>
+              <Text style={{ color: renk.textFaint, fontSize: 10, fontWeight: "700", letterSpacing: 0.3 }}>
+                TOPLAM
+              </Text>
+              <Text style={{ color: renk.text, fontSize: 17, fontWeight: "800", letterSpacing: -0.3 }}>
+                {tutarKisa(toplam)} ₺
+              </Text>
+            </View>
+          )}
+        />
+      </View>
+
+      <View style={{ gap: 2 }}>
+        {parcalar.map((d, i) => (
+          <View key={`${d.ad}-${i}`} style={s.satir}>
+            <View style={[s.ikonKutu, { backgroundColor: d.c + "22" }]}>
+              <Ionicons name={kategoriIkon(d.ad)} size={15} color={d.c} />
+            </View>
+            <Text style={[s.ad, { color: renk.text }]} numberOfLines={1}>
               {d.ad}
             </Text>
-            <Text style={[s.lejantOran, { color: renk.textMuted }]}>{yuzde(d.oran)}</Text>
+            <Text style={[s.oran, { color: renk.textFaint }]}>{yuzde(d.oran)}</Text>
+            <Text style={[s.tutar, { color: renk.text }]} numberOfLines={1}>
+              {tutarKisa(d.tutar)} ₺
+            </Text>
           </View>
         ))}
       </View>
@@ -109,10 +127,10 @@ export function IkiliCubukGrafik({
 }
 
 const s = StyleSheet.create({
-  pastaSatir: { flexDirection: "row", alignItems: "center", gap: SP.lg },
-  lejant: { flex: 1, gap: SP.sm },
-  lejantSatir: { flexDirection: "row", alignItems: "center", gap: SP.sm },
-  nokta: { width: 9, height: 9, borderRadius: 3 },
-  lejantAd: { flex: 1, fontSize: 13, fontWeight: "500" },
-  lejantOran: { fontSize: 12.5, fontWeight: "700" },
+  satir: { flexDirection: "row", alignItems: "center", gap: SP.sm, paddingVertical: 7 },
+  ikonKutu: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  ad: { flex: 1, fontSize: 14, fontWeight: "600" },
+  oran: { fontSize: 12.5, fontWeight: "600", width: 40, textAlign: "right" },
+  tutar: { fontSize: 13.5, fontWeight: "700", width: 92, textAlign: "right", fontVariant: ["tabular-nums"] },
+  _r: { borderRadius: R.sm },
 });

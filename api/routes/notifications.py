@@ -6,6 +6,7 @@ import calendar
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from api import deps
 from api.deps import CurrentUser
 from core import repo
 from core.dates import donem_araligi, today, turkce_tutar
@@ -35,7 +36,8 @@ def _kalan_gun() -> int:
 @router.get("/notifications", response_model=BildirimYanit)
 async def notifications(user_id: CurrentUser) -> BildirimYanit:
     bas, bit = donem_araligi("month", today())
-    txs = await repo.list_period(user_id, bas, bit)
+    ids = await deps.kapsam(user_id)
+    txs = await repo.list_period(ids, bas, bit)
     kalan_gun = _kalan_gun()
     out: list[Bildirim] = []
 
@@ -87,7 +89,7 @@ async def notifications(user_id: CurrentUser) -> BildirimYanit:
                        f"Şu ana kadar {turkce_tutar(y['birikmis'])} ₺."),
             ))
 
-    for t in (await repo.list_recent(user_id, 4)):
+    for t in (await repo.list_recent(ids, 4)):
         isaret = "+" if t.direction == "gelir" else "-"
         out.append(Bildirim(
             tur="islem", grup="Bu hafta", ikon="cash",

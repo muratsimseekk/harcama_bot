@@ -14,10 +14,11 @@ def test_candidate_dict_roundtrip():
     a = Candidate(
         aciklama="galvaniz", tutar=1500.0, kategori="Galvaniz", tip="isletme",
         direction="gider", tarih=date(2026, 5, 2), emin=False,
+        neden="galvaniz kaplama",
     )
     a2 = Candidate.from_dict(a.to_dict())
-    assert (a2.aciklama, a2.tutar, a2.kategori, a2.tip, a2.tarih, a2.emin) == \
-           (a.aciklama, a.tutar, a.kategori, a.tip, a.tarih, a.emin)
+    assert (a2.aciklama, a2.tutar, a2.kategori, a2.tip, a2.tarih, a2.emin, a2.neden) == \
+           (a.aciklama, a.tutar, a.kategori, a.tip, a.tarih, a.emin, a.neden)
 
 
 def test_candidate_to_row():

@@ -5,28 +5,29 @@ from datetime import date
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from api import usage
+from api import deps, usage
 from api.deps import CurrentUser
 from api.schemas import IslemGuncelleIstek, IslemModel, IslemOlusturIstek
 from core import repo
-from core.config import settings
 
 router = APIRouter(prefix="/v1/transactions", tags=["transactions"])
 
 
 @router.post("", response_model=list[IslemModel], status_code=status.HTTP_201_CREATED)
 async def olustur(user_id: CurrentUser, istek: IslemOlusturIstek) -> list[IslemModel]:
-    plan = await usage.plan(user_id)
-    if plan == "free":
+    durum = await usage.plan_durum(user_id)
+    ai_yeni = sum(1 for m in istek.candidates if m.kaynak in usage.AI_KAYNAKLARI)
+    if not durum.pro and ai_yeni > 0:
         mevcut = await usage.ay_kayit_sayisi(user_id)
-        if mevcut + len(istek.candidates) > settings.FREE_AYLIK_LIMIT:
+        if mevcut + ai_yeni > durum.ai_limit:
             raise HTTPException(
                 status.HTTP_402_PAYMENT_REQUIRED,
-                f"Aylık ücretsiz kayıt limitine ulaştın ({settings.FREE_AYLIK_LIMIT}). "
-                "Pro'ya geçerek sınırsız kayıt yapabilirsin.",
+                f"Base üyelikte aylık {durum.ai_limit} AI kaydı hakkın var. "
+                "Pro'ya geçerek sınırsız sesli/yazılı kayıt yapabilirsin. "
+                "(Elle işlem ekleme sınırsız.)",
             )
 
-    adaylar = [m.to_candidate("mobile") for m in istek.candidates]
+    adaylar = [m.to_candidate() for m in istek.candidates]
     txs = await repo.add_many(adaylar, user_id)
     return [IslemModel.from_tx(t) for t in txs]
 
@@ -40,23 +41,41 @@ async def listele(
     tip: str | None = Query(default=None),
     direction: str | None = Query(default=None),
 ) -> list[IslemModel]:
+    uyelik = await deps.hane_uyeligi(user_id)
+    ids = [user_id] if uyelik is None else await repo.hane_uye_idleri(uyelik.household_id)
+
     if bas and bit:
-        txs = await repo.list_period(user_id, bas, bit, direction=direction, tip=tip)
+        txs = await repo.list_period(ids, bas, bit, direction=direction, tip=tip)
         txs = list(reversed(txs))[:limit]
     else:
-        txs = await repo.list_recent(user_id, limit)
+        txs = await repo.list_recent(ids, limit)
         if tip:
             txs = [t for t in txs if t.tip == tip]
         if direction:
             txs = [t for t in txs if t.direction == direction]
-    return [IslemModel.from_tx(t) for t in txs]
+
+    ad_map: dict[str, str] = {}
+    if uyelik is not None:
+        ad_map = {u.user_id: u.ad for u in await repo.hane_uyeleri(uyelik.household_id)}
+    return [
+        IslemModel.from_tx(t, ekleyen=ad_map.get(t.user_id) if t.user_id != user_id else None)
+        for t in txs
+    ]
 
 
 async def _sahiplik(tx_id: str, user_id: str):
     tx = await repo.get(tx_id)
-    if not tx or tx.user_id != user_id:
+    if not tx:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Kayıt bulunamadı")
-    return tx
+    if tx.user_id == user_id:
+        return tx
+    # Hane üyesi + düzenleme yetkisi (owner/editor) → aynı hanedeki başkasının kaydını düzenleyebilir.
+    uyelik = await deps.hane_uyeligi(user_id)
+    if uyelik and uyelik.rol in ("owner", "editor"):
+        sahip = await deps.hane_uyeligi(tx.user_id)
+        if sahip and sahip.household_id == uyelik.household_id:
+            return tx
+    raise HTTPException(status.HTTP_404_NOT_FOUND, "Kayıt bulunamadı")
 
 
 @router.patch("/{tx_id}", response_model=IslemModel)

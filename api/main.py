@@ -10,6 +10,7 @@ from api.routes import (
     budgets,
     capture,
     categories,
+    hane,
     me,
     notifications,
     push,
@@ -46,6 +47,7 @@ app.include_router(budgets.router)
 app.include_router(notifications.router)
 app.include_router(push.router)
 app.include_router(me.router)
+app.include_router(hane.router)
 
 
 @app.get("/health", tags=["meta"])

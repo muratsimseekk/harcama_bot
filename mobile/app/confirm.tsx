@@ -34,6 +34,10 @@ export default function Confirm() {
         Alert.alert("Geçersiz tutar", `"${a.aciklama}" için tutar 0'dan büyük olmalı.`);
         return;
       }
+      if (!a.kategori?.trim()) {
+        Alert.alert("Kategori gerekli", `"${a.aciklama}" için bir kategori seç veya oluştur.`);
+        return;
+      }
     }
     setKaydediliyor(true);
     try {
@@ -43,7 +47,7 @@ export default function Confirm() {
     } catch (e) {
       setKaydediliyor(false);
       Alert.alert(
-        e instanceof ApiError && e.status === 402 ? "Limit doldu" : "Kaydedilemedi",
+        e instanceof ApiError && e.status === 402 ? "AI limiti doldu" : "Kaydedilemedi",
         e instanceof Error ? e.message : "Tekrar dene.",
       );
     }
@@ -62,13 +66,28 @@ export default function Confirm() {
         )}
 
         {adaylar.map((a, i) => (
-          <View key={i} style={[s.kart, { backgroundColor: renk.card, borderColor: renk.border }, golge(1)]}>
+          <View
+            key={i}
+            style={[
+              s.kart,
+              {
+                backgroundColor: renk.card,
+                borderColor: a.kategori?.trim() ? renk.border : renk.warn,
+              },
+              golge(1),
+            ]}
+          >
             {adaylar.length > 1 && (
               <Pressable onPress={() => sil(i)} hitSlop={10} style={s.silBtn}>
                 <Ionicons name="close-circle" size={22} color={renk.textFaint} />
               </Pressable>
             )}
             <IslemFormu deger={a} guncelle={(yama) => guncelle(i, yama)} />
+            {!!a.neden && (
+              <Text style={{ color: renk.textFaint, fontSize: 12, fontStyle: "italic" }}>
+                AI: {a.neden}
+              </Text>
+            )}
             {a.inceleme_sebepleri.length > 0 && (
               <View style={s.sebepler}>
                 {a.inceleme_sebepleri.map((sb, k) => (

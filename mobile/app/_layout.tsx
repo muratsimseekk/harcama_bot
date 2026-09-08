@@ -114,6 +114,8 @@ function Kapi() {
     headerStyle: { backgroundColor: renk.card },
     headerTintColor: renk.text,
     headerShadowVisible: false,
+    headerBackButtonDisplayMode: "minimal",
+    headerBackTitle: "",
   } as const;
 
   return (
@@ -125,6 +127,7 @@ function Kapi() {
       <Stack.Screen name="bildirimler" />
       <Stack.Screen name="ara" options={{ presentation: "modal" }} />
       <Stack.Screen name="kategori-yonet" options={{ ...baslik, title: "Kategoriler" }} />
+      <Stack.Screen name="hane/index" options={{ ...baslik, title: "Hane" }} />
       <Stack.Screen name="ayarlar/index" options={{ ...baslik, title: "Ayarlar" }} />
       <Stack.Screen name="ayarlar/profil-duzenle" options={{ ...baslik, title: "Profili Düzenle" }} />
       <Stack.Screen name="ayarlar/guvenlik" options={{ ...baslik, title: "Güvenlik" }} />

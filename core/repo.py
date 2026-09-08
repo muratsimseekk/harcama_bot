@@ -6,13 +6,24 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import secrets
 from datetime import date
 
 from supabase import Client, create_client
 
 from core.config import settings
 from core.dates import now
-from core.models import Budget, Candidate, Category, Goal, Transaction
+from core.models import (
+    Budget,
+    Candidate,
+    Category,
+    Goal,
+    HaneUye,
+    HaneUyelik,
+    Household,
+    Transaction,
+)
+from core.varsayilan_kategoriler import VARSAYILAN_KATEGORILER
 
 logger = logging.getLogger(__name__)
 
@@ -99,24 +110,30 @@ async def soft_delete(tx_id: str) -> bool:
     return await asyncio.to_thread(_run)
 
 
-async def list_recent(user_id: str, n: int = 5) -> list[Transaction]:
+def _kullanici_filtresi(q, user_id: str | list[str]):
+    """Tek kullanıcı → .eq; birden çok (hane) → .in_."""
+    if isinstance(user_id, str):
+        return q.eq("user_id", user_id)
+    return q.in_("user_id", list(user_id))
+
+
+async def list_recent(user_id: str | list[str], n: int = 5) -> list[Transaction]:
     def _run() -> list[dict]:
-        res = (
-            _db().table("transactions")
-            .select("*")
-            .eq("user_id", user_id)
-            .is_("deleted_at", "null")
+        q = _db().table("transactions").select("*")
+        q = _kullanici_filtresi(q, user_id)
+        return (
+            q.is_("deleted_at", "null")
             .order("created_at", desc=True)
             .limit(n)
             .execute()
+            .data
         )
-        return res.data
 
     return [Transaction.from_row(r) for r in await asyncio.to_thread(_run)]
 
 
 async def list_period(
-    user_id: str,
+    user_id: str | list[str],
     baslangic: date,
     bitis: date,
     *,
@@ -124,11 +141,10 @@ async def list_period(
     tip: str | None = None,
 ) -> list[Transaction]:
     def _run() -> list[dict]:
+        q = _db().table("transactions").select("*")
+        q = _kullanici_filtresi(q, user_id)
         q = (
-            _db().table("transactions")
-            .select("*")
-            .eq("user_id", user_id)
-            .is_("deleted_at", "null")
+            q.is_("deleted_at", "null")
             .gte("occurred_on", baslangic.isoformat())
             .lte("occurred_on", bitis.isoformat())
         )
@@ -194,22 +210,6 @@ PALET = [
     "#A56E5A", "#6E8B8A", "#B0894B", "#5F8A6B", "#8C6D9C", "#7C8B3E",
 ]
 
-VARSAYILAN_KATEGORILER: dict[str, list[str]] = {
-    "kisisel": [
-        "Market", "Sigara/İçecek", "Kafe/Restoran", "Ulaşım", "Sağlık",
-        "Giyim", "Eğlence", "Fatura", "Telefon/İnternet", "Diğer",
-    ],
-    "isletme": [
-        "Hammadde", "Nakliye", "Personel", "Yakıt/Araç", "Elektrik/Su",
-        "Kira", "Makine/Ekipman", "Galvaniz", "Diğer İşletme",
-    ],
-    "yatirim": [
-        "BES/Emeklilik", "Hisse Senedi", "Kripto Para", "Altın/Döviz",
-        "Yatırım Fonu", "Tahvil/Bono", "Diğer Yatırım",
-    ],
-}
-
-
 async def categories_list(user_id: str, *, only_active: bool = True) -> list[Category]:
     def _run() -> list[dict]:
         q = _db().table("categories").select("*").eq("user_id", user_id)
@@ -268,10 +268,15 @@ async def category_delete(cat_id: str) -> bool:
     return await asyncio.to_thread(_run)
 
 
-async def categories_seed(user_id: str) -> int:
-    """Kullanıcının hiç kategorisi yoksa: varsayılan liste + geçmişteki kategoriler.
-    Var olanı bozmaz (idempotent). Eklenen satır sayısını döndürür.
+async def categories_seed(user_id: str, tipler: list[str] | None = None) -> int:
+    """Kullanıcının hiç kategorisi yoksa: seçili bölümlerin varsayılan listesi +
+    geçmiş işlemlerdeki kategoriler. Var olanı bozmaz (idempotent).
+
+    `tipler` verilirse yalnız o bölümler seed'lenir (örn. yeni kullanıcıya sadece
+    "kisisel"). None → hepsi.
     """
+    izin = set(tipler) if tipler is not None else set(VARSAYILAN_KATEGORILER)
+
     def _run() -> int:
         db = _db()
         mevcut = db.table("categories").select("id").eq("user_id", user_id).limit(1).execute()
@@ -297,26 +302,65 @@ async def categories_seed(user_id: str) -> int:
             bas += 1000
 
         satirlar: list[dict] = []
-        eklendi: set[str] = set()
-        for tip, adlar in VARSAYILAN_KATEGORILER.items():
-            for i, ad in enumerate(adlar):
-                if ad.lower() in eklendi:
+        eklendi: set[tuple[str, str]] = set()  # (tip, ad.lower()) — bölüm bazlı benzersiz
+        for tip, ogeler in VARSAYILAN_KATEGORILER.items():
+            if tip not in izin:
+                continue
+            for i, oge in enumerate(ogeler):
+                ad = oge["name"]
+                anahtar = (tip, ad.lower())
+                if anahtar in eklendi:
                     continue
-                eklendi.add(ad.lower())
+                eklendi.add(anahtar)
                 satirlar.append({
                     "user_id": user_id, "name": ad, "type": tip,
                     "color": PALET[len(satirlar) % len(PALET)], "sort_order": i,
+                    "keywords": list(oge.get("keywords", [])),
                 })
         for ad, tip in gecmis.items():
-            if ad.lower() in eklendi:
+            tip = tip if tip in VARSAYILAN_KATEGORILER else "kisisel"
+            if tip not in izin:
                 continue
-            eklendi.add(ad.lower())
+            anahtar = (tip, ad.lower())
+            if anahtar in eklendi:
+                continue
+            eklendi.add(anahtar)
             satirlar.append({
-                "user_id": user_id, "name": ad,
-                "type": tip if tip in VARSAYILAN_KATEGORILER else "kisisel",
+                "user_id": user_id, "name": ad, "type": tip,
                 "color": PALET[len(satirlar) % len(PALET)], "sort_order": 50,
             })
 
+        if not satirlar:
+            return 0
+        db.table("categories").insert(satirlar).execute()
+        return len(satirlar)
+
+    return await asyncio.to_thread(_run)
+
+
+async def category_seed_tip(user_id: str, tip: str) -> int:
+    """Bir bölümün varsayılan kategorilerinden kullanıcıda henüz olmayanları ekler.
+    Kullanıcı sonradan "İşletme bölümü ekle" dediğinde çağrılır. Eklenen sayıyı döndürür.
+    """
+    if tip not in VARSAYILAN_KATEGORILER:
+        return 0
+
+    def _run() -> int:
+        db = _db()
+        mevcut = {
+            (r.get("name") or "").lower()
+            for r in db.table("categories").select("name")
+            .eq("user_id", user_id).eq("type", tip).execute().data
+        }
+        satirlar: list[dict] = []
+        for i, oge in enumerate(VARSAYILAN_KATEGORILER[tip]):
+            if oge["name"].lower() in mevcut:
+                continue
+            satirlar.append({
+                "user_id": user_id, "name": oge["name"], "type": tip,
+                "color": PALET[i % len(PALET)], "sort_order": i,
+                "keywords": list(oge.get("keywords", [])),
+            })
         if not satirlar:
             return 0
         db.table("categories").insert(satirlar).execute()
@@ -473,5 +517,159 @@ async def bildirim_isaretle(user_id: str, anahtar: str) -> None:
             {"user_id": user_id, "anahtar": anahtar, "gonderildi_at": now().isoformat()},
             on_conflict="user_id,anahtar",
         ).execute()
+
+    await asyncio.to_thread(_run)
+
+
+# --------------------------------------------------------------------------- #
+# households (hane / aile paylaşımı)
+# --------------------------------------------------------------------------- #
+_KOD_ALFABE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # I, O, 0, 1 yok
+
+
+def _kod_uret(n: int = 6) -> str:
+    return "".join(secrets.choice(_KOD_ALFABE) for _ in range(n))
+
+
+async def hane_uyeligi(user_id: str) -> HaneUyelik | None:
+    """Kullanıcının hane üyeliği (hane bilgisi + kendi rolü) ya da None.
+    Tablolar henüz yoksa / hata olursa None döner (havuzlama devre dışı, güvenli)."""
+    def _run() -> HaneUyelik | None:
+        db = _db()
+        m = (
+            db.table("household_members").select("household_id,rol")
+            .eq("user_id", user_id).limit(1).execute()
+        )
+        if not m.data:
+            return None
+        hid = m.data[0]["household_id"]
+        h = db.table("households").select("*").eq("id", hid).limit(1).execute()
+        if not h.data:
+            return None
+        r = h.data[0]
+        return HaneUyelik(
+            household_id=hid, ad=r.get("ad", ""), kod=r.get("kod", ""),
+            owner_id=r.get("owner_id", ""), rol=m.data[0]["rol"],
+        )
+
+    try:
+        return await asyncio.to_thread(_run)
+    except Exception:
+        logger.warning("hane_uyeligi sorgusu başarısız (tablo yok?) → None")
+        return None
+
+
+async def hane_uyeleri(household_id: str) -> list[HaneUye]:
+    def _run() -> list[dict]:
+        return (
+            _db().table("household_members").select("user_id,ad,rol")
+            .eq("household_id", household_id).order("joined_at").execute().data
+        )
+
+    return [HaneUye.from_row(r) for r in await asyncio.to_thread(_run)]
+
+
+async def hane_uye_idleri(household_id: str) -> list[str]:
+    def _run() -> list[str]:
+        rows = (
+            _db().table("household_members").select("user_id")
+            .eq("household_id", household_id).execute().data
+        )
+        return [r["user_id"] for r in rows]
+
+    return await asyncio.to_thread(_run)
+
+
+async def hane_olustur(user_id: str, ad: str, uye_adi: str) -> Household:
+    def _run() -> dict:
+        db = _db()
+        for _ in range(6):
+            kod = _kod_uret()
+            try:
+                h = db.table("households").insert(
+                    {"ad": ad.strip(), "kod": kod, "owner_id": user_id}
+                ).execute().data[0]
+                break
+            except Exception:
+                continue
+        else:
+            raise RuntimeError("Hane kodu üretilemedi")
+        db.table("household_members").insert(
+            {"household_id": h["id"], "user_id": user_id,
+             "ad": uye_adi.strip() or "Üye", "rol": "owner"}
+        ).execute()
+        return h
+
+    return Household.from_row(await asyncio.to_thread(_run))
+
+
+async def hane_kod_ile_bul(kod: str) -> Household | None:
+    def _run() -> dict | None:
+        res = (
+            _db().table("households").select("*")
+            .eq("kod", kod.strip().upper()).limit(1).execute()
+        )
+        return res.data[0] if res.data else None
+
+    r = await asyncio.to_thread(_run)
+    return Household.from_row(r) if r else None
+
+
+async def hane_katil(user_id: str, household_id: str, uye_adi: str) -> None:
+    """Üye ekler. `ux_hh_one_per_user` çakışması → exception (route 409'a çevirir)."""
+    def _run() -> None:
+        _db().table("household_members").insert(
+            {"household_id": household_id, "user_id": user_id,
+             "ad": uye_adi.strip() or "Üye", "rol": "editor"}
+        ).execute()
+
+    await asyncio.to_thread(_run)
+
+
+async def hane_ad_guncelle(household_id: str, ad: str) -> None:
+    def _run() -> None:
+        _db().table("households").update({"ad": ad.strip()}).eq("id", household_id).execute()
+
+    await asyncio.to_thread(_run)
+
+
+async def hane_kod_yenile(household_id: str) -> str:
+    def _run() -> str:
+        db = _db()
+        for _ in range(6):
+            kod = _kod_uret()
+            try:
+                db.table("households").update({"kod": kod}).eq("id", household_id).execute()
+                return kod
+            except Exception:
+                continue
+        raise RuntimeError("Hane kodu üretilemedi")
+
+    return await asyncio.to_thread(_run)
+
+
+async def hane_uye_rol(household_id: str, hedef_user_id: str, rol: str) -> None:
+    def _run() -> None:
+        (
+            _db().table("household_members").update({"rol": rol})
+            .eq("household_id", household_id).eq("user_id", hedef_user_id).execute()
+        )
+
+    await asyncio.to_thread(_run)
+
+
+async def hane_uye_cikar(household_id: str, hedef_user_id: str) -> None:
+    def _run() -> None:
+        (
+            _db().table("household_members").delete()
+            .eq("household_id", household_id).eq("user_id", hedef_user_id).execute()
+        )
+
+    await asyncio.to_thread(_run)
+
+
+async def hane_sil(household_id: str) -> None:
+    def _run() -> None:
+        _db().table("households").delete().eq("id", household_id).execute()
 
     await asyncio.to_thread(_run)

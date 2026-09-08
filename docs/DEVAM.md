@@ -379,12 +379,20 @@ Banka SMS okuma · işletme/KDV modu.
 - GitHub: https://github.com/muratsimseekk/harcama_bot/tree/faz-m1-mobil
 - Supabase proje: `mwuuicgxxruoesutbicv` · EAS proje: `@muratsimseekk/harcama-mobil` (`b2e4ce51-3042-4535-9644-89f867234215`)
 
-## 8. Fiyatlandırma kararı (Faz 0.5 için)
-Ücretsiz: 50 YZ kayıt/ay · 1 birikim hedefi · 3 kategori limiti · temel özet.
-Pro (~149 TL/ay veya ~999 TL/yıl, 7 gün deneme): sınırsız YZ · fiş okuma · YZ öngörüleri ·
-gelişmiş raporlar · CSV/Excel/PDF export · tekrarlayan/taksit · çoklu hedef + borç · hane.
-200 TL abonelikte: −%20 KDV −%15 mağaza = eline ~141 TL; gelir vergisi sonrası ~110–141 TL
-(genç girişimci istisnasıyla üst uç). Başa baş ~12–18 abone (Bağ-Kur hariç).
+## 8. Üyelik / fiyatlandırma — 3 katman
+
+**Kod tarafı hazır** (`api/usage.py` `plan_durum`, `scripts/schema_uyelik.sql`).
+Gerçek ödeme (RevenueCat + mağaza + `plan_bitis`) = Faz 0.5.
+
+| Katman | Süre/Fiyat | Kapsam |
+|---|---|---|
+| **Deneme (trial)** | Yeni kullanıcı, 7 gün otomatik | Tam Pro deneyimi: sınırsız AI + hane + hepsi |
+| **Base** | Aylık ~X TL (Faz 0.5'te belirlenecek) | Aylık **100 AI kaydı** (env `BASE_AI_AYLIK`), elle giriş sınırsız, temel özet/analiz/bütçe. Hane YOK. |
+| **Pro** | ~2× Base (~149 TL/ay öneri, 999 TL/yıl) | Sınırsız AI · **hane paylaşımı** · (ileride: fiş okuma, YZ öngörüleri, gelişmiş raporlar, export, tekrarlayan/taksit, çoklu hedef+borç, kişi-bazı hane kırılımı, bağımsız hane bütçesi — bkz `docs/HANE-PRO.md`) |
+
+Deneme bitip ödeme yoksa kullanıcı Base limitleriyle devam eder (kilitlenmez), Pro'ya davet edilir.
+Mağaza kesintisi: 200 TL abonelikte −%20 KDV −%15 mağaza = eline ~141 TL; gelir vergisi
+sonrası ~110–141 TL. Başa baş ~12–18 Pro abone (Bağ-Kur hariç).
 
 ---
 

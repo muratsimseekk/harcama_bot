@@ -141,13 +141,13 @@ export function IkonDaire({
       style={{
         width: boyut,
         height: boyut,
-        borderRadius: boyut * 0.32,
-        backgroundColor: c + "22",
+        borderRadius: boyut * 0.3,
+        backgroundColor: c + "26",
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <Ionicons name={ikon} size={boyut * 0.5} color={c} />
+      <Ionicons name={ikon} size={boyut * 0.46} color={c} />
     </View>
   );
 }

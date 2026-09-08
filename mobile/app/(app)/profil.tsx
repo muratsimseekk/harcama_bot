@@ -4,6 +4,7 @@ import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DEV_NOAUTH } from "@/app/_layout";
 import { Metin as Text } from "@/components/Metin";
+import { PlanRozeti } from "@/components/PlanRozeti";
 import { useMe, useNotifications } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
 import { golge, R, SERIF, SP, T, useRenkler } from "@/lib/theme";
@@ -31,6 +32,7 @@ export default function Profil() {
 
   const satirlar: Satir[] = [
     { ikon: "person-outline", ad: "Profili Düzenle", git: "/ayarlar/profil-duzenle" },
+    { ikon: "people-outline", ad: "Hane", git: "/hane" },
     { ikon: "pricetags-outline", ad: "Kategoriler", git: "/kategori-yonet" },
     { ikon: "shield-checkmark-outline", ad: "Güvenlik", git: "/ayarlar/guvenlik" },
     { ikon: "settings-outline", ad: "Ayarlar", git: "/ayarlar" },
@@ -55,10 +57,11 @@ export default function Profil() {
           <Ionicons name="person" size={44} color={renk.aksan} />
         </View>
         <Text style={[s.isim, { color: renk.text }]}>
-          {DEV_NOAUTH ? "Yönetici" : me.data?.plan === "pro" ? "Pro Üye" : "Kullanıcı"}
+          {DEV_NOAUTH ? "Yönetici" : "Kullanıcı"}
         </Text>
+        {!DEV_NOAUTH && <PlanRozeti ben={me.data} />}
         <Text style={[s.id, { color: renk.textMuted }]}>
-          {me.data ? `${me.data.toplam_kayit} kayıt · bu ay ${me.data.ay_kayit}` : "…"}
+          {me.data ? `${me.data.toplam_kayit} kayıt · bu ay ${me.data.ay_kayit} AI` : "…"}
         </Text>
       </View>
 

@@ -6,6 +6,8 @@ import type {
   Butce,
   CaptureYanit,
   Granularity,
+  Hane,
+  HaneRol,
   Hedef,
   Islem,
   Kapsam,
@@ -117,6 +119,34 @@ export const api = {
     return jsonReq<Ben>("/v1/me", "GET");
   },
 
+  hane(): Promise<Hane | null> {
+    return jsonReq<Hane | null>("/v1/hane", "GET");
+  },
+  haneOlustur(ad: string, uyeAdi: string): Promise<Hane> {
+    return jsonReq<Hane>("/v1/hane", "POST", { ad, uye_adi: uyeAdi });
+  },
+  haneKatil(kod: string, uyeAdi: string): Promise<Hane> {
+    return jsonReq<Hane>("/v1/hane/katil", "POST", { kod, uye_adi: uyeAdi });
+  },
+  haneAd(ad: string): Promise<Hane> {
+    return jsonReq<Hane>("/v1/hane", "PATCH", { ad });
+  },
+  haneKod(): Promise<{ kod: string }> {
+    return jsonReq<{ kod: string }>("/v1/hane/kod", "POST");
+  },
+  haneUyeRol(uid: string, rol: HaneRol): Promise<{ ok: boolean }> {
+    return jsonReq(`/v1/hane/uye/${uid}`, "PATCH", { rol });
+  },
+  haneUyeCikar(uid: string): Promise<{ ok: boolean }> {
+    return jsonReq(`/v1/hane/uye/${uid}`, "DELETE");
+  },
+  haneAyril(uid: string): Promise<{ ok: boolean }> {
+    return jsonReq(`/v1/hane/uye/${uid}`, "DELETE");
+  },
+  haneSil(): Promise<{ ok: boolean }> {
+    return jsonReq("/v1/hane", "DELETE");
+  },
+
   summary(period: Granularity, ref?: string): Promise<Ozet> {
     const q = new URLSearchParams({ period });
     if (ref) q.set("ref", ref);
@@ -127,12 +157,21 @@ export const api = {
     return jsonReq<Kategori[]>("/v1/categories", "GET");
   },
 
-  createCategory(body: { name: string; tip: Tip; color?: string }): Promise<Kategori> {
+  createCategory(body: {
+    name: string;
+    tip: Tip;
+    color?: string;
+    keywords?: string[];
+  }): Promise<Kategori> {
     return jsonReq<Kategori>("/v1/categories", "POST", body);
   },
 
   patchCategory(id: string, body: Partial<Kategori>): Promise<Kategori> {
     return jsonReq<Kategori>(`/v1/categories/${id}`, "PATCH", body);
+  },
+
+  seedBolum(tip: Tip): Promise<{ eklendi: number }> {
+    return jsonReq(`/v1/categories/bolum`, "POST", { tip });
   },
 
   deleteCategory(id: string): Promise<{ silindi: boolean }> {

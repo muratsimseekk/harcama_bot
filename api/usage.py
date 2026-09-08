@@ -1,11 +1,29 @@
-"""Abonelik planı ve aylık kullanım sayacı."""
+"""Üyelik katmanları (Deneme → Base → Pro) ve aylık AI kullanım sayacı."""
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
+from datetime import datetime
 
 from core.config import settings
 from core.dates import now
 from core.repo import _db
+
+# "AI kaydı" sayılan kaynaklar — Base aylık tavanı bunları sayar, elle girişi saymaz.
+AI_KAYNAKLARI = ["mobile_text", "mobile_voice", "telegram_text", "telegram_voice"]
+_SINIRSIZ = 10**9
+
+
+@dataclass
+class PlanDurum:
+    ham: str                      # DB değeri: free | trial | base | pro
+    etkin: str                    # geçerli davranış: base | pro
+    trial_bitis: datetime | None
+    ai_limit: int                 # aylık AI kayıt tavanı (pro/trial → çok büyük)
+
+    @property
+    def pro(self) -> bool:
+        return self.etkin == "pro"
 
 
 def _dev_user(user_id: str) -> bool:
@@ -16,9 +34,12 @@ def _ay_basi_iso() -> str:
     return now().replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
 
 
-def _plan_oku(user_id: str) -> str:
-    res = _db().table("profiles").select("plan").eq("id", user_id).limit(1).execute()
-    return res.data[0]["plan"] if res.data else "free"
+def _profil_oku(user_id: str) -> dict:
+    res = (
+        _db().table("profiles").select("plan,trial_bitis")
+        .eq("id", user_id).limit(1).execute()
+    )
+    return res.data[0] if res.data else {"plan": "base", "trial_bitis": None}
 
 
 def _profil_garanti(user_id: str) -> None:
@@ -28,11 +49,12 @@ def _profil_garanti(user_id: str) -> None:
     ).execute()
 
 
-def _ay_kayit_sayisi(user_id: str) -> int:
+def _ay_ai_sayisi(user_id: str) -> int:
     res = (
         _db().table("transactions")
         .select("id", count="exact")
         .eq("user_id", user_id)
+        .in_("source", AI_KAYNAKLARI)
         .is_("deleted_at", "null")
         .gte("created_at", _ay_basi_iso())
         .execute()
@@ -51,13 +73,39 @@ def _toplam_kayit(user_id: str) -> int:
     return res.count or 0
 
 
-async def plan(user_id: str) -> str:
+def _coz(profil: dict) -> PlanDurum:
+    ham = profil.get("plan") or "base"
+    tb_raw = profil.get("trial_bitis")
+    tb: datetime | None = None
+    if tb_raw:
+        try:
+            tb = datetime.fromisoformat(str(tb_raw).replace("Z", "+00:00"))
+        except ValueError:
+            tb = None
+
+    if ham == "pro":
+        return PlanDurum(ham, "pro", tb, _SINIRSIZ)
+    if ham == "trial":
+        aktif = tb is not None and tb > now()
+        return PlanDurum(ham, "pro" if aktif else "base", tb,
+                         _SINIRSIZ if aktif else settings.BASE_AI_AYLIK)
+    # base / free (legacy) / bilinmeyen
+    return PlanDurum(ham, "base", tb, settings.BASE_AI_AYLIK)
+
+
+async def plan_durum(user_id: str) -> PlanDurum:
     if _dev_user(user_id):
-        return "pro"
+        return PlanDurum("pro", "pro", None, _SINIRSIZ)
     try:
-        return await asyncio.to_thread(_plan_oku, user_id)
+        profil = await asyncio.to_thread(_profil_oku, user_id)
     except Exception:
-        return "free"
+        return PlanDurum("base", "base", None, settings.BASE_AI_AYLIK)
+    return _coz(profil)
+
+
+async def plan(user_id: str) -> str:
+    """Geriye dönük: etkin planı ('base' | 'pro') döndürür."""
+    return (await plan_durum(user_id)).etkin
 
 
 async def profil_garanti(user_id: str) -> None:
@@ -70,7 +118,11 @@ async def profil_garanti(user_id: str) -> None:
 
 
 async def ay_kayit_sayisi(user_id: str) -> int:
-    return await asyncio.to_thread(_ay_kayit_sayisi, user_id)
+    """Bu ayki AI kaydı sayısı (Base tavanı bununla karşılaştırılır)."""
+    try:
+        return await asyncio.to_thread(_ay_ai_sayisi, user_id)
+    except Exception:
+        return 0
 
 
 async def toplam_kayit(user_id: str) -> int:

@@ -1,4 +1,4 @@
-import { Tabs } from "expo-router";
+import { Tabs } from "expo-router/js-tabs";
 import { AltNav } from "@/components/AltNav";
 
 export default function AppLayout() {

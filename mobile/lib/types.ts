@@ -10,6 +10,8 @@ export interface Aday {
   tarih: string; // YYYY-MM-DD
   para_birimi: string;
   emin: boolean;
+  neden?: string;
+  kaynak?: string; // capture'dan gelen adaylarda mobile_text/mobile_voice → AI limitine sayılır
   inceleme_sebepleri: string[];
 }
 
@@ -30,13 +32,35 @@ export interface Islem {
   tarih: string;
   kaynak: string;
   created_at: string | null;
+  ekleyen?: string | null; // hane havuzunda kaydı ekleyen başka üyenin adı
+}
+
+export type HaneRol = "owner" | "editor" | "viewer";
+
+export interface HaneUye {
+  user_id: string;
+  ad: string;
+  rol: HaneRol;
+  ben: boolean;
+}
+
+export interface Hane {
+  ad: string;
+  kod: string;
+  rol: HaneRol;
+  owner: boolean;
+  uyeler: HaneUye[];
 }
 
 export interface Ben {
-  plan: string;
-  ay_kayit: number;
-  limit: number;
+  plan: "base" | "pro"; // etkin plan
+  ham_plan?: string; // trial | base | pro
+  trial_bitis?: string | null;
+  ai_limit: number;
+  ay_kayit: number; // bu ay kullanılan AI kaydı
+  limit: number; // = ai_limit (geriye dönük)
   toplam_kayit: number;
+  hane_rol?: HaneRol | null;
 }
 
 export interface Kategori {

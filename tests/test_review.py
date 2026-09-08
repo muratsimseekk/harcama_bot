@@ -29,6 +29,10 @@ def test_diger_kategori_inceleme():
     assert any("belirsiz" in s.lower() for s in incele(_aday(kategori="Diğer")))
 
 
+def test_bos_kategori_inceleme():
+    assert any("seçilmedi" in s.lower() for s in incele(_aday(kategori="")))
+
+
 def test_genel_aciklama_inceleme():
     assert any("genel" in s.lower() for s in incele(_aday(aciklama="ödeme")))
 

@@ -32,6 +32,7 @@ class Candidate:
     tarih: date = field(default_factory=date.today)
     para_birimi: str = "TRY"
     emin: bool = True
+    neden: str = ""  # AI'ın kategori/tip gerekçesi (kalıcı değil, onay ekranında gösterilir)
     ham_girdi: str = ""
     kaynak: str = "telegram_text"
     # onay aşamasında dolar:
@@ -52,6 +53,7 @@ class Candidate:
             "tarih": self.tarih.isoformat(),
             "para_birimi": self.para_birimi,
             "emin": self.emin,
+            "neden": self.neden,
             "ham_girdi": self.ham_girdi,
             "kaynak": self.kaynak,
             "inceleme_sebepleri": self.inceleme_sebepleri,
@@ -68,6 +70,7 @@ class Candidate:
             tarih=date.fromisoformat(d["tarih"]),
             para_birimi=d.get("para_birimi", "TRY"),
             emin=d.get("emin", True),
+            neden=d.get("neden", ""),
             ham_girdi=d.get("ham_girdi", ""),
             kaynak=d.get("kaynak", "telegram_text"),
             inceleme_sebepleri=list(d.get("inceleme_sebepleri", [])),
@@ -209,3 +212,42 @@ class Goal:
             tip=r.get("tip", "yatirim"),
             period=r.get("period", "month"),
         )
+
+
+HaneRol = Literal["owner", "editor", "viewer"]
+
+
+@dataclass
+class Household:
+    """Aile / paylaşımlı hane."""
+    id: str
+    ad: str
+    kod: str
+    owner_id: str
+
+    @classmethod
+    def from_row(cls, r: dict) -> Household:
+        return cls(id=r["id"], ad=r.get("ad", ""), kod=r.get("kod", ""),
+                   owner_id=r.get("owner_id", ""))
+
+
+@dataclass
+class HaneUye:
+    """Bir hanenin üyesi."""
+    user_id: str
+    ad: str
+    rol: HaneRol
+
+    @classmethod
+    def from_row(cls, r: dict) -> HaneUye:
+        return cls(user_id=r["user_id"], ad=r.get("ad", ""), rol=r.get("rol", "viewer"))
+
+
+@dataclass
+class HaneUyelik:
+    """Kullanıcının hane üyeliği — hane bilgisi + kendi rolü tek yerde."""
+    household_id: str
+    ad: str
+    kod: str
+    owner_id: str
+    rol: HaneRol

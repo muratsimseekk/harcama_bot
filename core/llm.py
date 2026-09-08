@@ -12,29 +12,86 @@ import asyncio
 import json
 import logging
 import os
+import weakref
 
-from groq import Groq
+import httpx
+from groq import (
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    BadRequestError,
+    Groq,
+    InternalServerError,
+    RateLimitError,
+)
 
 from core.config import settings
 from core.dates import tarih_parse, tarih_str, today
 from core.models import Candidate, tip_normalize
+from core.varsayilan_kategoriler import (
+    GELIR_KATEGORILERI,
+    VARSAYILAN_KATEGORILER,
+    digermi,
+)
+from core.varsayilan_kategoriler import kategori_bolumu as _kategori_bolumu_kur
+from core.varsayilan_kategoriler import varsayilan_bolum as _varsayilan_bolum
 
 logger = logging.getLogger(__name__)
 
 _client: Groq | None = None
+# Event loop başına bir semaphore (test'ler loop başına yeni; prod tek loop).
+# Tek anahtarın RPM'ini korur: fazla eşzamanlı istek reddedilmez, sıraya girer.
+_sems: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+
+
+def _semaphore() -> asyncio.Semaphore:
+    loop = asyncio.get_running_loop()
+    s = _sems.get(loop)
+    if s is None:
+        s = asyncio.Semaphore(settings.GROQ_MAX_ES)
+        _sems[loop] = s
+    return s
+
+
+class GroqBusy(Exception):
+    """Groq geçici olarak kullanılamıyor (rate-limit / 5xx / zaman aşımı) — sonra tekrar dene."""
+
+
+# Geçici (tekrar denenebilir) sağlayıcı hataları.
+_GECICI = (RateLimitError, APITimeoutError, APIConnectionError, InternalServerError)
 
 
 def _c() -> Groq:
     global _client
     if _client is None:
-        _client = Groq(api_key=settings.GROQ_API_KEY)
+        _client = Groq(
+            api_key=settings.GROQ_API_KEY,
+            timeout=httpx.Timeout(settings.GROQ_TIMEOUT, connect=5.0),
+            max_retries=1,  # SDK varsayılanı 2 → olay anında istek çoğalmasını azalt
+        )
     return _client
+
+
+async def _isle(fn, *args, **kwargs):
+    """Groq çağrısını semaphore altında thread'de çalıştırır; geçici hataları GroqBusy'e çevirir."""
+    async with _semaphore():
+        try:
+            return await asyncio.to_thread(fn, *args, **kwargs)
+        except _GECICI as e:
+            raise GroqBusy(str(e)) from e
+        except APIStatusError as e:
+            if e.status_code and e.status_code >= 500:
+                raise GroqBusy(str(e)) from e
+            raise
 
 
 # --------------------------------------------------------------------------- #
 # Sağlayıcı yardımcıları (tek değişim noktası)
 # --------------------------------------------------------------------------- #
-def _chat_json(system: str, user: str, *, max_tokens: int, temperature: float = 0.1) -> str:
+def _chat_json(
+    system: str, user: str, *, max_tokens: int, temperature: float = 0.1,
+    reasoning_effort: str = "low",
+) -> str:
     """JSON-object modunda sohbet tamamlaması; ham içerik string döner. Senkron."""
     yanit = _c().chat.completions.create(
         model=settings.PARSE_MODEL,
@@ -44,7 +101,7 @@ def _chat_json(system: str, user: str, *, max_tokens: int, temperature: float = 
         ],
         temperature=temperature,
         max_tokens=max_tokens,
-        reasoning_effort="low",
+        reasoning_effort=reasoning_effort,
         response_format={"type": "json_object"},
     )
     return yanit.choices[0].message.content.strip()
@@ -54,7 +111,7 @@ def _transcribe_raw(dosya_yolu: str) -> str:
     """Ses dosyasını metne çevirir. Senkron."""
     with open(dosya_yolu, "rb") as f:
         sonuc = _c().audio.transcriptions.create(
-            file=(os.path.basename(dosya_yolu), f.read()),
+            file=(os.path.basename(dosya_yolu), f),
             model=settings.TRANSCRIBE_MODEL,
             language="tr",
             response_format="text",
@@ -66,8 +123,11 @@ def _transcribe_raw(dosya_yolu: str) -> str:
 # Ses → metin
 # --------------------------------------------------------------------------- #
 async def transcribe(dosya_yolu: str) -> str:
+    """Sesi metne çevirir. Groq meşgulse GroqBusy fırlatır; gerçekten anlaşılamazsa "" döner."""
     try:
-        return await asyncio.to_thread(_transcribe_raw, dosya_yolu)
+        return await _isle(_transcribe_raw, dosya_yolu)
+    except GroqBusy:
+        raise
     except Exception as e:
         logger.error(f"transcribe hatası: {e}", exc_info=True)
         return ""
@@ -76,19 +136,26 @@ async def transcribe(dosya_yolu: str) -> str:
 # --------------------------------------------------------------------------- #
 # Metin → işlem adayları
 # --------------------------------------------------------------------------- #
-_PARSE_SISTEM = """Sen Rota Metal & Alüminyum şirketinin harcama/gelir takip asistanısın.
-Bugünün tarihi: {bugun}
+_PARSE_SISTEM = """Sen Rota Metal & Alüminyum şirketi için çalışan bir harcama/gelir
+takip asistanısın. Hem şirket (işletme) hem sahibinin kişisel ve yatırım işlemlerini
+kaydediyorsun. Bugünün tarihi: {bugun}
 
-Kullanıcının mesajında bir veya birden fazla işlem (harcama veya gelir) olabilir. Tümünü analiz et.
-Mesaj virgülle ayrılmış, satır satır veya karma formatta olabilir.
+Kullanıcının mesajında bir veya birden fazla işlem olabilir; virgülle, satır satır ya da
+karışık yazılmış olabilir. Her işlemi ayrı ayrı, şu sırayla analiz et:
+  1) TUTAR'ı bul ve sayıya çevir.
+  2) YÖN: para giriyor mu (gelir) çıkıyor mu (gider)?
+  3) TİP: yatirim / isletme / kisisel (aşağıdaki önceliğe göre).
+  4) KATEGORİ: aşağıdaki listede, anahtar kelimelerle EŞLEŞEN kategoriyi seç.
+  5) EMİN misin? Değilsen kategoriyi boş bırak.
 
 MUTLAKA şu JSON formatında yanıt ver (başka hiçbir şey yazma, sadece JSON):
 {{
   "kayitlar": [
     {{
-      "aciklama": "kısa açıklama",
+      "aciklama": "kısa ve net açıklama (ne alındı / ne için)",
       "tutar": 123.45,
-      "kategori": "kategori adı",
+      "kategori": "listeden bir kategori adı VEYA boş string",
+      "neden": "kategori/tip seçimini 8 kelimeyi geçmeyecek şekilde gerekçelendir",
       "tip": "kisisel | isletme | yatirim",
       "yon": "gider | gelir",
       "tarih": "DD.MM.YYYY",
@@ -98,63 +165,76 @@ MUTLAKA şu JSON formatında yanıt ver (başka hiçbir şey yazma, sadece JSON)
 }}
 
 YÖN KURALLARI:
-- "maaş", "gelir", "tahsilat", "satış yaptım", "ödeme aldım", "para geldi", "fatura kestim" → yon: "gelir"
-- Diğer her şey → yon: "gider"
+- "maaş aldım", "tahsilat", "satış yaptım", "ödeme aldım", "para geldi", "fatura kestim",
+  "sattım" → yon: "gelir"
+- Diğer her şey (aldım, ödedim, harcadım, fatura geldi) → yon: "gider"
 
-TİP KURALLARI — ÖNCELİK SIRASI:
-1. YATIRIM: BES, bireysel emeklilik, hisse, borsa, kripto, altın, döviz alımı, fon, tahvil, bono, yatırım fonu, BIST, Midas, temettü → tip: "yatirim"
-2. İŞLETME: ankraj, galvaniz, üretim, nakliye, malzeme, personel, fabrika, demir, alüminyum, hammadde, çelik, rota metal, işçi, sevkiyat, makine, ekipman, dükkan gideri → tip: "isletme"
-3. KİŞİSEL: diğer her şey → tip: "kisisel"
+TİP KURALLARI — ÖNCELİK SIRASI (ilk uyan kazanır):
+1. YATIRIM: BES, bireysel emeklilik, hisse, borsa, BIST, Midas, temettü, kripto, bitcoin,
+   altın alımı, döviz/dolar/euro alımı, yatırım fonu, tahvil, bono → tip: "yatirim"
+2. İŞLETME: galvaniz, üretim, nakliye/sevkiyat, hammadde, demir, alüminyum, çelik, sac,
+   profil, personel/işçi maaşı, fabrika, makine, ekipman, işyeri/dükkan gideri,
+   mazot/motorin (araç filosu) → tip: "isletme"
+3. KİŞİSEL: ev, market, kişisel fatura, sağlık, yemek, ulaşım, giyim vb. → tip: "kisisel"
 
-KATEGORİ KURALLARI (yalnız bu listelerden seç, uymuyorsa ilgili "Diğer"):
+KATEGORİ KURALLARI:
+- Kategoriyi YALNIZ aşağıdaki listeden seç. Her kategorinin yanındaki anahtar kelimelerle
+  eşleştir; anlamca en yakın olanı kullan.
+- Fatura türü tüm giderler (elektrik, su, doğalgaz, internet, telefon faturası, aidat,
+  abonelik) → tek kategori: "Faturalar" (kişisel) veya "Elektrik/Su" (fabrika/işyeri ise).
+- Hiçbir kategori net uymuyorsa: kategori alanını BOŞ string ("") bırak ve "emin": false ver.
+  ASLA kategori uydurma, ASLA "Diğer" yazma, listede olmayan bir isim yazma.
 {kategori_bolumu}
-- GELİR: Maaş, Tahsilat, Satış, Diğer Gelir
+- GELİR: {gelir_kategorileri}
 
 TARİH KURALLARI:
-- Tarih belirtildiyse o tarihi kullan (örn: "2 Mayıs" → 02.05.{yil})
-- "dün" → dünün tarihi, "geçen hafta" → 7 gün önce
-- Tarih belirtilmemişse → bugün: {bugun}
-- Format: DD.MM.YYYY
+- Tarih belirtildiyse onu kullan (örn: "2 Mayıs" → 02.05.{yil}).
+- "dün" → dünün tarihi, "bugün" → {bugun}, "geçen hafta" → 7 gün önce.
+- Tarih belirtilmemişse → {bugun}. Format: DD.MM.YYYY.
 
 TUTAR KURALLARI:
-- Sayıya çevir: "iki yüz elli" → 250.00, "1.500" → 1500.00, "1,5" → 1.5
-- Her zaman pozitif float döndür
+- Sayıya çevir: "iki yüz elli" → 250.00, "1.500" → 1500.00, "1,5" → 1.5, "2k" → 2000.
+- Her zaman pozitif float döndür.
 
 EMİN ALANI:
-- "emin": false ver eğer tutar/kategori/tip'ten emin değilsen, açıklama çok belirsizse
-  ("harcama", "ödeme" gibi), ya da tutar okunamadıysa. Aksi halde "emin": true.
+- "emin": false ver eğer: kategori listeye net oturmuyorsa, tutar/tip belirsizse,
+  açıklama çok genelse ("harcama", "ödeme", "şey" gibi) ya da tutar okunamadıysa.
+- Aksi halde "emin": true.
 
-SATIN ALMA KURALI:
-- "dolar aldım 500 lira" → gider, yatirim (Altın/Döviz), tutar=500
-- "altın aldım 2000 TL" → gider, yatirim (Altın/Döviz), tutar=2000
+ÖRNEKLER (kategori adları temsilîdir — sen SADECE yukarıdaki listeden seç):
+Girdi: "elektrik faturası 850, internet 400"
+→ [{{"aciklama":"Elektrik faturası","tutar":850,"kategori":"Faturalar","neden":"fatura","tip":"kisisel","yon":"gider","emin":true}},
+   {{"aciklama":"İnternet faturası","tutar":400,"kategori":"Faturalar","neden":"internet aboneliği","tip":"kisisel","yon":"gider","emin":true}}]
+Girdi: "şey için 200 harcadım"
+→ [{{"aciklama":"Belirsiz harcama","tutar":200,"kategori":"","neden":"kategori belirsiz","tip":"kisisel","yon":"gider","emin":false}}]
 
-Eğer metin hiç işlem içermiyorsa boş liste döndür: {{"kayitlar": []}}"""
-
-_VARSAYILAN_KATEGORI_BOLUMU = (
-    "- KİŞİSEL: Market, Sigara/İçecek, Kafe/Restoran, Ulaşım, Sağlık, Giyim, Eğlence, "
-    "Fatura, Telefon/İnternet, Diğer\n"
-    "- İŞLETME: Hammadde, Nakliye, Personel, Yakıt/Araç, Elektrik/Su, Kira, "
-    "Makine/Ekipman, Galvaniz, Diğer İşletme\n"
-    "- YATIRIM: BES/Emeklilik, Hisse Senedi, Kripto Para, Altın/Döviz, Yatırım Fonu, "
-    "Tahvil/Bono, Diğer Yatırım"
-)
-
-_TIP_BASLIK = {"kisisel": "KİŞİSEL", "isletme": "İŞLETME", "yatirim": "YATIRIM"}
+Eğer metin hiç işlem içermiyorsa: {{"kayitlar": []}}"""
 
 
 def _kategori_bolumu(kategoriler) -> str:
-    """Category listesinden tip'e göre gruplu prompt bölümü kurar."""
+    """Kategori listesini tip'e göre gruplu, anahtar kelimeli prompt bölümüne çevirir."""
     if not kategoriler:
-        return _VARSAYILAN_KATEGORI_BOLUMU
-    gruplar: dict[str, list[str]] = {"kisisel": [], "isletme": [], "yatirim": []}
+        return _varsayilan_bolum()
+    gruplar: dict[str, list[tuple[str, list[str]]]] = {
+        "kisisel": [], "isletme": [], "yatirim": [],
+    }
+    gorulen: dict[str, set[str]] = {"kisisel": set(), "isletme": set(), "yatirim": set()}
     for k in kategoriler:
-        if k.tip in gruplar and k.name not in gruplar[k.tip]:
-            gruplar[k.tip].append(k.name)
-    satirlar = []
-    for tip, adlar in gruplar.items():
-        if adlar:
-            satirlar.append(f"- {_TIP_BASLIK[tip]}: {', '.join(adlar)}")
-    return "\n".join(satirlar) or _VARSAYILAN_KATEGORI_BOLUMU
+        if k.tip in gruplar and k.name not in gorulen[k.tip] and not digermi(k.name):
+            gorulen[k.tip].add(k.name)
+            gruplar[k.tip].append((k.name, list(getattr(k, "keywords", []) or [])))
+    return _kategori_bolumu_kur(gruplar) or _varsayilan_bolum()
+
+
+def _gecerli_kategori_adlari(kategoriler) -> set[str]:
+    """Modelin seçebileceği geçerli kategori adları (küçük harf). Liste dışı isim reddedilir."""
+    adlar = {g.lower() for g in GELIR_KATEGORILERI}
+    if kategoriler:
+        adlar |= {k.name.lower() for k in kategoriler if not digermi(k.name)}
+    else:
+        for ogeler in VARSAYILAN_KATEGORILER.values():
+            adlar |= {o["name"].lower() for o in ogeler}
+    return adlar
 
 
 async def parse_transactions(
@@ -168,10 +248,20 @@ async def parse_transactions(
     sistem = _PARSE_SISTEM.format(
         bugun=tarih_str(bugun), yil=bugun.year,
         kategori_bolumu=_kategori_bolumu(kategoriler),
+        gelir_kategorileri=", ".join(GELIR_KATEGORILERI),
     )
 
     try:
-        ham = await asyncio.to_thread(_chat_json, sistem, metin, max_tokens=2000)
+        ham = await _isle(
+            _chat_json, sistem, metin,
+            max_tokens=1500, reasoning_effort=settings.PARSE_REASONING,
+        )
+    except GroqBusy:
+        raise
+    except BadRequestError as e:
+        # json_validate_failed: model geçerli JSON üretemedi (geçici) → aday yok say.
+        logger.warning(f"parse_transactions geçersiz JSON üretimi: {e}")
+        return []
     except Exception as e:
         logger.error(f"parse_transactions Groq çağrısı başarısız: {e}", exc_info=True)
         raise
@@ -182,6 +272,7 @@ async def parse_transactions(
         logger.error(f"parse_transactions JSON değil: {e} | {ham[:400]}")
         return []
 
+    gecerli_adlar = _gecerli_kategori_adlari(kategoriler)
     kayitlar = veri.get("kayitlar", []) if isinstance(veri, dict) else []
     adaylar: list[Candidate] = []
     for h in kayitlar if isinstance(kayitlar, list) else []:
@@ -193,14 +284,24 @@ async def parse_transactions(
             continue
         if tutar <= 0:
             continue
+
+        kategori = str(h.get("kategori", "")).strip()
+        emin = bool(h.get("emin", True))
+        if kategori and kategori.lower() not in gecerli_adlar:
+            # Model listede olmayan bir kategori uydurdu → boşalt, kullanıcı seçsin.
+            logger.info("parse: liste dışı kategori %r → boşaltıldı", kategori)
+            kategori = ""
+            emin = False
+
         adaylar.append(Candidate(
             aciklama=str(h.get("aciklama", "")).strip() or "—",
             tutar=tutar,
-            kategori=str(h.get("kategori", "")).strip() or "Diğer",
+            kategori=kategori,
+            neden=str(h.get("neden", "")).strip(),
             tip=tip_normalize(h.get("tip", "kisisel")),
             direction="gelir" if str(h.get("yon", "gider")).lower().startswith("gel") else "gider",
             tarih=tarih_parse(h.get("tarih", "")) if h.get("tarih") else bugun,
-            emin=bool(h.get("emin", True)),
+            emin=emin,
             ham_girdi=metin,
             kaynak=kaynak,
         ))
@@ -234,7 +335,7 @@ YON: "gelir","maas","kazanc" -> "gelir"; "gider","harcama" -> "gider"; belirtilm
 """
 
     try:
-        ham = await asyncio.to_thread(_chat_json, sistem, soru, max_tokens=400)
+        ham = await _isle(_chat_json, sistem, soru, max_tokens=400)
         return json.loads(ham)
     except Exception as e:
         logger.error(f"analyze_query hatasi: {e}", exc_info=True)
@@ -275,7 +376,7 @@ async def classify_intent(metin: str) -> str:
         return "rapor"
 
     try:
-        ham = await asyncio.to_thread(
+        ham = await _isle(
             _chat_json, _INTENT_SISTEM, metin, max_tokens=200, temperature=0.0
         )
         niyet = json.loads(ham).get("niyet", "islem")
@@ -300,7 +401,7 @@ _DUZELTME_SISTEM = (
 async def parse_correction(metin: str) -> dict:
     """'kategori market, tutar 95' → {'kategori': 'market', 'tutar': 95.0}"""
     try:
-        ham = await asyncio.to_thread(
+        ham = await _isle(
             _chat_json, _DUZELTME_SISTEM, metin, max_tokens=120, temperature=0.0
         )
         veri = json.loads(ham)

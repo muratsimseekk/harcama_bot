@@ -7,6 +7,7 @@ import { EkranBasligi } from "@/components/EkranBasligi";
 import { HedefHalkasi } from "@/components/HedefHalkasi";
 import { Metin as Text } from "@/components/Metin";
 import { kategoriIkon } from "@/lib/kategoriIkon";
+import { useKategoriRenk } from "@/lib/kategoriRenk";
 import { turkceTutar } from "@/lib/format";
 import {
   useBudgets,
@@ -23,6 +24,7 @@ const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
 
 export default function Hedefler() {
   const renk = useRenkler();
+  const katRenk = useKategoriRenk();
   const router = useRouter();
   const ozet = useSummary("month");
   const butceler = useBudgets();
@@ -177,8 +179,8 @@ export default function Hedefler() {
               }
               style={[s.katSatir, { backgroundColor: renk.card }]}
             >
-              <View style={[s.katIkon, { backgroundColor: (k.color || renk.blue) + "22" }]}>
-                <Ionicons name={kategoriIkon(k.name)} size={18} color={k.color || renk.blue} />
+              <View style={[s.katIkon, { backgroundColor: katRenk(k.name) + "26" }]}>
+                <Ionicons name={kategoriIkon(k.name)} size={18} color={katRenk(k.name)} />
               </View>
               <View style={{ flex: 1 }}>
                 <View style={s.katUst}>

@@ -36,7 +36,10 @@ def incele(aday: Candidate) -> list[str]:
     if not aday.emin:
         sebepler.append("AI bu kayıttan emin değil")
 
-    if aday.kategori.lower().strip() in _DIGER_KATEGORILER:
+    _kat = aday.kategori.lower().strip()
+    if not _kat:
+        sebepler.append("Kategori seçilmedi")
+    elif _kat in _DIGER_KATEGORILER:
         sebepler.append("Kategori belirsiz (\"Diğer\")")
 
     ac = aday.aciklama.lower().strip()

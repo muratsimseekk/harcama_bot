@@ -4,7 +4,12 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, status
 
 from api.deps import CurrentUser
-from api.schemas import KategoriGuncelleIstek, KategoriModel, KategoriOlusturIstek
+from api.schemas import (
+    BolumEkleIstek,
+    KategoriGuncelleIstek,
+    KategoriModel,
+    KategoriOlusturIstek,
+)
 from core import repo
 
 router = APIRouter(prefix="/v1/categories", tags=["categories"])
@@ -14,9 +19,17 @@ router = APIRouter(prefix="/v1/categories", tags=["categories"])
 async def listele(user_id: CurrentUser) -> list[KategoriModel]:
     kategoriler = await repo.categories_list(user_id, only_active=False)
     if not kategoriler:
-        await repo.categories_seed(user_id)
+        # Yeni kullanıcı: yalnız Kişisel bölümü. İşletme/Yatırım'ı kullanıcı ekler.
+        await repo.categories_seed(user_id, ["kisisel"])
         kategoriler = await repo.categories_list(user_id, only_active=False)
     return [KategoriModel.from_cat(c) for c in kategoriler]
+
+
+@router.post("/bolum")
+async def bolum_ekle(user_id: CurrentUser, istek: BolumEkleIstek) -> dict:
+    """Bir bölümün (İşletme / Yatırım) varsayılan kategorilerini ekler."""
+    eklendi = await repo.category_seed_tip(user_id, istek.tip)
+    return {"eklendi": eklendi}
 
 
 @router.post("", response_model=KategoriModel, status_code=status.HTTP_201_CREATED)
@@ -27,7 +40,7 @@ async def olustur(user_id: CurrentUser, istek: KategoriOlusturIstek) -> Kategori
         )
     except Exception as e:
         raise HTTPException(
-            status.HTTP_409_CONFLICT, "Bu isimde bir kategori zaten var"
+            status.HTTP_409_CONFLICT, "Bu bölümde bu isimde bir kategori zaten var"
         ) from e
     return KategoriModel.from_cat(cat)
 
