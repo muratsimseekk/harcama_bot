@@ -16,6 +16,7 @@ from api.routes import (
     push,
     summary,
     transactions,
+    uyelik,
 )
 from core.config import settings
 
@@ -48,6 +49,7 @@ app.include_router(notifications.router)
 app.include_router(push.router)
 app.include_router(me.router)
 app.include_router(hane.router)
+app.include_router(uyelik.router)
 
 
 @app.get("/health", tags=["meta"])

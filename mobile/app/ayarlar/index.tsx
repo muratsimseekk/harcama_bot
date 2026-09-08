@@ -1,6 +1,8 @@
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { Alert, ScrollView, StyleSheet } from "react-native";
 import { AyarGrup, AyarSatir } from "@/components/base";
+import { api, ApiError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { useTemaMod } from "@/lib/tema";
 import { SP, useRenkler } from "@/lib/theme";
@@ -12,6 +14,41 @@ export default function Ayarlar() {
   const renk = useRenkler();
   const router = useRouter();
   const { mod } = useTemaMod();
+  const [siliniyor, setSiliniyor] = useState(false);
+
+  async function hesabiSil() {
+    setSiliniyor(true);
+    try {
+      await api.hesapSil();
+      await supabase.auth.signOut();
+      // Oturum kapanınca _layout otomatik giriş ekranına yönlendirir.
+    } catch (e) {
+      setSiliniyor(false);
+      Alert.alert(
+        "Silinemedi",
+        e instanceof ApiError ? e.message : "Bağlantıyı kontrol edip tekrar dene.",
+      );
+    }
+  }
+
+  const silOnayi = () =>
+    Alert.alert(
+      "Hesabı Sil",
+      "Tüm işlemlerin, kategorilerin, bütçelerin ve hesabın kalıcı olarak silinir. " +
+        "Bu işlem geri alınamaz.",
+      [
+        { text: "Vazgeç", style: "cancel" },
+        {
+          text: "Hesabı Sil",
+          style: "destructive",
+          onPress: () =>
+            Alert.alert("Emin misin?", "Son onay. Devam edilsin mi?", [
+              { text: "Vazgeç", style: "cancel" },
+              { text: "Evet, sil", style: "destructive", onPress: hesabiSil },
+            ]),
+        },
+      ],
+    );
 
   return (
     <ScrollView style={{ backgroundColor: renk.bg }} contentContainerStyle={s.icerik}>
@@ -20,44 +57,43 @@ export default function Ayarlar() {
           ikon="color-palette-outline"
           baslik="Görünüm"
           deger={TEMA[mod]}
+          son
           onPress={() => router.navigate("/ayarlar/gorunum")}
         />
-        <AyarSatir ikon="notifications-outline" baslik="Bildirim Ayarları" deger="yakında" son />
       </AyarGrup>
 
-      <AyarGrup baslik="HESAP">
+      <AyarGrup baslik="YASAL">
         <AyarSatir
-          ikon="key-outline"
-          baslik="Şifre Ayarları"
-          onPress={() => router.navigate("/ayarlar/guvenlik")}
+          ikon="shield-checkmark-outline"
+          baslik="Gizlilik Politikası"
+          onPress={() => router.navigate("/yasal?belge=gizlilik")}
         />
         <AyarSatir
-          ikon="trash-outline"
-          baslik="Hesabı Sil"
-          tehlike
+          ikon="document-text-outline"
+          baslik="Kullanım Koşulları"
           son
-          onPress={() =>
-            Alert.alert("Hesabı Sil", "Bu işlem geri alınamaz. Devam edilsin mi?", [
-              { text: "Vazgeç", style: "cancel" },
-              {
-                text: "Sil",
-                style: "destructive",
-                onPress: () =>
-                  Alert.alert("Talep alındı", "Hesap silme talebini destek ekibine ilettik."),
-              },
-            ])
-          }
+          onPress={() => router.navigate("/yasal?belge=kosullar")}
         />
       </AyarGrup>
 
       {!DEV_NOAUTH && (
-        <AyarGrup>
+        <AyarGrup baslik="HESAP">
+          <AyarSatir
+            ikon="key-outline"
+            baslik="Şifre Değiştir"
+            onPress={() => router.navigate("/ayarlar/guvenlik")}
+          />
           <AyarSatir
             ikon="log-out-outline"
-            baslik="Çıkış yap"
+            baslik="Çıkış Yap"
+            onPress={() => supabase.auth.signOut()}
+          />
+          <AyarSatir
+            ikon="trash-outline"
+            baslik={siliniyor ? "Siliniyor…" : "Hesabı Sil"}
             tehlike
             son
-            onPress={() => supabase.auth.signOut()}
+            onPress={siliniyor ? undefined : silOnayi}
           />
         </AyarGrup>
       )}

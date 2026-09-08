@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from api import deps, usage
 from api.deps import CurrentUser
 from api.schemas import BenModel
+from core import repo
 
 router = APIRouter(prefix="/v1", tags=["me"])
 
@@ -27,3 +28,11 @@ async def me(user_id: CurrentUser) -> BenModel:
         toplam_kayit=toplam,
         hane_rol=uyelik.rol if uyelik else None,
     )
+
+
+@router.delete("/me")
+async def hesap_sil(user_id: CurrentUser) -> dict:
+    """Hesabı ve tüm kullanıcı verisini kalıcı olarak siler (KVKK / App Store)."""
+    await repo.kullanici_sil(user_id)
+    deps.hane_cache_temizle(user_id)
+    return {"silindi": True}

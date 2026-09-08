@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native";
@@ -56,18 +55,6 @@ export default function Giris() {
           </Pressable>
 
           <Buton yazi="Kayıt Ol" varyant="ikincil" onPress={() => router.push("/(auth)/kayit")} />
-
-          <View style={s.sosyal}>
-            <Text style={{ color: renk.textFaint, fontSize: 12.5 }}>veya (yakında)</Text>
-            <View style={{ flexDirection: "row", gap: SP.lg }}>
-              <View style={[s.sosBtn, { borderColor: renk.border }]}>
-                <Ionicons name="logo-google" size={20} color={renk.textFaint} />
-              </View>
-              <View style={[s.sosBtn, { borderColor: renk.border }]}>
-                <Ionicons name="logo-apple" size={20} color={renk.textFaint} />
-              </View>
-            </View>
-          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -80,6 +67,4 @@ const s = StyleSheet.create({
   mint: { flex: 2.2, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl },
   form: { padding: SP.xl, gap: SP.lg, paddingTop: SP.xxl },
   link: { textAlign: "center", fontSize: 13.5, fontWeight: "700" },
-  sosyal: { alignItems: "center", gap: SP.md, marginTop: SP.lg },
-  sosBtn: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: "center", justifyContent: "center" },
 });

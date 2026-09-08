@@ -46,10 +46,14 @@ export default function Confirm() {
       router.back();
     } catch (e) {
       setKaydediliyor(false);
-      Alert.alert(
-        e instanceof ApiError && e.status === 402 ? "AI limiti doldu" : "Kaydedilemedi",
-        e instanceof Error ? e.message : "Tekrar dene.",
-      );
+      if (e instanceof ApiError && e.status === 402) {
+        Alert.alert("AI limiti doldu", e.message, [
+          { text: "Kapat", style: "cancel" },
+          { text: "Pro'ya Geç", onPress: () => router.push("/uyelik") },
+        ]);
+        return;
+      }
+      Alert.alert("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene.");
     }
   }
 

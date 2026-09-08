@@ -65,6 +65,12 @@ class Settings:
     DEV_BYPASS_USER_ID: str = os.environ.get("DEV_BYPASS_USER_ID", "")
     # Planlı push işini (/v1/push/run) tetikleyen cron'un paylaşılan sırrı.
     CRON_SECRET: str = os.environ.get("CRON_SECRET", "")
+    # RevenueCat webhook Authorization header'ı (RC dashboard'da ayarlanan bearer).
+    RC_WEBHOOK_SECRET: str = os.environ.get("RC_WEBHOOK_SECRET", "")
+    # RC product id → plan eşlemesi (virgülle: "pro_aylik:pro,pro_yillik:pro,base_aylik:base")
+    RC_URUN_PLAN: str = os.environ.get(
+        "RC_URUN_PLAN", "pro_aylik:pro,pro_yillik:pro,base_aylik:base,base_yillik:base"
+    )
 
     # --- Hata izleme ---
     SENTRY_DSN: str = os.environ.get("SENTRY_DSN", "")

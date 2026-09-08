@@ -16,5 +16,6 @@ export const supabase = createClient(url, anon, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    flowType: "pkce", // şifre sıfırlama derin bağlantısı ?code= ile gelir → exchangeCodeForSession
   },
 });

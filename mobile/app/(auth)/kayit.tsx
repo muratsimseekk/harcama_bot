@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -23,9 +24,15 @@ export default function Kayit() {
   const [email, setEmail] = useState("");
   const [sifre, setSifre] = useState("");
   const [sifre2, setSifre2] = useState("");
+  const [onay, setOnay] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(false);
 
-  const gecerli = ad.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && sifre.length >= 6 && sifre === sifre2;
+  const gecerli =
+    ad.trim() &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+    sifre.length >= 6 &&
+    sifre === sifre2 &&
+    onay;
 
   async function kayitOl() {
     setYukleniyor(true);
@@ -78,9 +85,30 @@ export default function Kayit() {
           <Alan etiket="Şifre" sifre placeholder="en az 6 karakter" value={sifre} onChangeText={setSifre} />
           <Alan etiket="Şifre (tekrar)" sifre placeholder="••••••••" value={sifre2} onChangeText={setSifre2} />
 
-          <Text style={[s.sart, { color: renk.textMuted }]}>
-            Devam ederek Kullanım Koşulları ve Gizlilik Politikası'nı kabul etmiş olursun.
-          </Text>
+          <Pressable style={s.onaySatir} onPress={() => setOnay((v) => !v)}>
+            <Ionicons
+              name={onay ? "checkbox" : "square-outline"}
+              size={22}
+              color={onay ? renk.aksan : renk.textFaint}
+            />
+            <Text style={[s.sart, { color: renk.textMuted }]}>
+              <Text
+                style={{ color: renk.aksan, fontWeight: "700" }}
+                onPress={() => router.push("/yasal?belge=gizlilik")}
+              >
+                Gizlilik Politikası
+              </Text>
+              {" ve "}
+              <Text
+                style={{ color: renk.aksan, fontWeight: "700" }}
+                onPress={() => router.push("/yasal?belge=kosullar")}
+              >
+                Kullanım Koşulları
+              </Text>
+              'nı okudum, kabul ediyorum. Verilerimin ABD'deki hizmet sağlayıcılara
+              aktarılmasına açık rıza veriyorum.
+            </Text>
+          </Pressable>
           <Buton yazi="Kayıt Ol" onPress={kayitOl} yukleniyor={yukleniyor} pasif={!gecerli} />
           <Pressable onPress={() => router.replace("/(auth)/giris")}>
             <Text style={[s.link, { color: renk.text }]}>Zaten hesabın var mı? Giriş Yap</Text>
@@ -96,6 +124,7 @@ const s = StyleSheet.create({
   ust: { paddingVertical: SP.xl, justifyContent: "center" },
   mint: { flex: 3, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl },
   form: { padding: SP.xl, gap: SP.md, paddingBottom: 60 },
-  sart: { fontSize: 12, textAlign: "center", lineHeight: 17, marginTop: SP.sm },
+  onaySatir: { flexDirection: "row", alignItems: "flex-start", gap: SP.sm, marginTop: SP.sm },
+  sart: { flex: 1, fontSize: 12, lineHeight: 17 },
   link: { textAlign: "center", fontSize: 13.5, fontWeight: "700", marginTop: SP.sm },
 });

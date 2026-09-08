@@ -32,6 +32,7 @@ export default function Profil() {
 
   const satirlar: Satir[] = [
     { ikon: "person-outline", ad: "Profili Düzenle", git: "/ayarlar/profil-duzenle" },
+    { ikon: "star-outline", ad: "Üyelik", git: "/uyelik" },
     { ikon: "people-outline", ad: "Hane", git: "/hane" },
     { ikon: "pricetags-outline", ad: "Kategoriler", git: "/kategori-yonet" },
     { ikon: "shield-checkmark-outline", ad: "Güvenlik", git: "/ayarlar/guvenlik" },

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Alan } from "@/components/Alan";
@@ -62,6 +63,7 @@ export default function HaneEkrani() {
 
 function Hanesiz({ pro, uyeAdi }: { pro: boolean; uyeAdi: string }) {
   const renk = useRenkler();
+  const router = useRouter();
   const [ad, setAd] = useState("");
   const [kod, setKod] = useState("");
   const olustur = useHaneOlustur();
@@ -97,12 +99,16 @@ function Hanesiz({ pro, uyeAdi }: { pro: boolean; uyeAdi: string }) {
             />
           </>
         ) : (
-          <View style={[s.proKutu, { backgroundColor: renk.aksanSoft }]}>
-            <Ionicons name="lock-closed" size={16} color={renk.aksan} />
-            <Text style={{ color: renk.aksan, fontSize: 13, flex: 1, fontWeight: "600" }}>
-              Hane oluşturmak Pro üyelik gerektirir. Bir haneye katılmak ücretsiz.
-            </Text>
-          </View>
+          <>
+            <View style={[s.proKutu, { backgroundColor: renk.aksanSoft }]}>
+              <Ionicons name="lock-closed" size={16} color={renk.aksan} />
+              <Text style={{ color: renk.aksan, fontSize: 13, flex: 1, fontWeight: "600" }}>
+                Hane oluşturmak Pro üyelik gerektirir. Bir haneye katılmak ücretsiz.
+              </Text>
+            </View>
+            <View style={{ height: SP.sm }} />
+            <Buton yazi="Pro'ya Geç" onPress={() => router.push("/uyelik")} />
+          </>
         )}
       </Kart>
 

@@ -36,10 +36,19 @@ def _ay_basi_iso() -> str:
 
 def _profil_oku(user_id: str) -> dict:
     res = (
-        _db().table("profiles").select("plan,trial_bitis")
+        _db().table("profiles").select("plan,trial_bitis,plan_bitis")
         .eq("id", user_id).limit(1).execute()
     )
-    return res.data[0] if res.data else {"plan": "base", "trial_bitis": None}
+    return res.data[0] if res.data else {"plan": "base"}
+
+
+def _tarih(raw) -> datetime | None:
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
 
 def _profil_garanti(user_id: str) -> None:
@@ -75,13 +84,12 @@ def _toplam_kayit(user_id: str) -> int:
 
 def _coz(profil: dict) -> PlanDurum:
     ham = profil.get("plan") or "base"
-    tb_raw = profil.get("trial_bitis")
-    tb: datetime | None = None
-    if tb_raw:
-        try:
-            tb = datetime.fromisoformat(str(tb_raw).replace("Z", "+00:00"))
-        except ValueError:
-            tb = None
+    tb = _tarih(profil.get("trial_bitis"))
+    pb = _tarih(profil.get("plan_bitis"))
+
+    # Ücretli plan süresi dolmuşsa Base'e düş.
+    if ham in ("base", "pro") and pb is not None and pb <= now():
+        return PlanDurum(ham, "base", tb, settings.BASE_AI_AYLIK)
 
     if ham == "pro":
         return PlanDurum(ham, "pro", tb, _SINIRSIZ)

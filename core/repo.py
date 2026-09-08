@@ -673,3 +673,57 @@ async def hane_sil(household_id: str) -> None:
         _db().table("households").delete().eq("id", household_id).execute()
 
     await asyncio.to_thread(_run)
+
+
+async def profil_plan_guncelle(
+    user_id: str, plan: str, plan_bitis: str | None
+) -> None:
+    """RevenueCat webhook'undan gelen plan/süre bilgisini profiles'a yazar."""
+    def _run() -> None:
+        (
+            _db().table("profiles")
+            .update({"plan": plan, "plan_bitis": plan_bitis,
+                     "updated_at": now().isoformat()})
+            .eq("id", user_id)
+            .execute()
+        )
+
+    await asyncio.to_thread(_run)
+
+
+# --------------------------------------------------------------------------- #
+# Hesap silme (KVKK / App Store zorunluluğu)
+# --------------------------------------------------------------------------- #
+async def kullanici_sil(user_id: str) -> None:
+    """Kullanıcının TÜM verisini ve auth kaydını kalıcı olarak siler."""
+    def _run() -> None:
+        db = _db()
+        # Hane: owner ise haneyi sil (cascade üyeleri düşürür), değilse üyelikten çık.
+        m = (
+            db.table("household_members").select("household_id")
+            .eq("user_id", user_id).limit(1).execute()
+        )
+        if m.data:
+            hid = m.data[0]["household_id"]
+            h = db.table("households").select("owner_id").eq("id", hid).limit(1).execute()
+            if h.data and h.data[0]["owner_id"] == user_id:
+                db.table("households").delete().eq("id", hid).execute()
+            else:
+                db.table("household_members").delete().eq("user_id", user_id).execute()
+
+        for tablo in ("transactions", "categories", "budgets", "goals",
+                      "push_tokens", "notifications_sent", "pending_transactions"):
+            try:
+                db.table(tablo).delete().eq("user_id", user_id).execute()
+            except Exception as e:  # tablo yoksa / satır yoksa sürdür
+                logger.warning("kullanici_sil %s: %s", tablo, e)
+
+        db.table("profiles").delete().eq("id", user_id).execute()
+
+        # Supabase auth kaydı (yalnız gerçek UUID'ler; dev-bypass id'si auth.users'ta yok)
+        try:
+            db.auth.admin.delete_user(user_id)
+        except Exception as e:
+            logger.warning("kullanici_sil auth: %s", e)
+
+    await asyncio.to_thread(_run)

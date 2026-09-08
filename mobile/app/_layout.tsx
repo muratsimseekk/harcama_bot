@@ -14,6 +14,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Sentry from "@sentry/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import * as Linking from "expo-linking";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -92,6 +93,25 @@ function Kapi() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  // Şifre sıfırlama e-postasındaki derin bağlantıyı işle (harcama://sifre-yenile?code=... )
+  useEffect(() => {
+    async function isle(url: string | null) {
+      if (!url) return;
+      const parcalar = Linking.parse(url);
+      const code = parcalar.queryParams?.code as string | undefined;
+      const kurtarma =
+        parcalar.path?.includes("sifre-yenile") ||
+        (parcalar.queryParams?.type as string | undefined) === "recovery";
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error && kurtarma) router.replace("/(auth)/sifre-yenile");
+      }
+    }
+    Linking.getInitialURL().then(isle);
+    const sub = Linking.addEventListener("url", (e) => isle(e.url));
+    return () => sub.remove();
+  }, []);
+
   // Push token'ı kaydet (oturum açıkken ya da yönetici modunda)
   useEffect(() => {
     if (!DEV_NOAUTH && !session) return;
@@ -128,6 +148,8 @@ function Kapi() {
       <Stack.Screen name="ara" options={{ presentation: "modal" }} />
       <Stack.Screen name="kategori-yonet" options={{ ...baslik, title: "Kategoriler" }} />
       <Stack.Screen name="hane/index" options={{ ...baslik, title: "Hane" }} />
+      <Stack.Screen name="yasal" options={{ ...baslik, title: "Yasal" }} />
+      <Stack.Screen name="uyelik" options={{ ...baslik, title: "Üyelik" }} />
       <Stack.Screen name="ayarlar/index" options={{ ...baslik, title: "Ayarlar" }} />
       <Stack.Screen name="ayarlar/profil-duzenle" options={{ ...baslik, title: "Profili Düzenle" }} />
       <Stack.Screen name="ayarlar/guvenlik" options={{ ...baslik, title: "Güvenlik" }} />

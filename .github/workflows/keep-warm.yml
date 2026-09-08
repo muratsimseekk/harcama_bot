@@ -1,0 +1,30 @@
+name: API keep-warm
+
+# Render free plan 15 dk trafiksizlikte uyur → ilk kullanıcı 30-50 sn bekler.
+# Bu iş /health'e düzenli ping atarak uyanık tutar.
+#
+# NOT: GitHub cron yoğunlukta 5-15 dk gecikebilir → bu tek başına yeterli olmayabilir.
+# Güvenilir çözüm: cron-job.org veya UptimeRobot ile 5 dk'da bir /health ping (ücretsiz),
+# ya da Render Starter ($7/ay — hiç uyumaz).
+#
+# Repo Secret gerekli: API_URL (ör. https://harcama-api.onrender.com)
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: /health ping
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "${{ secrets.API_URL }}/health") || code=000
+            echo "deneme $i → HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 15
+          done
+          echo "keep-warm başarısız (API yanıt vermedi)"
+          exit 1

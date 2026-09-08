@@ -118,6 +118,9 @@ export const api = {
   me(): Promise<Ben> {
     return jsonReq<Ben>("/v1/me", "GET");
   },
+  hesapSil(): Promise<{ silindi: boolean }> {
+    return jsonReq("/v1/me", "DELETE");
+  },
 
   hane(): Promise<Hane | null> {
     return jsonReq<Hane | null>("/v1/hane", "GET");
