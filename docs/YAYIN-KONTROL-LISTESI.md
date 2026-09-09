@@ -58,13 +58,18 @@
 
 Tam plan: `~/.claude/plans/gentle-fluttering-unicorn.md` (Faz 2-4).
 
-**4 abonelik ürünü (tek grup), fiyatlar:**
-| ID | TR aylık/yıllık | USD baz aylık/yıllık | entitlement |
+**4 abonelik ürünü (tek grup), fiyatlar (güncel 2026-09-09):**
+| ID | TR | USD baz | entitlement |
 |---|---|---|---|
-| `base_aylik`  | ₺39,99  | $2.99  | base |
-| `base_yillik` | ₺299,99 | $24.99 | base |
-| `pro_aylik`   | ₺79,99  | $4.99  | pro |
-| `pro_yillik`  | ₺599,99 | $39.99 | pro |
+| `base_aylik`  | ₺59,99  | $3.99  | base |
+| `base_yillik` | ₺479,99 | $29.99 | base |
+| `pro_aylik`   | ₺99,99  | $6.99  | pro |
+| `pro_yillik`  | ₺799,99 | $59.99 | pro |
+
+Kod tarafı HAZIR: `react-native-purchases` kurulu, `mobile/lib/satinalma.ts` gerçek
+implementasyon (anahtar yoksa graceful), `mobile/app/uyelik.tsx` paywall (aylık/yıllık,
+geri yükle), `_layout.tsx` auth sonrası RC init, webhook entitlement-bazlı. Eksik: SADECE
+mağaza hesapları + RC anahtarları + `eas build`.
 
 - [ ] **Apple → Small Business Program başvurusu** (%15 komisyon, %30 değil) — hesap açar açmaz
 - [ ] App Store Connect → Subscriptions → grup "Harcama Üyelik" → 4 ürün (yukarıdaki ID+fiyat)
@@ -74,14 +79,12 @@ Tam plan: `~/.claude/plans/gentle-fluttering-unicorn.md` (Faz 2-4).
 - [ ] RevenueCat → iki mağazayı bağla → Entitlements: `pro`, `base` → Offering "default" (4 package)
 - [ ] RevenueCat → Integrations → Webhooks → `https://harcama-api.onrender.com/v1/rc/webhook`
       + Authorization header = `Bearer <RC_WEBHOOK_SECRET>`
-- [ ] `npx expo install react-native-purchases` (`-ui` GEREKMEZ — özel paywall var)
-- [ ] `app.json` plugins → `"react-native-purchases"`
-- [ ] `mobile/lib/satinalma.ts` → STUB → gerçek kod (dosyada yorumda) + `EXPO_PUBLIC_RC_IOS_KEY`/`_ANDROID_KEY`
-- [ ] `mobile/app/_layout.tsx` → auth sonrası `baslat(session.user.id)`
-- [ ] **`eas build --profile development`** — Expo Go artık kullanılamaz, dev build şart
+- [x] `react-native-purchases` kurulu · `satinalma.ts` gerçek impl · `_layout.tsx` RC init
+- [x] Paywall (`app/uyelik.tsx`): aylık/yıllık toggle, gerçek/statik fiyat, Geri Yükle, yasal linkler
+- [x] Webhook entitlement-bazlı + esnek auth header · `.env.example` + `eas.json` RC key alanları
+- [ ] RC anahtarlarını `eas.json` preview+production env'e yaz (`EXPO_PUBLIC_RC_IOS_KEY` / `_ANDROID_KEY`)
+- [ ] **`eas build --profile development`** — Expo Go artık native modülü çalıştırmaz, dev build şart
 - [ ] Sandbox test hesaplarıyla satın alma + geri yükleme + iptal + trial→base düşüş test
-- [ ] Paywall ekranı (`app/uyelik.tsx`) Apple kurallarına uygun: fiyat, süre, otomatik
-      yenileme, iptal yolu, Geri Yükle butonu, Şartlar + Gizlilik linki hepsi görünür
 - [ ] Render env: `RC_WEBHOOK_SECRET`, `BASE_AI_AYLIK=150` (`RC_URUN_PLAN` default doğru)
 
 ## 6. Mağaza varlıkları

@@ -27,6 +27,7 @@ import { HataSiniri } from "@/components/HataSiniri";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { izinVeToken, platformAdi } from "@/lib/bildirim";
+import { baslat as rcBaslat } from "@/lib/satinalma";
 import { supabase } from "@/lib/supabase";
 import { TemaProvider, useEtkinSema } from "@/lib/tema";
 import { useRenkler } from "@/lib/theme";
@@ -126,6 +127,12 @@ function Kapi() {
       }
     })();
   }, [session]);
+
+  // RevenueCat'i kullanıcı kimliğiyle başlat (dev build'de aktif, Expo Go'da no-op)
+  useEffect(() => {
+    const uid = session?.user?.id;
+    if (uid) rcBaslat(uid);
+  }, [session?.user?.id]);
 
   if (!DEV_NOAUTH && (yukleniyor || onboardGoruldu === null)) return <Giris />;
 

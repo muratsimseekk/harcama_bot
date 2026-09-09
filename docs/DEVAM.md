@@ -390,17 +390,18 @@ Gerçek ödeme (RevenueCat + mağaza) = Faz 0.5 — plan: `~/.claude/plans/gentl
 | **Base** | Aylık **150 AI kaydı** (`BASE_AI_AYLIK`), elle giriş sınırsız, özet/analiz/bütçe/hedef. Hane YOK. |
 | **Pro** | Sınırsız AI · **hane paylaşımı** · (ileride: fiş okuma, YZ öngörüleri, export, kişi-bazı hane kırılımı — bkz `docs/HANE-PRO.md`) |
 
-### Fiyatlar (Türkiye — öncelik)
-| | Aylık | Yıllık (~%37 indirim) |
+### Fiyatlar (Türkiye — öncelik) — güncellendi 2026-09-09
+| | Aylık | Yıllık (~%33 indirim) |
 |---|---|---|
-| Base | **₺39,99** | **₺299,99** (≈₺25/ay) |
-| Pro  | **₺79,99** | **₺599,99** (≈₺50/ay) |
+| Base | **₺59,99** | **₺479,99** (≈₺40/ay) |
+| Pro  | **₺99,99** | **₺799,99** (≈₺67/ay) |
 
-Diğer pazarlar USD anchor: Base $2.99/$24.99 · Pro $4.99/$39.99 (mağaza otomatik lokalize;
+Diğer pazarlar USD anchor: Base $3.99/$29.99 · Pro $6.99/$59.99 (mağaza otomatik lokalize;
 TR manuel override). Ürün ID: `base_aylik`, `base_yillik`, `pro_aylik`, `pro_yillik`.
+Mobil referans fiyatlar `mobile/lib/satinalma.ts` `STATIK_FIYAT` (mağaza teklifi gelmezse gösterilir).
 
 Ekonomi: Groq ~$0.001/AI kaydı → tipik kullanıcı ~₺2,5/ay maliyet, power-user ~₺20.
-Net gelir (KDV + %15 Apple SBP): Base ~₺28/ay, Pro ~₺56/ay. Marj %65-85.
+Net gelir (KDV + %15 Apple SBP): Base ~₺42/ay, Pro ~₺71/ay. Marj %80+.
 Deneme bitip ödeme yoksa kullanıcı Base limitleriyle devam eder (kilitlenmez), Pro'ya davet edilir.
 
 ---

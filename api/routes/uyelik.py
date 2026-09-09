@@ -27,10 +27,26 @@ _AKTIF = {"INITIAL_PURCHASE", "RENEWAL", "PRODUCT_CHANGE", "UNCANCELLATION", "NO
 _BITEN = {"EXPIRATION"}
 
 
+def _plan_coz(olay: dict) -> str:
+    """Önce entitlement_ids (RC'nin verdiği en güvenilir sinyal), sonra product_id eşlemesi."""
+    ents = olay.get("entitlement_ids") or []
+    if not ents and olay.get("entitlement_id"):
+        ents = [olay["entitlement_id"]]
+    if "pro" in ents:
+        return "pro"
+    if "base" in ents:
+        return "base"
+    return _URUN_PLAN.get(olay.get("product_id", ""), "pro")  # bilinmeyen → pro varsay
+
+
 @router.post("/webhook")
 async def webhook(istek: Request, authorization: str = Header(default="")) -> dict:
-    if settings.RC_WEBHOOK_SECRET and authorization != f"Bearer {settings.RC_WEBHOOK_SECRET}":
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "yetkisiz")
+    gizli = settings.RC_WEBHOOK_SECRET
+    if gizli:
+        # RevenueCat başlık değeri "Bearer <x>" veya sadece "<x>" olabilir
+        gelen = authorization.removeprefix("Bearer ").strip()
+        if gelen != gizli:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "yetkisiz")
 
     govde = await istek.json()
     olay = govde.get("event", {}) if isinstance(govde, dict) else {}
@@ -41,8 +57,7 @@ async def webhook(istek: Request, authorization: str = Header(default="")) -> di
         return {"ok": True}
 
     if tur in _AKTIF:
-        urun = olay.get("product_id", "")
-        plan = _URUN_PLAN.get(urun, "pro")  # bilinmeyen ürün → pro varsay
+        plan = _plan_coz(olay)
         bitis_ms = olay.get("expiration_at_ms")
         plan_bitis = None
         if bitis_ms:
