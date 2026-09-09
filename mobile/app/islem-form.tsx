@@ -5,8 +5,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Buton } from "@/components/Buton";
 import { IslemFormu, type IslemAlanlari } from "@/components/IslemFormu";
 import { Metin as Text } from "@/components/Metin";
-import { api, ApiError } from "@/lib/api";
-import { useDeleteTransaction, usePatchTransaction } from "@/lib/queries";
+import { ApiError } from "@/lib/api";
+import { useDeleteTransaction, usePatchTransaction, useSaveTransactions } from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 import type { Islem } from "@/lib/types";
 
@@ -21,6 +21,7 @@ export default function IslemForm() {
   const { islem } = useLocalSearchParams<{ islem?: string }>();
   const mevcut: Islem | null = islem ? JSON.parse(String(islem)) : null;
   const patch = usePatchTransaction();
+  const kaydetYeni = useSaveTransactions();
   const sil = useDeleteTransaction();
 
   const [alan, setAlan] = useState<IslemAlanlari>({
@@ -43,7 +44,7 @@ export default function IslemForm() {
       if (mevcut) {
         await patch.mutateAsync({ id: mevcut.id, alanlar: alan });
       } else {
-        await api.saveTransactions([
+        await kaydetYeni.mutateAsync([
           { ...alan, para_birimi: "TRY", emin: true, inceleme_sebepleri: [] },
         ]);
       }

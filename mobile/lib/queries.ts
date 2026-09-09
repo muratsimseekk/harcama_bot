@@ -110,6 +110,14 @@ export function useSetGoal() {
   });
 }
 
+export function useSaveTransactions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (adaylar: Aday[]) => api.saveTransactions(adaylar),
+    onSuccess: () => invalidateHepsi(qc),
+  });
+}
+
 export function useDeleteTransaction() {
   const qc = useQueryClient();
   return useMutation({
