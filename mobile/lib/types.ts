@@ -57,6 +57,7 @@ export interface Ben {
   ham_plan?: string; // trial | base | pro
   trial_bitis?: string | null;
   ai_limit: number;
+  base_ai_limit: number; // Base katmanının sabit aylık tavanı
   ay_kayit: number; // bu ay kullanılan AI kaydı
   limit: number; // = ai_limit (geriye dönük)
   toplam_kayit: number;

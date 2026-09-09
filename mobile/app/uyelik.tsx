@@ -9,19 +9,24 @@ import { useMe } from "@/lib/queries";
 import { SATINALMA_MEVCUT, satinAl } from "@/lib/satinalma";
 import { golge, R, SP, T, useRenkler } from "@/lib/theme";
 
-const OZELLIKLER: { ad: string; base: boolean; pro: boolean }[] = [
-  { ad: "Elle işlem ekleme", base: true, pro: true },
-  { ad: "Bütçe, hedef, özet & analiz", base: true, pro: true },
-  { ad: "Aylık AI (sesli/yazılı) kayıt", base: false, pro: true }, // base: sınırlı
-  { ad: "Sınırsız AI kayıt", base: false, pro: true },
-  { ad: "Hane / aile paylaşımı", base: false, pro: true },
-];
+type Hucre = boolean | string;
+
+function ozellikler(baseAiLimit: number): { ad: string; base: Hucre; pro: Hucre }[] {
+  return [
+    { ad: "Elle işlem ekleme", base: true, pro: true },
+    { ad: "Bütçe, hedef, özet & analiz", base: true, pro: true },
+    { ad: "AI kayıt (sesli/yazılı)", base: `${baseAiLimit}/ay`, pro: "Sınırsız" },
+    { ad: "Hane / aile paylaşımı", base: false, pro: true },
+  ];
+}
 
 export default function Uyelik() {
   const renk = useRenkler();
   const router = useRouter();
   const me = useMe();
   const deneme = me.data?.ham_plan === "trial" ? denemeGunKalan(me.data.trial_bitis) : null;
+  const baseAiLimit = me.data?.base_ai_limit ?? 100;
+  const OZELLIKLER = ozellikler(baseAiLimit);
 
   async function gec(paket: string) {
     if (!SATINALMA_MEVCUT) {
@@ -71,7 +76,7 @@ export default function Uyelik() {
       </Kart>
 
       <Text style={{ color: renk.textFaint, fontSize: 12, textAlign: "center" }}>
-        Base: aylık {me.data?.ai_limit ?? 100} AI kaydı · Pro: sınırsız + hane
+        Base: aylık {baseAiLimit} AI kaydı · Pro: sınırsız AI + hane paylaşımı
       </Text>
 
       <View style={{ gap: SP.sm }}>
@@ -90,7 +95,16 @@ export default function Uyelik() {
   );
 }
 
-function Isaret({ var: v, renk }: { var: boolean; renk: ReturnType<typeof useRenkler> }) {
+function Isaret({ var: v, renk }: { var: Hucre; renk: ReturnType<typeof useRenkler> }) {
+  if (typeof v === "string") {
+    return (
+      <View style={s.hucre}>
+        <Text style={{ color: renk.text, fontSize: 12, fontWeight: "700", textAlign: "center" }}>
+          {v}
+        </Text>
+      </View>
+    );
+  }
   return (
     <View style={s.hucre}>
       <Ionicons
@@ -107,7 +121,7 @@ const s = StyleSheet.create({
   tablo: { gap: 2 },
   satir: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
   hucreAd: { flex: 1, fontSize: 13.5, fontWeight: "500" },
-  hucreBaslik: { width: 56, textAlign: "center", fontSize: 13, fontWeight: "800" },
-  hucre: { width: 56, alignItems: "center" },
+  hucreBaslik: { width: 68, textAlign: "center", fontSize: 13, fontWeight: "800" },
+  hucre: { width: 68, alignItems: "center" },
   kucukYazi: { color: "#8F8B80", fontSize: 11, lineHeight: 16, textAlign: "center" },
 });

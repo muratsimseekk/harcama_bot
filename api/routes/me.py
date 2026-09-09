@@ -7,6 +7,7 @@ from api import deps, usage
 from api.deps import CurrentUser
 from api.schemas import BenModel
 from core import repo
+from core.config import settings
 
 router = APIRouter(prefix="/v1", tags=["me"])
 
@@ -23,6 +24,7 @@ async def me(user_id: CurrentUser) -> BenModel:
         ham_plan=durum.ham,
         trial_bitis=durum.trial_bitis,
         ai_limit=durum.ai_limit,
+        base_ai_limit=settings.BASE_AI_AYLIK,
         limit=durum.ai_limit,
         ay_kayit=ay_kayit,
         toplam_kayit=toplam,

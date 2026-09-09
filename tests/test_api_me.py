@@ -34,6 +34,7 @@ def test_me_plan_alanlari(client, monkeypatch):
     j = client.get("/v1/me").json()
     assert j["plan"] == "pro" and j["ham_plan"] == "trial"
     assert j["ay_kayit"] == 3 and j["toplam_kayit"] == 40
+    assert j["base_ai_limit"] == usage.settings.BASE_AI_AYLIK
 
 
 def test_hesap_sil(client, monkeypatch):

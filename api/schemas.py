@@ -106,6 +106,7 @@ class BenModel(BaseModel):
     ham_plan: str = "base"          # DB değeri: trial | base | pro
     trial_bitis: datetime | None = None
     ai_limit: int                   # aylık AI kayıt tavanı (pro → çok büyük)
+    base_ai_limit: int              # Base katmanının sabit aylık tavanı (karşılaştırma tablosu)
     ay_kayit: int                   # bu ay kullanılan AI kaydı
     limit: int                      # geriye dönük alias (= ai_limit)
     toplam_kayit: int = 0
