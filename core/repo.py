@@ -7,8 +7,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import secrets
+from collections.abc import Callable
 from datetime import date
+from typing import TypeVar
 
+import httpx
 from supabase import Client, create_client
 
 from core.config import settings
@@ -39,6 +42,33 @@ def _db() -> Client:
     return _client
 
 
+_T = TypeVar("_T")
+
+# Supabase boşta kalan HTTP/2 bağlantısını kapatınca httpx "Server disconnected"
+# fırlatıyor (postgrest'in kendi retry'ı yalnız 503/520'de devreye giriyor).
+_GECICI_HTTP = (
+    httpx.RemoteProtocolError,
+    httpx.ConnectError,
+    httpx.ConnectTimeout,
+    httpx.ReadError,
+    httpx.WriteError,
+    httpx.PoolTimeout,
+)
+
+
+async def _call(fn: Callable[[], _T], *, deneme: int = 3) -> _T:
+    """Senkron repo çağrısını thread'de çalıştırır; geçici bağlantı hatasında yeniden dener."""
+    for i in range(deneme):
+        try:
+            return await asyncio.to_thread(fn)
+        except _GECICI_HTTP:
+            if i == deneme - 1:
+                raise
+            logger.warning("repo çağrısı geçici hata, yeniden deneniyor (%d/%d)", i + 1, deneme - 1)
+            await asyncio.sleep(0.4 * (i + 1))
+    raise AssertionError("ulaşılamaz")
+
+
 # --------------------------------------------------------------------------- #
 # transactions
 # --------------------------------------------------------------------------- #
@@ -50,7 +80,7 @@ async def add(aday: Candidate, user_id: str) -> Transaction:
         res = _db().table("transactions").insert(row).execute()
         return res.data[0]
 
-    return Transaction.from_row(await asyncio.to_thread(_run))
+    return Transaction.from_row(await _call(_run))
 
 
 async def add_many(adaylar: list[Candidate], user_id: str) -> list[Transaction]:
@@ -64,7 +94,7 @@ async def add_many(adaylar: list[Candidate], user_id: str) -> list[Transaction]:
         res = _db().table("transactions").insert(rows).execute()
         return res.data
 
-    return [Transaction.from_row(r) for r in await asyncio.to_thread(_run)]
+    return [Transaction.from_row(r) for r in await _call(_run)]
 
 
 async def get(tx_id: str) -> Transaction | None:
@@ -79,7 +109,7 @@ async def get(tx_id: str) -> Transaction | None:
         )
         return res.data[0] if res.data else None
 
-    r = await asyncio.to_thread(_run)
+    r = await _call(_run)
     return Transaction.from_row(r) if r else None
 
 
@@ -93,7 +123,7 @@ async def update(tx_id: str, alanlar: dict) -> Transaction | None:
         res = _db().table("transactions").update(alanlar).eq("id", tx_id).execute()
         return res.data[0] if res.data else None
 
-    r = await asyncio.to_thread(_run)
+    r = await _call(_run)
     return Transaction.from_row(r) if r else None
 
 
@@ -107,7 +137,7 @@ async def soft_delete(tx_id: str) -> bool:
         )
         return bool(res.data)
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 def _kullanici_filtresi(q, user_id: str | list[str]):
@@ -129,7 +159,7 @@ async def list_recent(user_id: str | list[str], n: int = 5) -> list[Transaction]
             .data
         )
 
-    return [Transaction.from_row(r) for r in await asyncio.to_thread(_run)]
+    return [Transaction.from_row(r) for r in await _call(_run)]
 
 
 async def list_period(
@@ -154,7 +184,7 @@ async def list_period(
             q = q.eq("type", tip)
         return q.order("occurred_on", desc=False).execute().data
 
-    return [Transaction.from_row(r) for r in await asyncio.to_thread(_run)]
+    return [Transaction.from_row(r) for r in await _call(_run)]
 
 
 # --------------------------------------------------------------------------- #
@@ -170,7 +200,7 @@ async def pending_create(user_id: str, chat_id: int, message_id: int, payload: d
         }).execute()
         return res.data[0]["id"]
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 async def pending_get(pending_id: str) -> dict | None:
@@ -181,14 +211,14 @@ async def pending_get(pending_id: str) -> dict | None:
         )
         return res.data[0] if res.data else None
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 async def pending_delete(pending_id: str) -> None:
     def _run() -> None:
         _db().table("pending_transactions").delete().eq("id", pending_id).execute()
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
 
 
 async def pending_set_message(pending_id: str, chat_id: int, message_id: int) -> None:
@@ -197,7 +227,7 @@ async def pending_set_message(pending_id: str, chat_id: int, message_id: int) ->
             {"chat_id": chat_id, "message_id": message_id}
         ).eq("id", pending_id).execute()
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
 
 
 # --------------------------------------------------------------------------- #
@@ -217,7 +247,7 @@ async def categories_list(user_id: str, *, only_active: bool = True) -> list[Cat
             q = q.eq("is_active", True)
         return q.order("type").order("sort_order").order("name").execute().data
 
-    return [Category.from_row(r) for r in await asyncio.to_thread(_run)]
+    return [Category.from_row(r) for r in await _call(_run)]
 
 
 async def category_create(
@@ -235,7 +265,7 @@ async def category_create(
     def _run() -> dict:
         return _db().table("categories").insert(row).execute().data[0]
 
-    return Category.from_row(await asyncio.to_thread(_run))
+    return Category.from_row(await _call(_run))
 
 
 async def category_get(cat_id: str) -> Category | None:
@@ -243,7 +273,7 @@ async def category_get(cat_id: str) -> Category | None:
         res = _db().table("categories").select("*").eq("id", cat_id).limit(1).execute()
         return res.data[0] if res.data else None
 
-    r = await asyncio.to_thread(_run)
+    r = await _call(_run)
     return Category.from_row(r) if r else None
 
 
@@ -256,7 +286,7 @@ async def category_update(cat_id: str, alanlar: dict) -> Category | None:
         res = _db().table("categories").update(alanlar).eq("id", cat_id).execute()
         return res.data[0] if res.data else None
 
-    r = await asyncio.to_thread(_run)
+    r = await _call(_run)
     return Category.from_row(r) if r else None
 
 
@@ -265,7 +295,7 @@ async def category_delete(cat_id: str) -> bool:
         res = _db().table("categories").delete().eq("id", cat_id).execute()
         return bool(res.data)
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 async def categories_seed(user_id: str, tipler: list[str] | None = None) -> int:
@@ -335,7 +365,7 @@ async def categories_seed(user_id: str, tipler: list[str] | None = None) -> int:
         db.table("categories").insert(satirlar).execute()
         return len(satirlar)
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 async def category_seed_tip(user_id: str, tip: str) -> int:
@@ -366,7 +396,7 @@ async def category_seed_tip(user_id: str, tip: str) -> int:
         db.table("categories").insert(satirlar).execute()
         return len(satirlar)
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 # --------------------------------------------------------------------------- #
@@ -379,7 +409,7 @@ async def budgets_list(user_id: str) -> list[Budget]:
             .order("kapsam").execute().data
         )
 
-    return [Budget.from_row(r) for r in await asyncio.to_thread(_run)]
+    return [Budget.from_row(r) for r in await _call(_run)]
 
 
 async def budget_get(bid: str) -> Budget | None:
@@ -387,7 +417,7 @@ async def budget_get(bid: str) -> Budget | None:
         res = _db().table("budgets").select("*").eq("id", bid).limit(1).execute()
         return res.data[0] if res.data else None
 
-    r = await asyncio.to_thread(_run)
+    r = await _call(_run)
     return Budget.from_row(r) if r else None
 
 
@@ -420,14 +450,14 @@ async def budget_upsert(user_id: str, kapsam: str, kapsam_deger: str | None, lim
             .execute().data[0]
         )
 
-    return Budget.from_row(await asyncio.to_thread(_run))
+    return Budget.from_row(await _call(_run))
 
 
 async def budget_delete(bid: str) -> bool:
     def _run() -> bool:
         return bool(_db().table("budgets").delete().eq("id", bid).execute().data)
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 async def goal_get(user_id: str, tip: str = "yatirim") -> Goal | None:
@@ -438,7 +468,7 @@ async def goal_get(user_id: str, tip: str = "yatirim") -> Goal | None:
         )
         return res.data[0] if res.data else None
 
-    r = await asyncio.to_thread(_run)
+    r = await _call(_run)
     return Goal.from_row(r) if r else None
 
 
@@ -455,7 +485,7 @@ async def goal_upsert(user_id: str, hedef_amount: float, tip: str = "yatirim") -
             .execute().data[0]
         )
 
-    return Goal.from_row(await asyncio.to_thread(_run))
+    return Goal.from_row(await _call(_run))
 
 
 async def goal_delete(user_id: str, tip: str = "yatirim") -> bool:
@@ -465,7 +495,7 @@ async def goal_delete(user_id: str, tip: str = "yatirim") -> bool:
             .eq("user_id", user_id).eq("tip", tip).execute().data
         )
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 # --------------------------------------------------------------------------- #
@@ -479,14 +509,14 @@ async def push_token_upsert(user_id: str, token: str, platform: str | None) -> N
             on_conflict="token",
         ).execute()
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
 
 
 async def push_token_delete(token: str) -> None:
     def _run() -> None:
         _db().table("push_tokens").delete().eq("token", token).execute()
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
 
 
 async def push_tokens_all() -> list[dict]:
@@ -497,7 +527,7 @@ async def push_tokens_all() -> list[dict]:
         except Exception:
             return []
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 async def bildirim_gonderildi_mi(user_id: str, anahtar: str) -> bool:
@@ -508,7 +538,7 @@ async def bildirim_gonderildi_mi(user_id: str, anahtar: str) -> bool:
         )
         return bool(res.data)
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 async def bildirim_isaretle(user_id: str, anahtar: str) -> None:
@@ -518,7 +548,7 @@ async def bildirim_isaretle(user_id: str, anahtar: str) -> None:
             on_conflict="user_id,anahtar",
         ).execute()
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
 
 
 # --------------------------------------------------------------------------- #
@@ -553,7 +583,7 @@ async def hane_uyeligi(user_id: str) -> HaneUyelik | None:
         )
 
     try:
-        return await asyncio.to_thread(_run)
+        return await _call(_run)
     except Exception:
         logger.warning("hane_uyeligi sorgusu başarısız (tablo yok?) → None")
         return None
@@ -566,7 +596,7 @@ async def hane_uyeleri(household_id: str) -> list[HaneUye]:
             .eq("household_id", household_id).order("joined_at").execute().data
         )
 
-    return [HaneUye.from_row(r) for r in await asyncio.to_thread(_run)]
+    return [HaneUye.from_row(r) for r in await _call(_run)]
 
 
 async def hane_uye_idleri(household_id: str) -> list[str]:
@@ -577,7 +607,7 @@ async def hane_uye_idleri(household_id: str) -> list[str]:
         )
         return [r["user_id"] for r in rows]
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 async def hane_olustur(user_id: str, ad: str, uye_adi: str) -> Household:
@@ -600,7 +630,7 @@ async def hane_olustur(user_id: str, ad: str, uye_adi: str) -> Household:
         ).execute()
         return h
 
-    return Household.from_row(await asyncio.to_thread(_run))
+    return Household.from_row(await _call(_run))
 
 
 async def hane_kod_ile_bul(kod: str) -> Household | None:
@@ -611,7 +641,7 @@ async def hane_kod_ile_bul(kod: str) -> Household | None:
         )
         return res.data[0] if res.data else None
 
-    r = await asyncio.to_thread(_run)
+    r = await _call(_run)
     return Household.from_row(r) if r else None
 
 
@@ -623,14 +653,14 @@ async def hane_katil(user_id: str, household_id: str, uye_adi: str) -> None:
              "ad": uye_adi.strip() or "Üye", "rol": "editor"}
         ).execute()
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
 
 
 async def hane_ad_guncelle(household_id: str, ad: str) -> None:
     def _run() -> None:
         _db().table("households").update({"ad": ad.strip()}).eq("id", household_id).execute()
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
 
 
 async def hane_kod_yenile(household_id: str) -> str:
@@ -645,7 +675,7 @@ async def hane_kod_yenile(household_id: str) -> str:
                 continue
         raise RuntimeError("Hane kodu üretilemedi")
 
-    return await asyncio.to_thread(_run)
+    return await _call(_run)
 
 
 async def hane_uye_rol(household_id: str, hedef_user_id: str, rol: str) -> None:
@@ -655,7 +685,7 @@ async def hane_uye_rol(household_id: str, hedef_user_id: str, rol: str) -> None:
             .eq("household_id", household_id).eq("user_id", hedef_user_id).execute()
         )
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
 
 
 async def hane_uye_cikar(household_id: str, hedef_user_id: str) -> None:
@@ -665,14 +695,14 @@ async def hane_uye_cikar(household_id: str, hedef_user_id: str) -> None:
             .eq("household_id", household_id).eq("user_id", hedef_user_id).execute()
         )
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
 
 
 async def hane_sil(household_id: str) -> None:
     def _run() -> None:
         _db().table("households").delete().eq("id", household_id).execute()
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
 
 
 async def profil_plan_guncelle(
@@ -688,7 +718,7 @@ async def profil_plan_guncelle(
             .execute()
         )
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
 
 
 # --------------------------------------------------------------------------- #
@@ -726,4 +756,4 @@ async def kullanici_sil(user_id: str) -> None:
         except Exception as e:
             logger.warning("kullanici_sil auth: %s", e)
 
-    await asyncio.to_thread(_run)
+    await _call(_run)
