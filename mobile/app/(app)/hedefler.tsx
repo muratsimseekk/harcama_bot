@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Alert, Modal, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { HedefHalkasi } from "@/components/HedefHalkasi";
@@ -50,7 +50,9 @@ export default function Hedefler() {
     (g?.kategori_kirilim ?? []).filter((x) => x.kategori === ad).reduce((s, x) => s + x.tutar, 0);
 
   function tutarSor(baslik: string, mevcut: number | undefined, kaydet: (n: number) => void) {
-    if (Alert.prompt) {
+    // Alert.prompt yalnız iOS'ta gerçek çalışıyor; Android'de sessizce no-op →
+    // bütçe/hedef ayarlama tamamen kırılıyordu. Android'de kendi dialog'umuzu aç.
+    if (Platform.OS === "ios" && Alert.prompt) {
       Alert.prompt(
         baslik,
         "₺ tutar",
@@ -227,16 +229,16 @@ export default function Hedefler() {
         })}
       </View>
 
-      {dialog && (
-        <View style={s.dialogArka}>
-          <View style={[s.dialog, { backgroundColor: renk.card }]}>
-            <Text style={[T.heading, { color: renk.text }]}>{dialog.baslik}</Text>
+      <Modal visible={!!dialog} transparent animationType="fade" onRequestClose={() => setDialog(null)}>
+        <Pressable style={s.dialogArka} onPress={() => setDialog(null)}>
+          <Pressable style={[s.dialog, { backgroundColor: renk.card }]} onPress={() => {}}>
+            <Text style={[T.heading, { color: renk.text }]}>{dialog?.baslik}</Text>
             <TextInput
               style={[s.dialogInput, { color: renk.text, backgroundColor: renk.aksanSoft }]}
               keyboardType="numeric"
               autoFocus
-              defaultValue={dialog.deger}
-              onChangeText={(v) => setDialog({ ...dialog, deger: v })}
+              defaultValue={dialog?.deger}
+              onChangeText={(v) => dialog && setDialog({ ...dialog, deger: v })}
               placeholder="₺ tutar"
               placeholderTextColor={renk.textFaint}
             />
@@ -247,17 +249,17 @@ export default function Hedefler() {
               <Pressable
                 style={[s.dialogBtn, { backgroundColor: renk.aksan }]}
                 onPress={() => {
-                  const n = Number(dialog.deger.replace(",", "."));
-                  if (n > 0) dialog.kaydet(n);
+                  const n = Number((dialog?.deger ?? "").replace(",", "."));
+                  if (n > 0) dialog?.kaydet(n);
                   setDialog(null);
                 }}
               >
                 <Text style={{ color: renk.aksanUstu, fontWeight: "700" }}>Kaydet</Text>
               </Pressable>
             </View>
-          </View>
-        </View>
-      )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </EkranBasligi>
   );
 }
@@ -276,8 +278,7 @@ const s = StyleSheet.create({
   katUst: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   katRay: { height: 6, borderRadius: R.pill, overflow: "hidden", marginTop: 5 },
   dialogArka: {
-    position: "absolute",
-    top: 0, left: 0, right: 0, bottom: 0,
+    flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
     alignItems: "center",
     justifyContent: "center",
