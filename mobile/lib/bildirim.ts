@@ -1,29 +1,43 @@
 import Constants from "expo-constants";
 import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+// expo-notifications, Expo Go SDK 53+ Android'de import anında hata fırlatır
+// (push kaldırıldı). Gerçek build'de sorunsuz. Bu yüzden savunmalı yüklüyoruz —
+// Expo Go'da modül null olur, tüm fonksiyonlar sessizce no-op döner.
+let Notifications: typeof import("expo-notifications") | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  Notifications = require("expo-notifications");
+  Notifications?.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+} catch {
+  Notifications = null;
+}
 
 async function kanalKur() {
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "Genel",
-      importance: Notifications.AndroidImportance.DEFAULT,
-      vibrationPattern: [0, 200, 100, 200],
-    });
+  if (Notifications && Platform.OS === "android") {
+    try {
+      await Notifications.setNotificationChannelAsync("default", {
+        name: "Genel",
+        importance: Notifications.AndroidImportance.DEFAULT,
+        vibrationPattern: [0, 200, 100, 200],
+      });
+    } catch {
+      /* yoksay */
+    }
   }
 }
 
 /** İzin ister ve Expo push token'ı döndürür. Expo Go / emülatörde null. */
 export async function izinVeToken(): Promise<string | null> {
+  if (!Notifications) return null;
   await kanalKur();
   if (!Device.isDevice) return null;
 
@@ -48,6 +62,7 @@ export async function izinVeToken(): Promise<string | null> {
 
 /** Uygulama açıkken anlık yerel bildirim (dev build'de tam çalışır). */
 export async function yerelBildirim(baslik: string, govde: string) {
+  if (!Notifications) return;
   try {
     await Notifications.scheduleNotificationAsync({
       content: { title: baslik, body: govde },
