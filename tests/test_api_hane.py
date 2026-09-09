@@ -36,11 +36,15 @@ def test_getir_hanede_degil_null(client, monkeypatch):
     assert r.status_code == 200 and r.json() is None
 
 
-def test_olustur_base_402(client, monkeypatch):
+@pytest.mark.parametrize(
+    ("ham", "ai_limit"),
+    [("base", 150), ("trial", 10**9)],  # trial de hane kuramaz (deneme = Base kapsamı)
+)
+def test_olustur_pro_degil_402(client, monkeypatch, ham, ai_limit):
     from api.usage import PlanDurum
 
     async def _durum(uid):
-        return PlanDurum(ham="base", etkin="base", trial_bitis=None, ai_limit=100)
+        return PlanDurum(ham=ham, etkin="base", trial_bitis=None, ai_limit=ai_limit)
     monkeypatch.setattr(usage, "plan_durum", _durum)
 
     async def yok(uid):

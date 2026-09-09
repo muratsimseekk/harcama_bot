@@ -94,8 +94,9 @@ def _coz(profil: dict) -> PlanDurum:
     if ham == "pro":
         return PlanDurum(ham, "pro", tb, _SINIRSIZ)
     if ham == "trial":
+        # Deneme = Base özellikleri + sınırsız AI. Hane KAPALI (etkin='base' → .pro=False).
         aktif = tb is not None and tb > now()
-        return PlanDurum(ham, "pro" if aktif else "base", tb,
+        return PlanDurum(ham, "base", tb,
                          _SINIRSIZ if aktif else settings.BASE_AI_AYLIK)
     # base / free (legacy) / bilinmeyen
     return PlanDurum(ham, "base", tb, settings.BASE_AI_AYLIK)

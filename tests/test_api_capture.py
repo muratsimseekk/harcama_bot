@@ -149,6 +149,29 @@ def test_transactions_elle_giris_limitten_muaf(client, monkeypatch):
     assert r.status_code == 201
 
 
+def test_trial_sinirsiz_ai(client, monkeypatch):
+    from core.models import Transaction
+
+    async def fake_durum(uid):
+        return _durum("base", 10**9)  # deneme: etkin='base' ama ai_limit sınırsız
+    async def fake_sayac(uid):
+        return 999  # tavan çok aşılmış görünse de deneme sınırsız
+    async def fake_add_many(adaylar, uid):
+        return [Transaction(
+            id="tx1", user_id=uid, direction=a.direction, tip=a.tip, kategori=a.kategori,
+            aciklama=a.aciklama, tutar=a.tutar, para_birimi="TRY", tarih=a.tarih, kaynak=a.kaynak,
+        ) for a in adaylar]
+    monkeypatch.setattr(usage, "plan_durum", fake_durum)
+    monkeypatch.setattr(usage, "ay_kayit_sayisi", fake_sayac)
+    monkeypatch.setattr(transactions.repo, "add_many", fake_add_many)
+
+    r = client.post("/v1/transactions", json={"candidates": [{
+        "aciklama": "kahve", "tutar": 90, "kategori": "Kafe/Restoran",
+        "tarih": "2026-08-28", "kaynak": "mobile_text",
+    }]})
+    assert r.status_code == 201
+
+
 def test_transactions_olustur_basarili(client, monkeypatch):
     from core.models import Transaction
 

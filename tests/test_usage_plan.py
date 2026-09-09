@@ -10,10 +10,12 @@ def test_pro_sinirsiz():
     assert d.etkin == "pro" and d.pro and d.ai_limit >= 10**9
 
 
-def test_trial_aktif_pro_gibi():
+def test_trial_aktif_sinirsiz_ai_ama_hane_yok():
+    # Deneme = Base özellikleri + sınırsız AI; hane KAPALI (.pro False)
     tb = (now() + timedelta(days=3)).isoformat()
     d = _coz({"plan": "trial", "trial_bitis": tb})
-    assert d.etkin == "pro" and d.pro
+    assert d.etkin == "base" and not d.pro
+    assert d.ai_limit >= 10**9
 
 
 def test_trial_bitmis_base_olur():

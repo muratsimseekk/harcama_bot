@@ -51,8 +51,8 @@ class Settings:
     # --- Mobil API ---
     # Base üyelikte aylık AI (sesli/yazılı) kayıt tavanı. Elle işlem ekleme sınırsız.
     # Eski ad FREE_AYLIK_LIMIT env uyumu için okunur.
-    BASE_AI_AYLIK: int = _int("BASE_AI_AYLIK", _int("FREE_AYLIK_LIMIT", 100))
-    FREE_AYLIK_LIMIT: int = _int("FREE_AYLIK_LIMIT", 100)  # geriye dönük
+    BASE_AI_AYLIK: int = _int("BASE_AI_AYLIK", _int("FREE_AYLIK_LIMIT", 150))
+    FREE_AYLIK_LIMIT: int = _int("FREE_AYLIK_LIMIT", 150)  # geriye dönük
     TRIAL_GUN: int = _int("TRIAL_GUN", 7)  # referans; trigger'da sabit 7
     API_CORS_ORIGINS: str = os.environ.get("API_CORS_ORIGINS", "*")
     # /v1/capture kişi başı hız limiti: PENCERE saniyede en çok İSTEK adet.
