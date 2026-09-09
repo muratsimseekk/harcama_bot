@@ -164,7 +164,7 @@ function TemaliDurumCubugu() {
 }
 
 function RootLayout() {
-  useFonts({
+  const [fontHazir, fontHata] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -175,9 +175,19 @@ function RootLayout() {
     Newsreader_700Bold,
   });
 
+  const [fontZamanAsimi, setFontZamanAsimi] = useState(false);
   useEffect(() => {
-    SplashScreen.hideAsync().catch(() => {});
+    const t = setTimeout(() => setFontZamanAsimi(true), 2500);
+    return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (fontHazir || fontHata || fontZamanAsimi) SplashScreen.hideAsync().catch(() => {});
+  }, [fontHazir, fontHata, fontZamanAsimi]);
+
+  // Fontlar yüklenene kadar bekle — yoksa yedek font geniş metrikleriyle
+  // metinlerin son harfleri kırpılıyor (İşlem→İşle, Haftalık→Haftalı).
+  if (!fontHazir && !fontHata && !fontZamanAsimi) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
