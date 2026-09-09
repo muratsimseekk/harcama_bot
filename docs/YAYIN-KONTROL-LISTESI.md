@@ -54,22 +54,35 @@
       Supabase'de çalıştırıldı mı? (evet)
 - [ ] Render env: `RC_WEBHOOK_SECRET`, `RC_URUN_PLAN`
 
-## 5. Abonelik / ödeme (RevenueCat)
+## 5. Abonelik / ödeme (RevenueCat) — fiyatlar karar verildi
 
-- [ ] App Store Connect → Features → Subscriptions → abonelik grubu + ürünler:
-      `pro_aylik`, `pro_yillik`, `base_aylik` (id'ler `RC_URUN_PLAN` ile eşleşmeli)
-      - Her ürüne: fiyat, açıklama, gözden geçirme ekran görüntüsü
-- [ ] Play Console → Monetize → Subscriptions → aynı ürünler
-- [ ] RevenueCat → iki mağazayı bağla → Entitlements: `pro`, `base` → Offerings
+Tam plan: `~/.claude/plans/gentle-fluttering-unicorn.md` (Faz 2-4).
+
+**4 abonelik ürünü (tek grup), fiyatlar:**
+| ID | TR aylık/yıllık | USD baz aylık/yıllık | entitlement |
+|---|---|---|---|
+| `base_aylik`  | ₺39,99  | $2.99  | base |
+| `base_yillik` | ₺299,99 | $24.99 | base |
+| `pro_aylik`   | ₺79,99  | $4.99  | pro |
+| `pro_yillik`  | ₺599,99 | $39.99 | pro |
+
+- [ ] **Apple → Small Business Program başvurusu** (%15 komisyon, %30 değil) — hesap açar açmaz
+- [ ] App Store Connect → Subscriptions → grup "Harcama Üyelik" → 4 ürün (yukarıdaki ID+fiyat)
+      - TR fiyatı manuel; USD baz gir → Apple diğer bölgeleri doldurur; spot kontrol
+      - Her ürüne: TR ad/açıklama + **inceleme ekran görüntüsü** (paywall)
+- [ ] Play Console → Monetize → Subscriptions → aynı 4 ürün, monthly/annual base plans
+- [ ] RevenueCat → iki mağazayı bağla → Entitlements: `pro`, `base` → Offering "default" (4 package)
 - [ ] RevenueCat → Integrations → Webhooks → `https://harcama-api.onrender.com/v1/rc/webhook`
-      + Authorization header = `RC_WEBHOOK_SECRET`
-- [ ] `npx expo install react-native-purchases react-native-purchases-ui`
+      + Authorization header = `Bearer <RC_WEBHOOK_SECRET>`
+- [ ] `npx expo install react-native-purchases` (`-ui` GEREKMEZ — özel paywall var)
 - [ ] `app.json` plugins → `"react-native-purchases"`
-- [ ] `mobile/lib/satinalma.ts` → STUB bölümünü gerçek kodla değiştir + RC API key'leri
+- [ ] `mobile/lib/satinalma.ts` → STUB → gerçek kod (dosyada yorumda) + `EXPO_PUBLIC_RC_IOS_KEY`/`_ANDROID_KEY`
+- [ ] `mobile/app/_layout.tsx` → auth sonrası `baslat(session.user.id)`
 - [ ] **`eas build --profile development`** — Expo Go artık kullanılamaz, dev build şart
-- [ ] Sandbox test hesaplarıyla satın alma + geri yükleme + iptal test et
+- [ ] Sandbox test hesaplarıyla satın alma + geri yükleme + iptal + trial→base düşüş test
 - [ ] Paywall ekranı (`app/uyelik.tsx`) Apple kurallarına uygun: fiyat, süre, otomatik
-      yenileme, iptal yolu, Şartlar + Gizlilik linki hepsi görünür
+      yenileme, iptal yolu, Geri Yükle butonu, Şartlar + Gizlilik linki hepsi görünür
+- [ ] Render env: `RC_WEBHOOK_SECRET`, `BASE_AI_AYLIK=150` (`RC_URUN_PLAN` default doğru)
 
 ## 6. Mağaza varlıkları
 

@@ -379,20 +379,29 @@ Banka SMS okuma · işletme/KDV modu.
 - GitHub: https://github.com/muratsimseekk/harcama_bot/tree/faz-m1-mobil
 - Supabase proje: `mwuuicgxxruoesutbicv` · EAS proje: `@muratsimseekk/harcama-mobil` (`b2e4ce51-3042-4535-9644-89f867234215`)
 
-## 8. Üyelik / fiyatlandırma — 3 katman
+## 8. Üyelik / fiyatlandırma — 3 katman (fiyatlar karar verildi 2026-09-09)
 
 **Kod tarafı hazır** (`api/usage.py` `plan_durum`, `scripts/schema_uyelik.sql`).
-Gerçek ödeme (RevenueCat + mağaza + `plan_bitis`) = Faz 0.5.
+Gerçek ödeme (RevenueCat + mağaza) = Faz 0.5 — plan: `~/.claude/plans/gentle-fluttering-unicorn.md`.
 
-| Katman | Süre/Fiyat | Kapsam |
+| Katman | Kapsam |
+|---|---|
+| **Deneme (trial)** | Yeni kullanıcı, 7 gün otomatik. **Base özellikleri + sınırsız AI.** Hane KİLİTLİ (Pro'ya geçiş sebebi). Kodda: `_coz()` trial → `etkin='base'`, `ai_limit=sınırsız`. |
+| **Base** | Aylık **150 AI kaydı** (`BASE_AI_AYLIK`), elle giriş sınırsız, özet/analiz/bütçe/hedef. Hane YOK. |
+| **Pro** | Sınırsız AI · **hane paylaşımı** · (ileride: fiş okuma, YZ öngörüleri, export, kişi-bazı hane kırılımı — bkz `docs/HANE-PRO.md`) |
+
+### Fiyatlar (Türkiye — öncelik)
+| | Aylık | Yıllık (~%37 indirim) |
 |---|---|---|
-| **Deneme (trial)** | Yeni kullanıcı, 7 gün otomatik | Tam Pro deneyimi: sınırsız AI + hane + hepsi |
-| **Base** | Aylık ~X TL (Faz 0.5'te belirlenecek) | Aylık **100 AI kaydı** (env `BASE_AI_AYLIK`), elle giriş sınırsız, temel özet/analiz/bütçe. Hane YOK. |
-| **Pro** | ~2× Base (~149 TL/ay öneri, 999 TL/yıl) | Sınırsız AI · **hane paylaşımı** · (ileride: fiş okuma, YZ öngörüleri, gelişmiş raporlar, export, tekrarlayan/taksit, çoklu hedef+borç, kişi-bazı hane kırılımı, bağımsız hane bütçesi — bkz `docs/HANE-PRO.md`) |
+| Base | **₺39,99** | **₺299,99** (≈₺25/ay) |
+| Pro  | **₺79,99** | **₺599,99** (≈₺50/ay) |
 
+Diğer pazarlar USD anchor: Base $2.99/$24.99 · Pro $4.99/$39.99 (mağaza otomatik lokalize;
+TR manuel override). Ürün ID: `base_aylik`, `base_yillik`, `pro_aylik`, `pro_yillik`.
+
+Ekonomi: Groq ~$0.001/AI kaydı → tipik kullanıcı ~₺2,5/ay maliyet, power-user ~₺20.
+Net gelir (KDV + %15 Apple SBP): Base ~₺28/ay, Pro ~₺56/ay. Marj %65-85.
 Deneme bitip ödeme yoksa kullanıcı Base limitleriyle devam eder (kilitlenmez), Pro'ya davet edilir.
-Mağaza kesintisi: 200 TL abonelikte −%20 KDV −%15 mağaza = eline ~141 TL; gelir vergisi
-sonrası ~110–141 TL. Başa baş ~12–18 Pro abone (Bağ-Kur hariç).
 
 ---
 
