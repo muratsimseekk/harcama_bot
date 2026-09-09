@@ -48,3 +48,10 @@ export function useDagilimRenkleri(): (adet: number) => string[] {
   return (adet: number) =>
     Array.from({ length: adet }, (_, i) => (i < p.length ? p[i] : diger));
 }
+
+export const DIGER_ADI = "Diğer";
+
+/** "Diğer" / katlanmış artık dilimi için nötr gri (dataviz: kategorik hue verme). */
+export function useDigerRenk(): string {
+  return useKaranlik() ? DIGER_KOYU : DIGER_ACIK;
+}

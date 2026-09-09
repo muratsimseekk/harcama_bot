@@ -40,16 +40,18 @@ export default function AnaSayfa() {
   const dilimler = useMemo(() => {
     const hepsi = birlestirKategori(g?.kategori_kirilim ?? []);
     if (hepsi.length <= 8) return hepsi;
-    const ilk = hepsi.slice(0, 7);
+    const ilk = hepsi.slice(0, 7).map((d) => ({ ...d }));
     const kalan = hepsi.slice(7);
-    return [
-      ...ilk,
-      {
-        ad: "Diğer",
-        tutar: kalan.reduce((s, d) => s + d.tutar, 0),
-        oran: kalan.reduce((s, d) => s + d.oran, 0),
-      },
-    ];
+    const artikTutar = kalan.reduce((s, d) => s + d.tutar, 0);
+    const artikOran = kalan.reduce((s, d) => s + d.oran, 0);
+    // "Diğer" ilk 7'de zaten varsa artığı ona kat (çift "Diğer" satırı olmasın)
+    const mevcut = ilk.find((d) => d.ad === "Diğer");
+    if (mevcut) {
+      mevcut.tutar += artikTutar;
+      mevcut.oran += artikOran;
+      return ilk.sort((a, b) => b.tutar - a.tutar);
+    }
+    return [...ilk, { ad: "Diğer", tutar: artikTutar, oran: artikOran }];
   }, [g?.kategori_kirilim]);
 
   return (

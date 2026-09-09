@@ -4,7 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import { tutarKisa, yuzde } from "@/lib/format";
 import { kategoriIkon } from "@/lib/kategoriIkon";
-import { useDagilimRenkleri } from "@/lib/kategoriRenk";
+import { DIGER_ADI, useDagilimRenkleri, useDigerRenk } from "@/lib/kategoriRenk";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 
 export interface Dilim {
@@ -17,9 +17,14 @@ export interface Dilim {
 export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
   const renk = useRenkler();
   const renkDizi = useDagilimRenkleri();
+  const digerRenk = useDigerRenk();
   const dolu = dilimler.filter((d) => d.tutar > 0);
   const paleti = renkDizi(dolu.length);
-  const parcalar = dolu.map((d, i) => ({ ...d, c: d.renk || paleti[i] }));
+  let hueIdx = 0;
+  const parcalar = dolu.map((d) => ({
+    ...d,
+    c: d.renk || (d.ad === DIGER_ADI ? digerRenk : paleti[hueIdx++]),
+  }));
   const toplam = parcalar.reduce((s, d) => s + d.tutar, 0);
   const veri = parcalar.map((d) => ({ value: d.tutar, color: d.c }));
 
