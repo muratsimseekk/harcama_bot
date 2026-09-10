@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
-import { type Donem, IkiliCubukGrafik } from "@/components/charts";
+import { IkiliCubukGrafik } from "@/components/charts";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { IlerlemeCubugu } from "@/components/IlerlemeCubugu";
 import { IslemSatiri } from "@/components/IslemSatiri";
@@ -42,52 +42,41 @@ export default function Analiz() {
   const renk = useRenkler();
   const router = useRouter();
   const [sekme, setSekme] = useState<Sekme>("month");
-  const [seciliDonem, setSeciliDonem] = useState<number | null>(null);
   const gran = granOf(sekme);
-
-  const sekmeDegis = (x: Sekme) => {
-    setSekme(x);
-    setSeciliDonem(null); // dönem değişince eski seçim anlamsız
-  };
 
   const ozet = useSummary(gran);
   const g = ozet.data?.bu_donem;
   const txQ = useTransactions({ limit: 300, from: ozet.data?.baslangic, to: ozet.data?.bitis });
 
-  /**
-   * Grafik dönemleri. Aylık görünümde 30 günü tek tek çizmek okunaksız
-   * (60 çubuk, çoğu boş) — haftalık kovalara toplanır.
-   */
-  const donemler = useMemo<Donem[]>(() => {
-    if (!g) return [];
+  const grafik = useMemo(() => {
+    if (!g) return { etiketler: [] as string[], gelir: [] as number[], gider: [] as number[] };
     if (gran === "year") {
-      const kova = AYLAR.map((etiket) => ({ etiket, gelir: 0, gider: 0 }));
+      const gg = Array(12).fill(0);
+      const ge = Array(12).fill(0);
       for (const gn of g.gunluk) {
         const m = Number(gn.tarih.slice(5, 7)) - 1;
-        kova[m].gelir += gn.gelir;
-        kova[m].gider += gn.gider;
+        gg[m] += gn.gelir;
+        ge[m] += gn.gider;
       }
-      return kova;
+      return { etiketler: AYLAR, gelir: gg, gider: ge };
     }
     if (gran === "week") {
-      // 7 gün → hafta günü kısaltması (Pzt, Sal…)
-      return g.gunluk.map((x) => ({ etiket: gunAdi(x.tarih), gelir: x.gelir, gider: x.gider }));
+      // 7 gün → hafta günü kısaltması (Pzt, Sal…) — "1.9" gibi tarih kodu değil
+      return {
+        etiketler: g.gunluk.map((x) => gunAdi(x.tarih)),
+        gelir: g.gunluk.map((x) => x.gelir),
+        gider: g.gunluk.map((x) => x.gider),
+      };
     }
-    // Aylık → 7'şer günlük kovalar: "1-7", "8-14", "15-21", "22-28", "29-30"
-    const kova = new Map<number, { ilk: number; son: number; gelir: number; gider: number }>();
-    for (const gn of g.gunluk) {
-      const gun = Number(gn.tarih.slice(8, 10));
-      const i = Math.min(Math.floor((gun - 1) / 7), 4);
-      const k = kova.get(i) ?? { ilk: gun, son: gun, gelir: 0, gider: 0 };
-      k.ilk = Math.min(k.ilk, gun);
-      k.son = Math.max(k.son, gun);
-      k.gelir += gn.gelir;
-      k.gider += gn.gider;
-      kova.set(i, k);
-    }
-    return [...kova.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([, k]) => ({ etiket: `${k.ilk}-${k.son}`, gelir: k.gelir, gider: k.gider }));
+    // Aylık: ~30 çubuk. Her güne etiket sığmaz → sadece 1, 5, 10, 15, 20, 25, 30
+    return {
+      etiketler: g.gunluk.map((x) => {
+        const gun = Number(x.tarih.slice(8, 10));
+        return gun === 1 || gun % 5 === 0 ? String(gun) : "";
+      }),
+      gelir: g.gunluk.map((x) => x.gelir),
+      gider: g.gunluk.map((x) => x.gider),
+    };
   }, [g, gran]);
 
   const bolumler = useMemo(() => {
@@ -104,9 +93,6 @@ export default function Analiz() {
 
   const islemAc = (t: Islem) =>
     router.push({ pathname: "/islem-form", params: { islem: JSON.stringify(t) } });
-
-  const sec = seciliDonem !== null ? (donemler[seciliDonem] ?? null) : null;
-  const secNet = sec ? sec.gelir - sec.gider : 0;
 
   return (
     <EkranBasligi
@@ -135,7 +121,7 @@ export default function Analiz() {
         secenekler={["day", "week", "month", "year"] as const}
         etiket={(x) => ETIKET[x]}
         secili={sekme}
-        onSec={sekmeDegis}
+        onSec={setSekme}
       />
 
       <Kart style={{ backgroundColor: renk.aksanSoft }}>
@@ -148,37 +134,7 @@ export default function Analiz() {
             <Ionicons name="search" size={16} color={renk.aksanUstu} />
           </Pressable>
         </View>
-        {sec ? (
-          <View style={s.secimSatir}>
-            <Text style={[s.secimAd, { color: renk.text }]}>{sec.etiket}</Text>
-            <View style={s.secimDegerler}>
-              <Text style={[s.secimDeger, { color: renk.success }]}>
-                +{turkceTutar(sec.gelir)}
-              </Text>
-              <Text style={[s.secimDeger, { color: renk.blue }]}>
-                −{turkceTutar(sec.gider)}
-              </Text>
-              <Text style={[s.secimNet, { color: secNet >= 0 ? renk.success : renk.danger }]}>
-                net {secNet >= 0 ? "+" : "−"}
-                {turkceTutar(Math.abs(secNet))} ₺
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <View style={s.lejant}>
-            <View style={s.lejantOge}>
-              <View style={[s.lejantNokta, { backgroundColor: renk.success }]} />
-              <Text style={[s.lejantYazi, { color: renk.textMuted }]}>Gelir</Text>
-            </View>
-            <View style={s.lejantOge}>
-              <View style={[s.lejantNokta, { backgroundColor: renk.blue }]} />
-              <Text style={[s.lejantYazi, { color: renk.textMuted }]}>Gider</Text>
-            </View>
-            <Text style={[s.lejantYazi, { color: renk.textFaint }]}>· çubuğa dokun</Text>
-          </View>
-        )}
-
-        <IkiliCubukGrafik donemler={donemler} secili={seciliDonem} onSec={setSeciliDonem} />
+        <IkiliCubukGrafik etiketler={grafik.etiketler} gelir={grafik.gelir} gider={grafik.gider} />
       </Kart>
 
       {katHedefler.length > 0 ? (
@@ -256,15 +212,6 @@ const s = StyleSheet.create({
     marginBottom: SP.md,
   },
   yesilBtn: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  lejant: { flexDirection: "row", alignItems: "center", gap: SP.md, marginBottom: SP.md },
-  lejantOge: { flexDirection: "row", alignItems: "center", gap: 5 },
-  lejantNokta: { width: 8, height: 8, borderRadius: 4 },
-  lejantYazi: { fontSize: 12.5, fontWeight: "600" },
-  secimSatir: { marginBottom: SP.md, gap: 3 },
-  secimAd: { fontSize: 14, fontWeight: "800" },
-  secimDegerler: { flexDirection: "row", alignItems: "center", gap: SP.md, flexWrap: "wrap" },
-  secimDeger: { fontSize: 13.5, fontWeight: "700", fontVariant: ["tabular-nums"] },
-  secimNet: { fontSize: 13.5, fontWeight: "800", fontVariant: ["tabular-nums"] },
   hedefUst: { flexDirection: "row", justifyContent: "space-between" },
   hedefRay: { height: 8, borderRadius: R.pill, overflow: "hidden" },
   gunBaslik: { fontSize: 13, fontWeight: "700", marginTop: SP.lg, marginBottom: 2 },

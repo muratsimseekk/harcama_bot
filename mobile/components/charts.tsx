@@ -132,37 +132,18 @@ export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
   );
 }
 
-export interface Donem {
-  etiket: string;
-  gelir: number;
-  gider: number;
-}
-
-/** Y ekseninin bölüm başına "yuvarlak" adımı — 15.638 yerine 4.000/8.000/12.000/16.000. */
-function guzelAdim(enBuyuk: number, bolum: number): number {
-  const ham = enBuyuk / bolum;
-  if (ham <= 0) return 1;
-  const us = 10 ** Math.floor(Math.log10(ham));
-  const n = ham / us;
-  const kat = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 4 ? 4 : n <= 5 ? 5 : 10;
-  return kat * us;
-}
-
-/**
- * İkili çubuk: her dönem için gelir + gider yan yana.
- * Çubuğa dokununca `onSec(index)` çağrılır; seçili değilse diğerleri soluklaşır.
- */
+/** İkili çubuk: her birim için gelir + gider yan yana */
 export function IkiliCubukGrafik({
-  donemler,
-  secili,
-  onSec,
+  etiketler,
+  gelir,
+  gider,
 }: {
-  donemler: Donem[];
-  secili: number | null;
-  onSec: (i: number | null) => void;
+  etiketler: string[];
+  gelir: number[];
+  gider: number[];
 }) {
   const renk = useRenkler();
-  const hepsi = donemler.flatMap((d) => [d.gelir, d.gider]);
+  const hepsi = [...gelir, ...gider];
   if (hepsi.length === 0 || hepsi.every((v) => v === 0)) {
     return (
       <Text style={[T.body, { color: renk.textMuted, textAlign: "center", paddingVertical: SP.lg }]}>
@@ -170,42 +151,27 @@ export function IkiliCubukGrafik({
       </Text>
     );
   }
-
-  const BOLUM = 4;
-  const adim = guzelAdim(Math.max(...hepsi, 1), BOLUM);
-  const n = donemler.length;
-
-  const data = donemler.flatMap((d, i) => {
-    const sonuk = secili !== null && secili !== i;
-    const bas = (c: string) => (sonuk ? c + "44" : c);
-    const dokun = () => onSec(secili === i ? null : i);
-    return [
-      { value: d.gelir, frontColor: bas(renk.success), spacing: 3, label: "", onPress: dokun },
-      {
-        value: d.gider,
-        frontColor: bas(renk.blue),
-        spacing: n > 8 ? 8 : 18,
-        label: d.etiket,
-        onPress: dokun,
-      },
-    ];
-  });
+  const enBuyuk = Math.max(...hepsi, 1);
+  const n = etiketler.length;
+  const data = etiketler.flatMap((et, i) => [
+    { value: gelir[i] ?? 0, frontColor: renk.success, spacing: 3, label: "" },
+    { value: gider[i] ?? 0, frontColor: renk.blue, spacing: n > 8 ? 8 : 16, label: et },
+  ]);
 
   return (
     <BarChart
       data={data}
-      barWidth={Math.max(6, Math.min(18, 220 / n))}
-      initialSpacing={12}
-      barBorderTopLeftRadius={4}
-      barBorderTopRightRadius={4}
-      noOfSections={BOLUM}
-      maxValue={adim * BOLUM}
-      stepValue={adim}
+      barWidth={Math.max(5, Math.min(12, 150 / n))}
+      initialSpacing={10}
+      barBorderTopLeftRadius={3}
+      barBorderTopRightRadius={3}
+      noOfSections={3}
+      maxValue={enBuyuk * 1.15}
       yAxisThickness={0}
       xAxisThickness={1}
       xAxisColor={renk.border}
-      xAxisLabelTextStyle={{ color: renk.textMuted, fontSize: 11 }}
-      yAxisTextStyle={{ color: renk.textFaint, fontSize: 10 }}
+      xAxisLabelTextStyle={{ color: renk.textMuted, fontSize: 9 }}
+      yAxisTextStyle={{ color: renk.textFaint, fontSize: 9 }}
       formatYLabel={(l: string) => tutarKisa(Number(l))}
       rulesType="dashed"
       rulesColor={renk.hairline}
