@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } fro
 import { Kart, Sekmeli } from "@/components/base";
 import { Metin as Text } from "@/components/Metin";
 import { PlanRozeti, denemeGunKalan } from "@/components/PlanRozeti";
+import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { useMe } from "@/lib/queries";
 import {
   type EtkinPlan,
@@ -131,7 +132,7 @@ export default function Uyelik() {
       />
 
       {yukleniyor ? (
-        <ActivityIndicator color={renk.aksan} style={{ marginVertical: SP.xl }} />
+        <YuklemeHalkasi boyut={64} yazi="Paketler alınıyor" />
       ) : (
         <View style={{ gap: SP.md }}>
           <PlanKart

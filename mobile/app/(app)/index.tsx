@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Kart, Sekmeli, Yukleniyor } from "@/components/base";
+import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { PastaGrafik } from "@/components/charts";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { IslemSatiri } from "@/components/IslemSatiri";
@@ -95,7 +96,7 @@ export default function AnaSayfa() {
           {DAGILIM_BASLIK[gran]}
         </Text>
         {ozet.isLoading ? (
-          <Yukleniyor yukseklik={150} />
+          <YuklemeHalkasi boyut={64} yukseklik={190} />
         ) : (
           <PastaGrafik dilimler={dilimler} />
         )}

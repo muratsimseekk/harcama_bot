@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } fro
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IslemFormu } from "@/components/IslemFormu";
 import { Metin as Text } from "@/components/Metin";
+import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { api, ApiError } from "@/lib/api";
 import { turkceTutar } from "@/lib/format";
 import { golge, R, SP, useRenkler } from "@/lib/theme";
@@ -63,7 +64,7 @@ export default function Confirm() {
         {yanit.needs_review && (
           <View style={[s.uyari, { backgroundColor: renk.warnSoft }]}>
             <Ionicons name="alert-circle" size={16} color={renk.warn} />
-            <Text style={{ color: renk.warn, fontSize: 13, flex: 1 }}>
+            <Text style={{ color: renk.warn, fontSize: 14, flex: 1 }}>
               Bazı kayıtlar kontrol istiyor — düzelt, sonra onayla.
             </Text>
           </View>
@@ -88,7 +89,7 @@ export default function Confirm() {
             )}
             <IslemFormu deger={a} guncelle={(yama) => guncelle(i, yama)} />
             {!!a.neden && (
-              <Text style={{ color: renk.textFaint, fontSize: 12, fontStyle: "italic" }}>
+              <Text style={{ color: renk.textFaint, fontSize: 13, fontStyle: "italic" }}>
                 AI: {a.neden}
               </Text>
             )}
@@ -125,6 +126,12 @@ export default function Confirm() {
           </Pressable>
         </View>
       </View>
+
+      {kaydediliyor && (
+        <View style={[s.kaydetKatman, { backgroundColor: renk.bg + "F2" }]}>
+          <YuklemeHalkasi yazi="Kaydediliyor" />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -136,9 +143,18 @@ const s = StyleSheet.create({
   kart: { borderWidth: StyleSheet.hairlineWidth, borderRadius: R.lg, padding: SP.lg, gap: SP.md },
   silBtn: { position: "absolute", top: 8, right: 8, zIndex: 2 },
   sebepler: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  sebep: { fontSize: 12, paddingHorizontal: 8, paddingVertical: 4, borderRadius: R.sm, overflow: "hidden" },
+  sebep: { fontSize: 13, paddingHorizontal: 8, paddingVertical: 4, borderRadius: R.sm, overflow: "hidden" },
   altBar: { borderTopWidth: StyleSheet.hairlineWidth, padding: SP.lg, gap: SP.sm },
-  toplam: { fontSize: 13, fontWeight: "600", textAlign: "center" },
+  kaydetKatman: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toplam: { fontSize: 14, fontWeight: "600", textAlign: "center" },
   butonlar: { flexDirection: "row", gap: SP.sm },
   iptal: { flex: 1, borderWidth: 1, borderRadius: R.md, paddingVertical: 14, alignItems: "center" },
   onay: { flex: 2, borderRadius: R.md, paddingVertical: 14, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 },

@@ -59,7 +59,7 @@ export function KategoriSecici({
   return (
     <View style={{ gap: 6 }}>
       {!secili.trim() && (
-        <Text style={{ color: renk.textFaint, fontSize: 12.5 }}>bir kategori seç →</Text>
+        <Text style={{ color: renk.textFaint, fontSize: 13 }}>bir kategori seç →</Text>
       )}
       <ScrollView
         horizontal
@@ -73,7 +73,7 @@ export function KategoriSecici({
             style={[s.cip, { borderStyle: "dashed", borderColor: renk.aksan }]}
           >
             <Ionicons name="add" size={13} color={renk.aksan} />
-            <Text style={{ color: renk.aksan, fontSize: 12.5, fontWeight: "600" }}>{eksik}</Text>
+            <Text style={{ color: renk.aksan, fontSize: 14, fontWeight: "600" }}>{eksik}</Text>
           </Pressable>
         )}
         {uygun.map((k) => {
@@ -99,7 +99,7 @@ export function KategoriSecici({
               <Text
                 style={{
                   color: aktif ? "#fff" : renk.textMuted,
-                  fontSize: 12.5,
+                  fontSize: 14,
                   fontWeight: "600",
                 }}
               >
@@ -111,7 +111,7 @@ export function KategoriSecici({
         {!yeniAcik && (
           <Pressable onPress={() => setYeniAcik(true)} style={[s.cip, { borderColor: renk.border }]}>
             <Ionicons name="add" size={13} color={renk.textMuted} />
-            <Text style={{ color: renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>Yeni</Text>
+            <Text style={{ color: renk.textMuted, fontSize: 14, fontWeight: "600" }}>Yeni</Text>
           </Pressable>
         )}
       </ScrollView>
@@ -160,7 +160,7 @@ const s = StyleSheet.create({
     borderRadius: R.sm,
     paddingHorizontal: 12,
     paddingVertical: 9,
-    fontSize: 14.5,
+    fontSize: 16,
     fontFamily: FONT["500"],
   },
   yeniBtn: { width: 38, height: 38, borderRadius: R.sm, alignItems: "center", justifyContent: "center" },

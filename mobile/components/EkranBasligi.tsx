@@ -21,6 +21,7 @@ import { SP, T, useRenkler } from "@/lib/theme";
 export function EkranBasligi({
   baslik,
   geri = false,
+  onGeri,
   zil = true,
   onZil,
   ustAlan,
@@ -31,6 +32,8 @@ export function EkranBasligi({
 }: {
   baslik?: string;
   geri?: boolean;
+  /** Geri okuna basınca çalışır; verilmezse `router.back()`. */
+  onGeri?: () => void;
   zil?: boolean;
   onZil?: () => void;
   ustAlan?: React.ReactNode;
@@ -68,7 +71,7 @@ export function EkranBasligi({
         {(baslik || geri || zil) && (
           <View style={s.baslikSatir}>
             {geri ? (
-              <Pressable onPress={() => router.back()} hitSlop={12}>
+              <Pressable onPress={onGeri ?? (() => router.back())} hitSlop={12}>
                 <Ionicons name="chevron-back" size={26} color={renk.text} />
               </Pressable>
             ) : (

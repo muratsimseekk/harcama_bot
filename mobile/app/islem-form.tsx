@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Buton } from "@/components/Buton";
 import { IslemFormu, type IslemAlanlari } from "@/components/IslemFormu";
 import { Metin as Text } from "@/components/Metin";
+import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { ApiError } from "@/lib/api";
 import { useDeleteTransaction, usePatchTransaction, useSaveTransactions } from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
@@ -100,6 +101,12 @@ export default function IslemForm() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {mesgul && (
+        <View style={[s.kaydetKatman, { backgroundColor: renk.bg + "F2" }]}>
+          <YuklemeHalkasi yazi={mevcut ? "Güncelleniyor" : "Kaydediliyor"} />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -116,5 +123,14 @@ const s = StyleSheet.create({
     borderBottomColor: "transparent",
   },
   icerik: { padding: SP.lg, gap: SP.md, paddingBottom: 60 },
+  kaydetKatman: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   _r: { borderRadius: R.md },
 });

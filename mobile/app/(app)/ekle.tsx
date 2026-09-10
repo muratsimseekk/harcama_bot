@@ -10,10 +10,10 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   Easing,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -24,6 +24,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { Metin as Text } from "@/components/Metin";
+import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { api, ApiError } from "@/lib/api";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
 import type { CaptureYanit } from "@/lib/types";
@@ -42,6 +43,7 @@ export default function Ekle() {
   const [yaziyor, setYaziyor] = useState(false);
   const [durum, setDurum] = useState<Durum>("bos");
   const basladiRef = useRef(0);
+  const inputRef = useRef<TextInput>(null);
   const halka = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -109,6 +111,27 @@ export default function Ekle() {
     }
   }
 
+  /** Kaydı durdur ama gönderme — ses atılır, ekran anında boş duruma döner. */
+  async function kayitIptal() {
+    if (durum !== "kayit") return; // çift dokunuş koruması
+    setDurum("bos"); // UI anında sıfırlansın ("Analiz ediliyor…" görünmesin)
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await recorder.stop();
+      await setAudioModeAsync({ allowsRecording: false });
+    } catch {
+      /* yoksay — zaten vazgeçiyoruz, ses atılacak */
+    }
+  }
+
+  /** Klavye açıkken üst soldaki geri oku: klavyeyi kapat, taslağı temizle. */
+  function yaziVazgec() {
+    inputRef.current?.blur();
+    Keyboard.dismiss();
+    setMetin("");
+    setYaziyor(false);
+  }
+
   async function kayitBitir() {
     const sure = Date.now() - basladiRef.current;
     if (sure < MIN_KAYIT_MS) await new Promise((r) => setTimeout(r, MIN_KAYIT_MS - sure));
@@ -132,7 +155,14 @@ export default function Ekle() {
   const sn = Math.floor(rState.durationMillis / 1000);
 
   return (
-    <EkranBasligi baslik="Ekle" zil={false} kaydir={false} icerikStil={{ padding: 0, gap: 0 }}>
+    <EkranBasligi
+      baslik="Ekle"
+      zil={false}
+      kaydir={false}
+      geri={yaziyor}
+      onGeri={yaziVazgec}
+      icerikStil={{ padding: 0, gap: 0 }}
+    >
       <KeyboardAvoidingView
         style={s.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -152,17 +182,17 @@ export default function Ekle() {
                 ]}
               />
             )}
-            <Pressable
-              onPress={mikTikla}
-              disabled={mesgul}
-              style={[s.mic, { backgroundColor: kayitta ? renk.danger : renk.aksan, opacity: mesgul ? 0.6 : 1 }]}
-            >
-              {mesgul ? (
-                <ActivityIndicator color={renk.aksanUstu} size="large" />
-              ) : (
+            {mesgul ? (
+              // Analiz/hazırlık sırasında mikrofonun yerini yükleme halkası alır
+              <YuklemeHalkasi boyut={100} yazi="" />
+            ) : (
+              <Pressable
+                onPress={mikTikla}
+                style={[s.mic, { backgroundColor: kayitta ? renk.danger : renk.aksan }]}
+              >
                 <Ionicons name={kayitta ? "stop" : "mic"} size={52} color={renk.aksanUstu} />
-              )}
-            </Pressable>
+              </Pressable>
+            )}
           </View>
 
           <Text style={[T.heading, { color: kayitta ? renk.danger : renk.text }]}>
@@ -178,6 +208,17 @@ export default function Ekle() {
             <Text style={[s.ipucu, { color: renk.textFaint }]}>
               {kayitta ? "Bitince tekrar dokun" : "Sesli ya da yazılı — birden çok kalem tek seferde"}
             </Text>
+          )}
+
+          {kayitta && (
+            <Pressable
+              onPress={kayitIptal}
+              style={[s.vazgec, { backgroundColor: renk.cardAlt }]}
+              hitSlop={8}
+            >
+              <Ionicons name="close" size={16} color={renk.textMuted} />
+              <Text style={{ color: renk.textMuted, fontSize: 14, fontWeight: "700" }}>Vazgeç</Text>
+            </Pressable>
           )}
 
           {durum === "bos" && !yaziyor && (
@@ -203,6 +244,7 @@ export default function Ekle() {
 
         <View style={[s.altBar, { backgroundColor: renk.aksanSoft }]}>
           <TextInput
+            ref={inputRef}
             style={[s.input, { color: renk.text }]}
             placeholder="yazarak ekle…"
             placeholderTextColor={renk.textFaint}
@@ -237,6 +279,15 @@ const s = StyleSheet.create({
   ipucu: { fontSize: 13, textAlign: "center", maxWidth: 280 },
   ornekler: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: SP.sm, marginTop: SP.lg },
   ornek: { borderRadius: R.pill, paddingHorizontal: 12, paddingVertical: 7 },
+  vazgec: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: SP.lg,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: R.pill,
+  },
   elle: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: SP.lg, paddingVertical: 6 },
   altBar: {
     flexDirection: "row",

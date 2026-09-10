@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { BosDurum } from "@/components/base";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { Metin as Text } from "@/components/Metin";
+import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { useNotifications } from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 
@@ -27,7 +28,7 @@ export default function Bildirimler() {
   return (
     <EkranBasligi baslik="Bildirimler" geri zil={false} onRefresh={() => q.refetch()}>
       {q.isLoading ? (
-        <ActivityIndicator color={renk.aksan} style={{ marginTop: 40 }} />
+        <YuklemeHalkasi yazi="Bildirimler alınıyor" yukseklik={240} />
       ) : list.length === 0 ? (
         <BosDurum ikon="notifications-outline" yazi="Şimdilik bildirim yok" />
       ) : (

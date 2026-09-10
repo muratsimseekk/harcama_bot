@@ -84,7 +84,7 @@ export function Sekmeli<T extends string>({
               style={{
                 color: aktif ? renk.text : renk.textMuted,
                 fontWeight: aktif ? "700" : "600",
-                fontSize: kucuk ? 12.5 : 13.5,
+                fontSize: kucuk ? 14 : 14.5,
               }}
             >
               {etiket(o)}

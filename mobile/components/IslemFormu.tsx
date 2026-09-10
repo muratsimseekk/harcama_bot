@@ -54,7 +54,7 @@ export function IslemFormu({
               placeholder="0"
               placeholderTextColor={renk.textFaint}
             />
-            <Text style={{ color: renk.textMuted, fontSize: 15 }}>₺</Text>
+            <Text style={{ color: renk.textMuted, fontSize: 16 }}>₺</Text>
           </View>
         </View>
       </View>
@@ -87,7 +87,7 @@ export function IslemFormu({
 }
 
 const s = StyleSheet.create({
-  girdi: { borderRadius: R.md, paddingHorizontal: SP.lg, paddingVertical: 12, fontSize: 15.5, fontFamily: FONT["500"] },
+  girdi: { borderRadius: R.md, paddingHorizontal: SP.lg, paddingVertical: 12, fontSize: 16, fontFamily: FONT["500"] },
   ikili: { flexDirection: "row", gap: SP.md },
   tutarKutu: {
     flexDirection: "row",

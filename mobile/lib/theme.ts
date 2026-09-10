@@ -99,7 +99,7 @@ export const T: Record<string, TextStyle> = {
   heading: { fontFamily: SERIF["600"], fontSize: 18 },
   body: { fontFamily: FONT["500"], fontSize: 15 },
   bodyBold: { fontFamily: FONT["600"], fontSize: 15 },
-  label: { fontFamily: FONT["600"], fontSize: 14 },
+  label: { fontFamily: FONT["600"], fontSize: 15 },
   caption: { fontFamily: FONT["400"], fontSize: 12.5 },
   overline: { fontFamily: FONT["600"], fontSize: 12.5, letterSpacing: 0.4 },
   para: { fontFamily: FONT["500"], letterSpacing: -0.1 },

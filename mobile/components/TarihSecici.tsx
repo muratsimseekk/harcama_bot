@@ -40,7 +40,7 @@ export function TarihSecici({ deger, onChange }: { deger: string; onChange: (iso
             onPress={() => onChange(c.iso)}
             style={[s.cip, { borderColor: aktif ? renk.aksan : renk.border, backgroundColor: aktif ? renk.aksan : renk.card }]}
           >
-            <Text style={{ color: aktif ? renk.aksanUstu : renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>
+            <Text style={{ color: aktif ? renk.aksanUstu : renk.textMuted, fontSize: 14, fontWeight: "600" }}>
               {c.etiket}
             </Text>
           </Pressable>
@@ -50,7 +50,7 @@ export function TarihSecici({ deger, onChange }: { deger: string; onChange: (iso
         onPress={() => setAcik(true)}
         style={[s.cip, s.tarihCip, { borderColor: renk.border, backgroundColor: renk.card }]}
       >
-        <Text style={{ color: renk.text, fontSize: 12.5, fontWeight: "600" }}>
+        <Text style={{ color: renk.text, fontSize: 14, fontWeight: "600" }}>
           {secili.getDate()} {AY[secili.getMonth()]} {secili.getFullYear()}
         </Text>
       </Pressable>

@@ -6,6 +6,7 @@ import { Kart, Sekmeli } from "@/components/base";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { HedefHalkasi } from "@/components/HedefHalkasi";
 import { Metin as Text } from "@/components/Metin";
+import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { kategoriIkon } from "@/lib/kategoriIkon";
 import { useKategoriRenk } from "@/lib/kategoriRenk";
 import { turkceTutar } from "@/lib/format";
@@ -37,6 +38,10 @@ export default function Hedefler() {
     onError: (e: unknown) =>
       Alert.alert("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene."),
   };
+
+  // Kategori limitleri hem kategori listesine hem bütçe/özet verisine bağlı —
+  // üçü de gelmeden satırlar "Limit yok" gösterip yanıltıyordu.
+  const katYukleniyor = kategoriler.isLoading || butceler.isLoading || ozet.isLoading;
 
   const g = ozet.data?.bu_donem;
   const yatirim = ozet.data?.yatirim;
@@ -158,11 +163,13 @@ export default function Hedefler() {
       />
 
       <View style={{ gap: SP.sm }}>
-        {(kategoriler.data ?? []).filter((k) => k.tip === katTip).length === 0 && (
-          <Text style={{ color: renk.textFaint, fontSize: 13, paddingVertical: SP.md, textAlign: "center" }}>
-            Bu türde kategori yok.
-          </Text>
-        )}
+        {katYukleniyor && <YuklemeHalkasi boyut={64} yukseklik={200} />}
+        {!katYukleniyor &&
+          (kategoriler.data ?? []).filter((k) => k.tip === katTip).length === 0 && (
+            <Text style={{ color: renk.textFaint, fontSize: 13, paddingVertical: SP.md, textAlign: "center" }}>
+              Bu türde kategori yok.
+            </Text>
+          )}
         {(kategoriler.data ?? []).filter((k) => k.tip === katTip).map((k) => {
           const b = katLimit(k.name);
           const h = katHedef(k.name);

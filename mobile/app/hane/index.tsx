@@ -4,7 +4,8 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Alan } from "@/components/Alan";
-import { Kart, Yukleniyor } from "@/components/base";
+import { Kart } from "@/components/base";
+import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { Buton } from "@/components/Buton";
 import { Metin as Text } from "@/components/Metin";
 import { ApiError } from "@/lib/api";
@@ -46,7 +47,7 @@ export default function HaneEkrani() {
     "Üye";
   const pro = me.data?.plan === "pro";
 
-  if (hane.isLoading) return <Yukleniyor yukseklik={200} />;
+  if (hane.isLoading) return <YuklemeHalkasi yukseklik={300} />;
 
   return (
     <ScrollView style={{ backgroundColor: renk.bg }} contentContainerStyle={s.icerik}>
