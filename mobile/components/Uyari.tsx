@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useState } from "react";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { Modal, Platform, Pressable, StyleSheet, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import { golge, R, SP, T, useRenkler } from "@/lib/theme";
 
@@ -59,11 +59,23 @@ export function UyariProvider({ children }: { children: React.ReactNode }) {
 function UyariPenceresi({ icerik, onKapat }: { icerik: Icerik | null; onKapat: () => void }) {
   const renk = useRenkler();
 
-  // Butona basınca önce kapat, sonra eylemi çalıştır — eylem yeni bir uyarı
-  // açacaksa (zincirli onay) o pencere üstte açılabilsin.
+  // iOS'ta Modal kapanma animasyonu bitmeden eylem çalışırsa (eylem router.back()
+  // ile native modal ekranı da kapatıyorsa) iki kapanış çakışıp view controller
+  // hiyerarşisini bozuyor ve uygulama dokunmalara yanıt vermez hale geliyor.
+  // Bu yüzden eylemi bekletip Modal tam kapandıktan sonra (onDismiss) çalıştırıyoruz.
+  // Android'de onDismiss yok ve böyle bir sorun da yok — hemen çalıştır.
+  const bekleyen = useRef<(() => void) | null>(null);
+
+  const bekleyeniCalistir = () => {
+    const f = bekleyen.current;
+    bekleyen.current = null;
+    f?.();
+  };
+
   const bas = (b: UyariButon) => {
+    bekleyen.current = b.onPress ?? null;
     onKapat();
-    b.onPress?.();
+    if (Platform.OS !== "ios") bekleyeniCalistir();
   };
 
   const butonlar = icerik?.butonlar ?? [];
@@ -77,8 +89,9 @@ function UyariPenceresi({ icerik, onKapat }: { icerik: Icerik | null; onKapat: (
       animationType="fade"
       statusBarTranslucent
       onRequestClose={onKapat}
+      onDismiss={bekleyeniCalistir}
     >
-      <Pressable style={[s.arka, { backgroundColor: renk.bg + "CC" }]} onPress={onKapat}>
+      <Pressable style={s.arka} onPress={onKapat}>
         <Pressable
           style={[s.kutu, { backgroundColor: renk.card, borderColor: renk.hairline }, golge(3)]}
           onPress={() => {}}
@@ -125,7 +138,15 @@ function UyariPenceresi({ icerik, onKapat }: { icerik: Icerik | null; onKapat: (
 }
 
 const s = StyleSheet.create({
-  arka: { flex: 1, alignItems: "center", justifyContent: "center", padding: SP.xl },
+  // Koyu perde: krem zemin üzerinde açık renkli perde arka planı soldurup
+  // dialog'un kenarını belirsizleştiriyordu.
+  arka: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: SP.xl,
+    backgroundColor: "rgba(0,0,0,0.42)",
+  },
   kutu: {
     width: "100%",
     maxWidth: 360,
