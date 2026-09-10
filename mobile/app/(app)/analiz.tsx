@@ -8,7 +8,7 @@ import { EkranBasligi } from "@/components/EkranBasligi";
 import { IlerlemeCubugu } from "@/components/IlerlemeCubugu";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
-import { kisaGun, turkceTutar } from "@/lib/format";
+import { turkceTutar } from "@/lib/format";
 import { useSummary, useTransactions } from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 import type { Granularity, Islem } from "@/lib/types";
@@ -21,9 +21,17 @@ const AY_UZUN = [
   "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
 ];
 
+const GUNLER = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+
 function tarihUzun(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   return `${d} ${AY_UZUN[m - 1]} ${y}`;
+}
+
+/** "2026-09-08" → "Pzt" */
+function gunAdi(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return GUNLER[new Date(y, m - 1, d).getDay()];
 }
 
 function granOf(s: Sekme): Granularity {
@@ -52,8 +60,20 @@ export default function Analiz() {
       }
       return { etiketler: AYLAR, gelir: gg, gider: ge };
     }
+    if (gran === "week") {
+      // 7 gün → hafta günü kısaltması (Pzt, Sal…) — "1.9" gibi tarih kodu değil
+      return {
+        etiketler: g.gunluk.map((x) => gunAdi(x.tarih)),
+        gelir: g.gunluk.map((x) => x.gelir),
+        gider: g.gunluk.map((x) => x.gider),
+      };
+    }
+    // Aylık: ~30 çubuk. Her güne etiket sığmaz → sadece 1, 5, 10, 15, 20, 25, 30
     return {
-      etiketler: g.gunluk.map((x) => kisaGun(x.tarih)),
+      etiketler: g.gunluk.map((x) => {
+        const gun = Number(x.tarih.slice(8, 10));
+        return gun === 1 || gun % 5 === 0 ? String(gun) : "";
+      }),
       gelir: g.gunluk.map((x) => x.gelir),
       gider: g.gunluk.map((x) => x.gider),
     };

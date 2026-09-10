@@ -57,11 +57,6 @@ export function birlestirKategori<T extends { kategori: string; tutar: number; o
   return [...map.values()].sort((a, b) => b.tutar - a.tutar);
 }
 
-export function kisaGun(iso: string): string {
-  const [, m, d] = iso.split("-");
-  return `${Number(d)}.${Number(m)}`;
-}
-
 /** İki değeri kıyaslar → "+%12" / "−%8" / "yeni" */
 export function kiyas(bu: number, onceki: number): { yazi: string; yon: 1 | 0 | -1 } {
   if (onceki <= 0) return { yazi: bu > 0 ? "yeni" : "—", yon: 0 };
