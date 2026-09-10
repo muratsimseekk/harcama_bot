@@ -151,8 +151,14 @@ async def list_recent(user_id: str | list[str], n: int = 5) -> list[Transaction]
     def _run() -> list[dict]:
         q = _db().table("transactions").select("*")
         q = _kullanici_filtresi(q, user_id)
+        # Önce işlem tarihi, sonra saati. Yalnız created_at'e göre sıralanınca
+        # tek seferde eklenen "market (bugün), dün benzin" gibi kayıtlar aynı
+        # created_at'i paylaşıp rastgele sıralanıyordu — dünkü kayıt başa geçiyordu.
+        # occurred_at yalnız bugünün kayıtlarında dolu; null olanlar sona.
         return (
             q.is_("deleted_at", "null")
+            .order("occurred_on", desc=True)
+            .order("occurred_at", desc=True, nullsfirst=False)
             .order("created_at", desc=True)
             .limit(n)
             .execute()
