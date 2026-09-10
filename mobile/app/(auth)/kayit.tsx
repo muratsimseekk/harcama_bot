@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,11 +13,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Alan } from "@/components/Alan";
 import { Buton } from "@/components/Buton";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 import { supabase } from "@/lib/supabase";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 
 export default function Kayit() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const router = useRouter();
   const [ad, setAd] = useState("");
   const [email, setEmail] = useState("");
@@ -42,13 +43,13 @@ export default function Kayit() {
       options: { data: { ad: ad.trim() } },
     });
     setYukleniyor(false);
-    if (error) return Alert.alert("Kayıt başarısız", error.message);
+    if (error) return uyari("Kayıt başarısız", error.message);
 
     // Supabase, e-posta zaten kayıtlıysa (enumeration koruması) user döndürür
     // ama identities boş olur ve hiçbir e-posta gitmez.
     if (data.user && (data.user.identities?.length ?? 0) === 0) {
-      return Alert.alert("Bu e-posta zaten kayıtlı", "Giriş ekranından şifrenle devam et.", [
-        { text: "Giriş Yap", onPress: () => router.replace("/(auth)/giris") },
+      return uyari("Bu e-posta zaten kayıtlı", "Giriş ekranından şifrenle devam et.", [
+        { yazi: "Giriş Yap", onPress: () => router.replace("/(auth)/giris") },
       ]);
     }
 
@@ -57,8 +58,8 @@ export default function Kayit() {
       return;
     }
 
-    Alert.alert("Neredeyse tamam", "E-postana gönderilen bağlantıyla hesabını onayla, sonra giriş yap.", [
-      { text: "Tamam", onPress: () => router.replace("/(auth)/giris") },
+    uyari("Neredeyse tamam", "E-postana gönderilen bağlantıyla hesabını onayla, sonra giriş yap.", [
+      { yazi: "Tamam", onPress: () => router.replace("/(auth)/giris") },
     ]);
   }
 

@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { Alan } from "@/components/Alan";
 import { Buton } from "@/components/Buton";
+import { useUyari } from "@/components/Uyari";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { SP, useRenkler } from "@/lib/theme";
 
 export default function ProfilDuzenle() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const { session } = useAuth();
   const meta = (session?.user?.user_metadata ?? {}) as { ad?: string };
   const [ad, setAd] = useState(meta.ad ?? "");
@@ -17,7 +19,7 @@ export default function ProfilDuzenle() {
     setYukleniyor(true);
     const { error } = await supabase.auth.updateUser({ data: { ad: ad.trim() } });
     setYukleniyor(false);
-    Alert.alert(error ? "Hata" : "Kaydedildi", error?.message ?? "Profil güncellendi.");
+    uyari(error ? "Hata" : "Kaydedildi", error?.message ?? "Profil güncellendi.");
   }
 
   return (

@@ -1,16 +1,18 @@
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Alan } from "@/components/Alan";
 import { Buton } from "@/components/Buton";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 import { supabase } from "@/lib/supabase";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 
 export default function SifreSifirla() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [yukleniyor, setYukleniyor] = useState(false);
@@ -21,10 +23,10 @@ export default function SifreSifirla() {
       redirectTo: Linking.createURL("/sifre-yenile"),
     });
     setYukleniyor(false);
-    Alert.alert(
+    uyari(
       error ? "Hata" : "Gönderildi",
       error ? error.message : "Şifre sıfırlama bağlantısı e-postana gönderildi.",
-      [{ text: "Tamam", onPress: () => !error && router.back() }],
+      [{ yazi: "Tamam", onPress: () => !error && router.back() }],
     );
   }
 

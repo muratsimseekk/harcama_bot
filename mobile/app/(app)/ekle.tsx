@@ -10,7 +10,6 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   Easing,
   Keyboard,
@@ -24,6 +23,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { api, ApiError } from "@/lib/api";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
@@ -35,6 +35,7 @@ const ORNEKLER = ["market 250, dün benzin 600", "kahve 90", "maaş geldi 45000"
 
 export default function Ekle() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -61,7 +62,7 @@ export default function Ekle() {
 
   function sonuc(y: CaptureYanit) {
     if (y.candidates.length === 0) {
-      Alert.alert(
+      uyari(
         "Anlaşılamadı",
         y.transcript ? `Duyduğum: "${y.transcript}"\n\nKayıt çıkaramadım.` : "Daha açık dene.",
       );
@@ -71,7 +72,7 @@ export default function Ekle() {
   }
 
   function hata(e: unknown) {
-    Alert.alert("Hata", e instanceof ApiError ? e.message : "Bir şeyler ters gitti.");
+    uyari("Hata", e instanceof ApiError ? e.message : "Bir şeyler ters gitti.");
   }
 
   async function metinGonder() {
@@ -95,7 +96,7 @@ export default function Ekle() {
     try {
       const izin = await AudioModule.requestRecordingPermissionsAsync();
       if (!izin.granted) {
-        Alert.alert("Mikrofon izni gerekli");
+        uyari("Mikrofon izni gerekli");
         setDurum("bos");
         return;
       }

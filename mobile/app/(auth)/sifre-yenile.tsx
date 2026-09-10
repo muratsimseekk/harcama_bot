@@ -1,15 +1,17 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Alan } from "@/components/Alan";
 import { Buton } from "@/components/Buton";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 import { supabase } from "@/lib/supabase";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 
 export default function SifreYenile() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const router = useRouter();
   const [sifre, setSifre] = useState("");
   const [sifre2, setSifre2] = useState("");
@@ -21,9 +23,9 @@ export default function SifreYenile() {
     setYukleniyor(true);
     const { error } = await supabase.auth.updateUser({ password: sifre });
     setYukleniyor(false);
-    if (error) return Alert.alert("Hata", error.message);
-    Alert.alert("Şifren güncellendi", "Yeni şifrenle giriş yapabilirsin.", [
-      { text: "Tamam", onPress: () => router.replace("/(auth)/giris") },
+    if (error) return uyari("Hata", error.message);
+    uyari("Şifren güncellendi", "Yeni şifrenle giriş yapabilirsin.", [
+      { yazi: "Tamam", onPress: () => router.replace("/(auth)/giris") },
     ]);
   }
 

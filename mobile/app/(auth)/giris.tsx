@@ -1,15 +1,17 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Alan } from "@/components/Alan";
 import { Buton } from "@/components/Buton";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 import { supabase } from "@/lib/supabase";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 
 export default function Giris() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [sifre, setSifre] = useState("");
@@ -19,7 +21,7 @@ export default function Giris() {
     setYukleniyor(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: sifre });
     setYukleniyor(false);
-    if (error) Alert.alert("Giriş başarısız", error.message);
+    if (error) uyari("Giriş başarısız", error.message);
   }
 
   return (

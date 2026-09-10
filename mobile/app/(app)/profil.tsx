@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DEV_NOAUTH } from "@/app/_layout";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 import { PlanRozeti } from "@/components/PlanRozeti";
 import { useMe, useNotifications } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
@@ -19,15 +20,16 @@ type Satir = {
 
 export default function Profil() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const router = useRouter();
   const me = useMe();
   const bildirim = useNotifications();
   const uyariVar = (bildirim.data?.bildirimler ?? []).some((b) => b.tur === "uyari");
 
   const cikis = () =>
-    Alert.alert("Çıkış", "Çıkış yapılsın mı?", [
-      { text: "Vazgeç", style: "cancel" },
-      { text: "Çıkış", style: "destructive", onPress: () => supabase.auth.signOut() },
+    uyari("Çıkış", "Çıkış yapılsın mı?", [
+      { yazi: "Vazgeç", stil: "vazgec" },
+      { yazi: "Çıkış", stil: "tehlike", onPress: () => supabase.auth.signOut() },
     ]);
 
   const satirlar: Satir[] = [

@@ -24,6 +24,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Giris } from "@/components/Giris";
 import { HataSiniri } from "@/components/HataSiniri";
+import { UyariProvider } from "@/components/Uyari";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { izinVeToken, platformAdi } from "@/lib/bildirim";
@@ -204,9 +205,11 @@ function RootLayout() {
             <QueryClientProvider client={queryClient}>
               <AuthProvider>
                 <TemaliDurumCubugu />
-                <View style={{ flex: 1 }}>
-                  <Kapi />
-                </View>
+                <UyariProvider>
+                  <View style={{ flex: 1 }}>
+                    <Kapi />
+                  </View>
+                </UyariProvider>
               </AuthProvider>
             </QueryClientProvider>
           </TemaProvider>

@@ -1,11 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Buton } from "@/components/Buton";
 import { IslemFormu, type IslemAlanlari } from "@/components/IslemFormu";
+import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
 import { Metin as Text } from "@/components/Metin";
-import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
+import { useUyari } from "@/components/Uyari";
 import { ApiError } from "@/lib/api";
 import { useDeleteTransaction, usePatchTransaction, useSaveTransactions } from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
@@ -33,26 +34,29 @@ export default function IslemForm() {
     direction: mevcut?.direction ?? "gider",
     tarih: mevcut?.tarih ?? bugun(),
   });
-  const [mesgul, setMesgul] = useState(false);
+  const uyari = useUyari();
+  const katman = useIslemKatmani();
+  const mesgul = katman.durum !== null;
 
   const guncelle = (yama: Partial<IslemAlanlari>) => setAlan((e) => ({ ...e, ...yama }));
 
   async function kaydet() {
-    if (!(alan.tutar > 0)) return Alert.alert("Geçersiz tutar", "Tutar 0'dan büyük olmalı.");
-    if (!alan.aciklama.trim()) return Alert.alert("Başlık gerekli");
-    setMesgul(true);
+    if (!(alan.tutar > 0)) return uyari("Geçersiz tutar", "Tutar 0'dan büyük olmalı.");
+    if (!alan.aciklama.trim()) return uyari("Başlık gerekli");
     try {
-      if (mevcut) {
-        await patch.mutateAsync({ id: mevcut.id, alanlar: alan });
-      } else {
-        await kaydetYeni.mutateAsync([
-          { ...alan, para_birimi: "TRY", emin: true, inceleme_sebepleri: [] },
-        ]);
-      }
-      router.back();
+      await katman.calistir({
+        bekleyen: mevcut ? "Güncelleniyor" : "Kaydediliyor",
+        basarili: mevcut ? "Güncellendi" : "Kaydedildi",
+        is: () =>
+          mevcut
+            ? patch.mutateAsync({ id: mevcut.id, alanlar: alan })
+            : kaydetYeni.mutateAsync([
+                { ...alan, para_birimi: "TRY", emin: true, inceleme_sebepleri: [] },
+              ]),
+        sonra: () => router.back(),
+      });
     } catch (e) {
-      setMesgul(false);
-      Alert.alert(
+      uyari(
         e instanceof ApiError && e.status === 402 ? "Limit doldu" : "Kaydedilemedi",
         e instanceof Error ? e.message : "Tekrar dene.",
       );
@@ -61,14 +65,22 @@ export default function IslemForm() {
 
   function silSor() {
     if (!mevcut) return;
-    Alert.alert(mevcut.aciklama, "Bu kayıt silinsin mi?", [
-      { text: "Vazgeç", style: "cancel" },
+    uyari(mevcut.aciklama, "Bu kayıt silinsin mi?", [
+      { yazi: "Vazgeç", stil: "vazgec" },
       {
-        text: "Sil",
-        style: "destructive",
+        yazi: "Sil",
+        stil: "tehlike",
         onPress: async () => {
-          await sil.mutateAsync(mevcut.id);
-          router.back();
+          try {
+            await katman.calistir({
+              bekleyen: "Siliniyor",
+              basarili: "Silindi",
+              is: () => sil.mutateAsync(mevcut.id),
+              sonra: () => router.back(),
+            });
+          } catch (e) {
+            uyari("Silinemedi", e instanceof Error ? e.message : "Tekrar dene.");
+          }
         },
       },
     ]);
@@ -102,11 +114,7 @@ export default function IslemForm() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {mesgul && (
-        <View style={[s.kaydetKatman, { backgroundColor: renk.bg + "F2" }]}>
-          <YuklemeHalkasi yazi={mevcut ? "Güncelleniyor" : "Kaydediliyor"} />
-        </View>
-      )}
+      <IslemKatmani durum={katman.durum} />
     </SafeAreaView>
   );
 }
@@ -118,19 +126,13 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: SP.lg,
-    paddingVertical: SP.md,
+    // Modal sunumunda üstte güvenli alan payı 0 — iOS tutamacının altına
+    // girmemesi için üst boşluk elle veriliyor.
+    paddingTop: SP.xl,
+    paddingBottom: SP.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "transparent",
   },
   icerik: { padding: SP.lg, gap: SP.md, paddingBottom: 60 },
-  kaydetKatman: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   _r: { borderRadius: R.md },
 });

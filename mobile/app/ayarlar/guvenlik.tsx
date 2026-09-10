@@ -1,29 +1,31 @@
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { Alan } from "@/components/Alan";
 import { Buton } from "@/components/Buton";
 import { supabase } from "@/lib/supabase";
 import { SP, T, useRenkler } from "@/lib/theme";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 
 export default function Guvenlik() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const [yeni, setYeni] = useState("");
   const [yeni2, setYeni2] = useState("");
   const [yukleniyor, setYukleniyor] = useState(false);
 
   async function degistir() {
     if (yeni.length < 6 || yeni !== yeni2) {
-      Alert.alert("Kontrol et", "Şifreler eşleşmeli ve en az 6 karakter olmalı.");
+      uyari("Kontrol et", "Şifreler eşleşmeli ve en az 6 karakter olmalı.");
       return;
     }
     setYukleniyor(true);
     const { error } = await supabase.auth.updateUser({ password: yeni });
     setYukleniyor(false);
-    if (error) return Alert.alert("Hata", error.message);
+    if (error) return uyari("Hata", error.message);
     setYeni("");
     setYeni2("");
-    Alert.alert("Tamam", "Şifren güncellendi.");
+    uyari("Tamam", "Şifren güncellendi.");
   }
 
   return (

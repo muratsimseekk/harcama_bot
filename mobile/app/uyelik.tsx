@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 import { PlanRozeti, denemeGunKalan } from "@/components/PlanRozeti";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { useMe } from "@/lib/queries";
@@ -38,6 +39,7 @@ function statikPaket(plan: "base" | "pro", period: Period): Paket {
 
 export default function Uyelik() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const router = useRouter();
   const me = useMe();
   const deneme = me.data?.ham_plan === "trial" ? denemeGunKalan(me.data.trial_bitis) : null;
@@ -66,14 +68,14 @@ export default function Uyelik() {
   async function planaGuncelle(sonuc: EtkinPlan, mesaj: string) {
     if (sonuc) {
       await me.refetch();
-      Alert.alert("Tamam", mesaj);
+      uyari("Tamam", mesaj);
       router.back();
     }
   }
 
   async function sec(plan: "base" | "pro") {
     if (!satinalmaAktif()) {
-      Alert.alert(
+      uyari(
         "Abonelikler yakında",
         "Mağaza abonelikleri bir sonraki güncellemede açılacak. " +
           "Şu an tüm özellikler deneme sürende açık.",
@@ -82,7 +84,7 @@ export default function Uyelik() {
     }
     const paket = paketBul(plan);
     if (!paket._rc) {
-      Alert.alert("Hata", "Bu paket şu an mağazada bulunamadı. Daha sonra tekrar dene.");
+      uyari("Hata", "Bu paket şu an mağazada bulunamadı. Daha sonra tekrar dene.");
       return;
     }
     setIslemde(paket.id);
@@ -90,7 +92,7 @@ export default function Uyelik() {
       const sonuc = await satinAl(paket);
       await planaGuncelle(sonuc, "Üyeliğin güncellendi.");
     } catch (e) {
-      Alert.alert("Tamamlanamadı", e instanceof Error ? e.message : "Satın alma başarısız oldu.");
+      uyari("Tamamlanamadı", e instanceof Error ? e.message : "Satın alma başarısız oldu.");
     } finally {
       setIslemde(null);
     }
@@ -102,7 +104,7 @@ export default function Uyelik() {
     try {
       const sonuc = await geriYukle();
       if (sonuc) await planaGuncelle(sonuc, "Aboneliğin geri yüklendi.");
-      else Alert.alert("Bulunamadı", "Bu hesapta geri yüklenecek aktif abonelik yok.");
+      else uyari("Bulunamadı", "Bu hesapta geri yüklenecek aktif abonelik yok.");
     } finally {
       setIslemde(null);
     }

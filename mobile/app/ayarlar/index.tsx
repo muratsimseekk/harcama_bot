@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { AyarGrup, AyarSatir } from "@/components/base";
+import { useUyari } from "@/components/Uyari";
 import { api, ApiError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { useTemaMod } from "@/lib/tema";
@@ -12,6 +13,7 @@ const TEMA = { system: "Sistem", light: "Açık", dark: "Koyu" } as const;
 
 export default function Ayarlar() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const router = useRouter();
   const { mod } = useTemaMod();
   const [siliniyor, setSiliniyor] = useState(false);
@@ -24,7 +26,7 @@ export default function Ayarlar() {
       // Oturum kapanınca _layout otomatik giriş ekranına yönlendirir.
     } catch (e) {
       setSiliniyor(false);
-      Alert.alert(
+      uyari(
         "Silinemedi",
         e instanceof ApiError ? e.message : "Bağlantıyı kontrol edip tekrar dene.",
       );
@@ -32,19 +34,19 @@ export default function Ayarlar() {
   }
 
   const silOnayi = () =>
-    Alert.alert(
+    uyari(
       "Hesabı Sil",
       "Tüm işlemlerin, kategorilerin, bütçelerin ve hesabın kalıcı olarak silinir. " +
         "Bu işlem geri alınamaz.",
       [
-        { text: "Vazgeç", style: "cancel" },
+        { yazi: "Vazgeç", stil: "vazgec" },
         {
-          text: "Hesabı Sil",
-          style: "destructive",
+          yazi: "Hesabı Sil",
+          stil: "tehlike",
           onPress: () =>
-            Alert.alert("Emin misin?", "Son onay. Devam edilsin mi?", [
-              { text: "Vazgeç", style: "cancel" },
-              { text: "Evet, sil", style: "destructive", onPress: hesabiSil },
+            uyari("Emin misin?", "Son onay. Devam edilsin mi?", [
+              { yazi: "Vazgeç", stil: "vazgec" },
+              { yazi: "Evet, sil", stil: "tehlike", onPress: hesabiSil },
             ]),
         },
       ],

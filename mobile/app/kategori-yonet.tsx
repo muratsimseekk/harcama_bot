@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { Sekmeli } from "@/components/base";
 import { Buton } from "@/components/Buton";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 import { kategoriIkon } from "@/lib/kategoriIkon";
 import { useKategoriRenk } from "@/lib/kategoriRenk";
 import {
@@ -23,6 +24,7 @@ const kelimeAyir = (s: string): string[] =>
 
 export default function KategoriYonet() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const liste = useCategories();
   const olustur = useCreateCategory();
   const bolumEkle = useSeedBolum();
@@ -40,7 +42,7 @@ export default function KategoriYonet() {
           setAd("");
           setKelimeler("");
         },
-        onError: (e) => Alert.alert("Eklenemedi", String(e)),
+        onError: (e) => uyari("Eklenemedi", String(e)),
       },
     );
   }
@@ -96,6 +98,7 @@ export default function KategoriYonet() {
 
 function Satir({ kat }: { kat: Kategori }) {
   const renk = useRenkler();
+  const uyari = useUyari();
   const katRenk = useKategoriRenk();
   const patch = usePatchCategory();
   const sil = useDeleteCategory();
@@ -137,9 +140,9 @@ function Satir({ kat }: { kat: Kategori }) {
         </Pressable>
         <Pressable
           onPress={() =>
-            Alert.alert("Sil", `"${kat.name}" silinsin mi? (kayıtlar etkilenmez)`, [
-              { text: "Vazgeç", style: "cancel" },
-              { text: "Sil", style: "destructive", onPress: () => sil.mutate(kat.id) },
+            uyari("Sil", `"${kat.name}" silinsin mi? (kayıtlar etkilenmez)`, [
+              { yazi: "Vazgeç", stil: "vazgec" },
+              { yazi: "Sil", stil: "tehlike", onPress: () => sil.mutate(kat.id) },
             ])
           }
           hitSlop={8}

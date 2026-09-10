@@ -2,11 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IslemFormu } from "@/components/IslemFormu";
 import { Metin as Text } from "@/components/Metin";
-import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
+import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
+import { useUyari } from "@/components/Uyari";
 import { api, ApiError } from "@/lib/api";
 import { turkceTutar } from "@/lib/format";
 import { golge, R, SP, useRenkler } from "@/lib/theme";
@@ -20,7 +21,9 @@ export default function Confirm() {
 
   const yanit = useMemo<CaptureYanit>(() => JSON.parse(String(data)), [data]);
   const [adaylar, setAdaylar] = useState<Aday[]>(yanit.candidates);
-  const [kaydediliyor, setKaydediliyor] = useState(false);
+  const uyari = useUyari();
+  const katman = useIslemKatmani();
+  const kaydediliyor = katman.durum !== null;
 
   const toplam = adaylar.reduce((t, a) => t + (a.direction === "gelir" ? a.tutar : -a.tutar), 0);
 
@@ -32,29 +35,33 @@ export default function Confirm() {
     if (adaylar.length === 0) return router.back();
     for (const a of adaylar) {
       if (!(a.tutar > 0)) {
-        Alert.alert("Geçersiz tutar", `"${a.aciklama}" için tutar 0'dan büyük olmalı.`);
+        uyari("Geçersiz tutar", `"${a.aciklama}" için tutar 0'dan büyük olmalı.`);
         return;
       }
       if (!a.kategori?.trim()) {
-        Alert.alert("Kategori gerekli", `"${a.aciklama}" için bir kategori seç veya oluştur.`);
+        uyari("Kategori gerekli", `"${a.aciklama}" için bir kategori seç veya oluştur.`);
         return;
       }
     }
-    setKaydediliyor(true);
     try {
-      await api.saveTransactions(adaylar);
-      await qc.invalidateQueries();
-      router.back();
+      await katman.calistir({
+        bekleyen: "Kaydediliyor",
+        basarili: adaylar.length > 1 ? `${adaylar.length} kayıt eklendi` : "Kaydedildi",
+        is: async () => {
+          await api.saveTransactions(adaylar);
+          await qc.invalidateQueries();
+        },
+        sonra: () => router.back(),
+      });
     } catch (e) {
-      setKaydediliyor(false);
       if (e instanceof ApiError && e.status === 402) {
-        Alert.alert("AI limiti doldu", e.message, [
-          { text: "Kapat", style: "cancel" },
-          { text: "Pro'ya Geç", onPress: () => router.push("/uyelik") },
+        uyari("AI limiti doldu", e.message, [
+          { yazi: "Kapat", stil: "vazgec" },
+          { yazi: "Pro'ya Geç", onPress: () => router.push("/uyelik") },
         ]);
         return;
       }
-      Alert.alert("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene.");
+      uyari("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene.");
     }
   }
 
@@ -127,11 +134,7 @@ export default function Confirm() {
         </View>
       </View>
 
-      {kaydediliyor && (
-        <View style={[s.kaydetKatman, { backgroundColor: renk.bg + "F2" }]}>
-          <YuklemeHalkasi yazi="Kaydediliyor" />
-        </View>
-      )}
+      <IslemKatmani durum={katman.durum} />
     </SafeAreaView>
   );
 }
@@ -145,15 +148,6 @@ const s = StyleSheet.create({
   sebepler: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   sebep: { fontSize: 13, paddingHorizontal: 8, paddingVertical: 4, borderRadius: R.sm, overflow: "hidden" },
   altBar: { borderTopWidth: StyleSheet.hairlineWidth, padding: SP.lg, gap: SP.sm },
-  kaydetKatman: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   toplam: { fontSize: 14, fontWeight: "600", textAlign: "center" },
   butonlar: { flexDirection: "row", gap: SP.sm },
   iptal: { flex: 1, borderWidth: 1, borderRadius: R.md, paddingVertical: 14, alignItems: "center" },

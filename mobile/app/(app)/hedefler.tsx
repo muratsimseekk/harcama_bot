@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Modal, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Modal, Pressable, StyleSheet, TextInput, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { HedefHalkasi } from "@/components/HedefHalkasi";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { kategoriIkon } from "@/lib/kategoriIkon";
 import { useKategoriRenk } from "@/lib/kategoriRenk";
@@ -25,6 +26,7 @@ const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
 
 export default function Hedefler() {
   const renk = useRenkler();
+  const uyari = useUyari();
   const katRenk = useKategoriRenk();
   const router = useRouter();
   const ozet = useSummary("month");
@@ -36,7 +38,7 @@ export default function Hedefler() {
 
   const hataGoster = {
     onError: (e: unknown) =>
-      Alert.alert("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene."),
+      uyari("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene."),
   };
 
   // Kategori limitleri hem kategori listesine hem bütçe/özet verisine bağlı —
@@ -55,23 +57,9 @@ export default function Hedefler() {
     (g?.kategori_kirilim ?? []).filter((x) => x.kategori === ad).reduce((s, x) => s + x.tutar, 0);
 
   function tutarSor(baslik: string, mevcut: number | undefined, kaydet: (n: number) => void) {
-    // Alert.prompt yalnız iOS'ta gerçek çalışıyor; Android'de sessizce no-op →
-    // bütçe/hedef ayarlama tamamen kırılıyordu. Android'de kendi dialog'umuzu aç.
-    if (Platform.OS === "ios" && Alert.prompt) {
-      Alert.prompt(
-        baslik,
-        "₺ tutar",
-        (v) => {
-          const n = Number(String(v).replace(/[^\d,.-]/g, "").replace(",", "."));
-          if (n > 0) kaydet(n);
-        },
-        "plain-text",
-        mevcut ? String(mevcut) : "",
-        "numeric",
-      );
-    } else {
-      setDialog({ baslik, deger: mevcut ? String(mevcut) : "", kaydet });
-    }
+    // Her platformda kendi dialog'umuz: Alert.prompt Android'de hiç çalışmıyor,
+    // iOS'ta da native görünüyor — uygulama temasının dışında kalıyordu.
+    setDialog({ baslik, deger: mevcut ? String(mevcut) : "", kaydet });
   }
 
   const [dialog, setDialog] = useState<{ baslik: string; deger: string; kaydet: (n: number) => void } | null>(null);

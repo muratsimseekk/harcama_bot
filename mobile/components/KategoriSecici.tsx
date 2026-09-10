@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 import { kategoriIkon } from "@/lib/kategoriIkon";
 import { useKategoriRenk } from "@/lib/kategoriRenk";
 import { useCreateCategory } from "@/lib/queries";
@@ -20,6 +21,7 @@ export function KategoriSecici({
   onSec: (ad: string) => void;
 }) {
   const renk = useRenkler();
+  const uyari = useUyari();
   const katRenk = useKategoriRenk();
   const olustur = useCreateCategory();
   const [yeniAcik, setYeniAcik] = useState(false);
@@ -51,7 +53,7 @@ export function KategoriSecici({
           onSec(k.name);
           kapat();
         },
-        onError: (e) => Alert.alert("Eklenemedi", String(e)),
+        onError: (e) => uyari("Eklenemedi", String(e)),
       },
     );
   }

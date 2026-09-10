@@ -2,12 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Alan } from "@/components/Alan";
 import { Kart } from "@/components/base";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { Buton } from "@/components/Buton";
 import { Metin as Text } from "@/components/Metin";
+import { useUyari } from "@/components/Uyari";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import {
@@ -64,6 +65,7 @@ export default function HaneEkrani() {
 
 function Hanesiz({ pro, uyeAdi }: { pro: boolean; uyeAdi: string }) {
   const renk = useRenkler();
+  const uyari = useUyari();
   const router = useRouter();
   const [ad, setAd] = useState("");
   const [kod, setKod] = useState("");
@@ -94,7 +96,7 @@ function Hanesiz({ pro, uyeAdi }: { pro: boolean; uyeAdi: string }) {
                 ad.trim() &&
                 olustur.mutate(
                   { ad: ad.trim(), uyeAdi },
-                  { onError: (e) => Alert.alert("Oluşturulamadı", hataMesaji(e)) },
+                  { onError: (e) => uyari("Oluşturulamadı", hataMesaji(e)) },
                 )
               }
             />
@@ -135,7 +137,7 @@ function Hanesiz({ pro, uyeAdi }: { pro: boolean; uyeAdi: string }) {
             kod.trim().length >= 4 &&
             katil.mutate(
               { kod: kod.trim(), uyeAdi },
-              { onError: (e) => Alert.alert("Katılınamadı", hataMesaji(e)) },
+              { onError: (e) => uyari("Katılınamadı", hataMesaji(e)) },
             )
           }
         />
@@ -154,6 +156,7 @@ function Hanede({
   uyeAdi: string;
 }) {
   const renk = useRenkler();
+  const uyari = useUyari();
   const adM = useHaneAd();
   const kodM = useHaneKod();
   const rolM = useHaneUyeRol();
@@ -164,25 +167,25 @@ function Hanede({
 
   const kodKopyala = async () => {
     await Clipboard.setStringAsync(hane.kod);
-    Alert.alert("Kopyalandı", `Katılım kodu: ${hane.kod}`);
+    uyari("Kopyalandı", `Katılım kodu: ${hane.kod}`);
   };
 
   const ayril = () => {
     const ben = hane.uyeler.find((u) => u.ben);
-    Alert.alert("Haneden Ayrıl", "Kendi harcamaların artık paylaşılmayacak.", [
-      { text: "Vazgeç", style: "cancel" },
+    uyari("Haneden Ayrıl", "Kendi harcamaların artık paylaşılmayacak.", [
+      { yazi: "Vazgeç", stil: "vazgec" },
       {
-        text: "Ayrıl",
-        style: "destructive",
-        onPress: () => ben && cikarM.mutate(ben.user_id, { onError: (e) => Alert.alert("Hata", hataMesaji(e)) }),
+        yazi: "Ayrıl",
+        stil: "tehlike",
+        onPress: () => ben && cikarM.mutate(ben.user_id, { onError: (e) => uyari("Hata", hataMesaji(e)) }),
       },
     ]);
   };
 
   const sil = () =>
-    Alert.alert("Haneyi Sil", "Hane silinecek, üyeler çıkarılacak. Kayıtlar silinmez.", [
-      { text: "Vazgeç", style: "cancel" },
-      { text: "Sil", style: "destructive", onPress: () => silM.mutate(undefined, { onError: (e) => Alert.alert("Hata", hataMesaji(e)) }) },
+    uyari("Haneyi Sil", "Hane silinecek, üyeler çıkarılacak. Kayıtlar silinmez.", [
+      { yazi: "Vazgeç", stil: "vazgec" },
+      { yazi: "Sil", stil: "tehlike", onPress: () => silM.mutate(undefined, { onError: (e) => uyari("Hata", hataMesaji(e)) }) },
     ]);
 
   return (
@@ -232,9 +235,9 @@ function Hanede({
         {hane.owner && (
           <Pressable
             onPress={() =>
-              Alert.alert("Kodu Yenile", "Eski kod geçersiz olur.", [
-                { text: "Vazgeç", style: "cancel" },
-                { text: "Yenile", onPress: () => kodM.mutate(undefined) },
+              uyari("Kodu Yenile", "Eski kod geçersiz olur.", [
+                { yazi: "Vazgeç", stil: "vazgec" },
+                { yazi: "Yenile", onPress: () => kodM.mutate(undefined) },
               ])
             }
             style={{ marginTop: SP.sm }}
@@ -271,9 +274,9 @@ function Hanede({
                 </Pressable>
                 <Pressable
                   onPress={() =>
-                    Alert.alert("Üyeyi Çıkar", `${u.ad} haneden çıkarılsın mı?`, [
-                      { text: "Vazgeç", style: "cancel" },
-                      { text: "Çıkar", style: "destructive", onPress: () => cikarM.mutate(u.user_id) },
+                    uyari("Üyeyi Çıkar", `${u.ad} haneden çıkarılsın mı?`, [
+                      { yazi: "Vazgeç", stil: "vazgec" },
+                      { yazi: "Çıkar", stil: "tehlike", onPress: () => cikarM.mutate(u.user_id) },
                     ])
                   }
                   hitSlop={8}
