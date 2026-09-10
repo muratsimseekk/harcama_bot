@@ -6,13 +6,14 @@ export function tutarKisa(x: number): string {
   return x.toLocaleString("tr-TR", { maximumFractionDigits: 0 });
 }
 
+export const AY_UZUN = [
+  "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+  "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+];
+
 export function tarihEtiket(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
-  const aylar = [
-    "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
-  ];
-  return `${d} ${aylar[m - 1]} ${y}`;
+  return `${d} ${AY_UZUN[m - 1]} ${y}`;
 }
 
 export function bugunISO(): string {

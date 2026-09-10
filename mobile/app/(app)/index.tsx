@@ -7,18 +7,24 @@ import { PastaGrafik } from "@/components/charts";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
-import { birlestirKategori, selamlama, turkceTutar } from "@/lib/format";
+import { AY_UZUN, birlestirKategori, selamlama, turkceTutar } from "@/lib/format";
 import { useHane, useSummary, useTransactions } from "@/lib/queries";
 import { SP, T, useRenkler } from "@/lib/theme";
 import type { Granularity } from "@/lib/types";
 
 const GRAN: Granularity[] = ["week", "month", "year"];
 const ETIKET: Record<Granularity, string> = { week: "Haftalık", month: "Aylık", year: "Yıllık" };
-const DAGILIM_BASLIK: Record<Granularity, string> = {
-  week: "Bu hafta nereye gitti",
-  month: "Bu ay nereye gitti",
-  year: "Bu yıl nereye gitti",
-};
+/**
+ * Dağılım kartı başlığı — dönemi adıyla söyler: "Eylül ayı harcamaları",
+ * "2026 yılı harcamaları". Tarih özetten (baslangic) gelir; henüz yüklenmediyse
+ * bugüne düşer.
+ */
+function dagilimBaslik(gran: Granularity, baslangic?: string): string {
+  const d = baslangic ? new Date(`${baslangic}T00:00:00`) : new Date();
+  if (gran === "month") return `${AY_UZUN[d.getMonth()]} ayı harcamaları`;
+  if (gran === "year") return `${d.getFullYear()} yılı harcamaları`;
+  return "Haftalık harcamalarım";
+}
 
 export default function AnaSayfa() {
   const renk = useRenkler();
@@ -93,7 +99,7 @@ export default function AnaSayfa() {
 
       <Kart>
         <Text style={[T.heading, { color: renk.text, marginBottom: SP.md }]}>
-          {DAGILIM_BASLIK[gran]}
+          {dagilimBaslik(gran, ozet.data?.baslangic)}
         </Text>
         {ozet.isLoading ? (
           <YuklemeHalkasi boyut={64} yukseklik={190} />
