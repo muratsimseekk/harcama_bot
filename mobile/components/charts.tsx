@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useRef } from "react";
 import { BarChart, PieChart } from "react-native-gifted-charts";
-import { StyleSheet, View } from "react-native";
+import { Animated, Easing, StyleSheet, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import { tutarKisa, yuzde } from "@/lib/format";
 import { kategoriIkon } from "@/lib/kategoriIkon";
@@ -28,6 +29,22 @@ export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
   const toplam = parcalar.reduce((s, d) => s + d.tutar, 0);
   const veri = parcalar.map((d) => ({ value: d.tutar, color: d.c }));
 
+  // Giriş animasyonu: veri gelince halka büyüyerek belirir, lejant satırları
+  // sırayla aşağıdan kayarak oturur. Tek sürücü, satır başına gecikme aralıkla.
+  const giris = useRef(new Animated.Value(0)).current;
+  const imza = `${parcalar.length}:${toplam}`;
+  useEffect(() => {
+    giris.setValue(0);
+    const a = Animated.timing(giris, {
+      toValue: 1,
+      duration: 700,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
+    a.start();
+    return () => a.stop();
+  }, [giris, imza]);
+
   if (veri.length === 0) {
     return (
       <Text style={[T.body, { color: renk.textMuted, textAlign: "center", paddingVertical: SP.lg }]}>
@@ -38,7 +55,21 @@ export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
 
   return (
     <View style={{ gap: SP.lg }}>
-      <View style={{ alignItems: "center" }}>
+      <Animated.View
+        style={{
+          alignItems: "center",
+          opacity: giris.interpolate({ inputRange: [0, 0.45], outputRange: [0, 1], extrapolate: "clamp" }),
+          transform: [
+            {
+              scale: giris.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.82, 1],
+                extrapolate: "clamp",
+              }),
+            },
+          ],
+        }}
+      >
         <PieChart
           data={veri}
           donut
@@ -58,23 +89,44 @@ export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
             </View>
           )}
         />
-      </View>
+      </Animated.View>
 
       <View style={{ gap: 2 }}>
-        {parcalar.map((d, i) => (
-          <View key={`${d.ad}-${i}`} style={s.satir}>
-            <View style={[s.ikonKutu, { backgroundColor: d.c + "22" }]}>
-              <Ionicons name={kategoriIkon(d.ad)} size={15} color={d.c} />
-            </View>
-            <Text style={[s.ad, { color: renk.text }]} numberOfLines={1}>
-              {d.ad}
-            </Text>
-            <Text style={[s.oran, { color: renk.textFaint }]}>{yuzde(d.oran)}</Text>
-            <Text style={[s.tutar, { color: renk.text }]} numberOfLines={1}>
-              {tutarKisa(d.tutar)} ₺
-            </Text>
-          </View>
-        ))}
+        {parcalar.map((d, i) => {
+          const bas = Math.min(0.35 + i * 0.07, 0.85);
+          const son = Math.min(bas + 0.3, 1);
+          return (
+            <Animated.View
+              key={`${d.ad}-${i}`}
+              style={[
+                s.satir,
+                {
+                  opacity: giris.interpolate({ inputRange: [bas, son], outputRange: [0, 1], extrapolate: "clamp" }),
+                  transform: [
+                    {
+                      translateY: giris.interpolate({
+                        inputRange: [bas, son],
+                        outputRange: [10, 0],
+                        extrapolate: "clamp",
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <View style={[s.ikonKutu, { backgroundColor: d.c + "22" }]}>
+                <Ionicons name={kategoriIkon(d.ad)} size={15} color={d.c} />
+              </View>
+              <Text style={[s.ad, { color: renk.text }]} numberOfLines={1}>
+                {d.ad}
+              </Text>
+              <Text style={[s.oran, { color: renk.textFaint }]}>{yuzde(d.oran)}</Text>
+              <Text style={[s.tutar, { color: renk.text }]} numberOfLines={1}>
+                {tutarKisa(d.tutar)} ₺
+              </Text>
+            </Animated.View>
+          );
+        })}
       </View>
     </View>
   );
