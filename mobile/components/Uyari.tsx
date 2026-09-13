@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useRef, useState } from "react";
-import { Modal, Platform, Pressable, StyleSheet, View } from "react-native";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { BackHandler, Pressable, StyleSheet, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import { golge, R, SP, T, useRenkler } from "@/lib/theme";
 
@@ -50,98 +50,92 @@ export function UyariProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider value={goster}>
-      {children}
-      <UyariPenceresi icerik={icerik} onKapat={() => setIcerik(null)} />
+      <View style={s.kok}>
+        {children}
+        {icerik && <UyariPenceresi icerik={icerik} onKapat={() => setIcerik(null)} />}
+      </View>
     </Ctx.Provider>
   );
 }
 
-function UyariPenceresi({ icerik, onKapat }: { icerik: Icerik | null; onKapat: () => void }) {
+function UyariPenceresi({ icerik, onKapat }: { icerik: Icerik; onKapat: () => void }) {
   const renk = useRenkler();
 
-  // iOS'ta Modal kapanma animasyonu bitmeden eylem çalışırsa (eylem router.back()
-  // ile native modal ekranı da kapatıyorsa) iki kapanış çakışıp view controller
-  // hiyerarşisini bozuyor ve uygulama dokunmalara yanıt vermez hale geliyor.
-  // Bu yüzden eylemi bekletip Modal tam kapandıktan sonra (onDismiss) çalıştırıyoruz.
-  // Android'de onDismiss yok ve böyle bir sorun da yok — hemen çalıştır.
-  const bekleyen = useRef<(() => void) | null>(null);
-
-  const bekleyeniCalistir = () => {
-    const f = bekleyen.current;
-    bekleyen.current = null;
-    f?.();
-  };
+  // Android donanım geri tuşu — RN Modal'ın onRequestClose'unun yerini tutar.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      onKapat();
+      return true;
+    });
+    return () => sub.remove();
+  }, [onKapat]);
 
   const bas = (b: UyariButon) => {
-    bekleyen.current = b.onPress ?? null;
     onKapat();
-    if (Platform.OS !== "ios") bekleyeniCalistir();
+    b.onPress?.();
   };
 
-  const butonlar = icerik?.butonlar ?? [];
+  const butonlar = icerik.butonlar;
   // 2 buton yan yana; 1 ya da 3+ alt alta (uzun etiketler sıkışmasın)
   const yatay = butonlar.length === 2;
 
   return (
-    <Modal
-      visible={!!icerik}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onKapat}
-      onDismiss={bekleyeniCalistir}
-    >
-      <Pressable style={s.arka} onPress={onKapat}>
-        <Pressable
-          style={[s.kutu, { backgroundColor: renk.card, borderColor: renk.hairline }, golge(3)]}
-          onPress={() => {}}
-        >
-          <Text style={[T.heading, { color: renk.text }]}>{icerik?.baslik}</Text>
-          {!!icerik?.mesaj && (
-            <Text style={[T.body, { color: renk.textMuted, lineHeight: 21 }]}>{icerik.mesaj}</Text>
-          )}
+    <Pressable style={s.arka} onPress={onKapat}>
+      <Pressable
+        style={[s.kutu, { backgroundColor: renk.card, borderColor: renk.hairline }, golge(3)]}
+        onPress={() => {}}
+      >
+        <Text style={[T.heading, { color: renk.text }]}>{icerik.baslik}</Text>
+        {!!icerik.mesaj && (
+          <Text style={[T.body, { color: renk.textMuted, lineHeight: 21 }]}>{icerik.mesaj}</Text>
+        )}
 
-          <View style={[s.butonlar, yatay ? s.yatay : s.dikey]}>
-            {butonlar.map((b, i) => {
-              const tehlike = b.stil === "tehlike";
-              const vazgec = b.stil === "vazgec";
-              return (
-                <Pressable
-                  key={`${b.yazi}-${i}`}
-                  onPress={() => bas(b)}
-                  style={({ pressed }) => [
-                    s.buton,
-                    yatay && { flex: 1 },
-                    vazgec
-                      ? { borderWidth: 1, borderColor: renk.border }
-                      : { backgroundColor: tehlike ? renk.danger : renk.aksan },
-                    pressed && { opacity: 0.75 },
-                  ]}
+        <View style={[s.butonlar, yatay ? s.yatay : s.dikey]}>
+          {butonlar.map((b, i) => {
+            const tehlike = b.stil === "tehlike";
+            const vazgec = b.stil === "vazgec";
+            return (
+              <Pressable
+                key={`${b.yazi}-${i}`}
+                onPress={() => bas(b)}
+                style={({ pressed }) => [
+                  s.buton,
+                  yatay && { flex: 1 },
+                  vazgec
+                    ? { borderWidth: 1, borderColor: renk.border }
+                    : { backgroundColor: tehlike ? renk.danger : renk.aksan },
+                  pressed && { opacity: 0.75 },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: vazgec ? renk.textMuted : renk.aksanUstu,
+                    fontSize: 15,
+                    fontWeight: "700",
+                  }}
                 >
-                  <Text
-                    style={{
-                      color: vazgec ? renk.textMuted : renk.aksanUstu,
-                      fontSize: 15,
-                      fontWeight: "700",
-                    }}
-                  >
-                    {b.yazi}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Pressable>
+                  {b.yazi}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </Pressable>
-    </Modal>
+    </Pressable>
   );
 }
 
 const s = StyleSheet.create({
-  // Koyu perde: krem zemin üzerinde açık renkli perde arka planı soldurup
-  // dialog'un kenarını belirsizleştiriyordu.
+  kok: { flex: 1 },
+  // RN Modal DEĞİL, mutlak konumlu katman. Modal kullanınca iOS'ta native modal
+  // olarak sunulan ekranların (islem-form, confirm) üstüne ikinci bir modal
+  // sunulamıyor; sunum sessizce başarısız olup dokunmaları kilitliyordu.
   arka: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: "center",
     justifyContent: "center",
     padding: SP.xl,

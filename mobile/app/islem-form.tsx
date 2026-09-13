@@ -126,10 +126,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: SP.lg,
-    // Modal sunumunda üstte güvenli alan payı 0 — iOS tutamacının altına
-    // girmemesi için üst boşluk elle veriliyor.
-    paddingTop: SP.xl,
-    paddingBottom: SP.md,
+    paddingVertical: SP.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "transparent",
   },

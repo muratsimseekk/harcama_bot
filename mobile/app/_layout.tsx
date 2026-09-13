@@ -150,8 +150,10 @@ function Kapi() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: renk.bg } }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(app)" />
-      <Stack.Screen name="confirm" options={{ ...baslik, presentation: "modal", title: "Onayla" }} />
-      <Stack.Screen name="islem-form" options={{ presentation: "modal" }} />
+      {/* Bu ikisi native modal DEĞİL: iOS'ta native modal olarak sunulan bir
+          ekranın üstüne uygulama-içi uyarı katmanı çizilemiyordu. */}
+      <Stack.Screen name="confirm" options={{ ...baslik, title: "Onayla" }} />
+      <Stack.Screen name="islem-form" />
       <Stack.Screen name="bildirimler" />
       <Stack.Screen name="ara" options={{ presentation: "modal" }} />
       <Stack.Screen name="kategori-yonet" options={{ ...baslik, title: "Kategoriler" }} />
