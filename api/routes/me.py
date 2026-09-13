@@ -1,6 +1,8 @@
 """GET /v1/me — plan ve bu ayki kullanım."""
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter
 
 from api import deps, usage
@@ -14,11 +16,15 @@ router = APIRouter(prefix="/v1", tags=["me"])
 
 @router.get("/me", response_model=BenModel)
 async def me(user_id: CurrentUser) -> BenModel:
+    # Beş sorgu da birbirinden bağımsız — sıralı beklemek ~1,5 sn ediyordu.
+    # profil_garanti upsert'i plan_durum'dan önce bitmeli, o yüzden o ayrı.
     await usage.profil_garanti(user_id)
-    durum = await usage.plan_durum(user_id)
-    ay_kayit = await usage.ay_kayit_sayisi(user_id)
-    toplam = await usage.toplam_kayit(user_id)
-    uyelik = await deps.hane_uyeligi(user_id)
+    durum, ay_kayit, toplam, uyelik = await asyncio.gather(
+        usage.plan_durum(user_id),
+        usage.ay_kayit_sayisi(user_id),
+        usage.toplam_kayit(user_id),
+        deps.hane_uyeligi(user_id),
+    )
     return BenModel(
         plan=durum.etkin,
         ham_plan=durum.ham,

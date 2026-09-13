@@ -43,6 +43,9 @@ def capture_limiti(user_id: str) -> None:
 # Hane üyeliği — kişi başı kısa TTL cache (üyelik değişiminde ~30 sn gecikme kabul edilebilir)
 # --------------------------------------------------------------------------- #
 _uyelik_cache: TTLCache = TTLCache(maxsize=20000, ttl=30)
+# Hane üye id'leri de cache'lenir: hanedeki kullanıcının HER isteği bunu
+# sorguluyordu (~300 ms/istek). Anahtar household_id — üyeler ortak yararlanır.
+_uye_id_cache: TTLCache = TTLCache(maxsize=5000, ttl=30)
 _YOK = object()
 
 
@@ -58,6 +61,7 @@ def hane_cache_temizle(*user_ids: str) -> None:
     """Üyelik değişiminde ilgili kullanıcıların cache'ini düşür."""
     for uid in user_ids:
         _uyelik_cache.pop(uid, None)
+    _uye_id_cache.clear()  # üye listesi de değişmiş olabilir
 
 
 async def kapsam(user_id: str) -> list[str]:
@@ -65,4 +69,9 @@ async def kapsam(user_id: str) -> list[str]:
     uyelik = await hane_uyeligi(user_id)
     if uyelik is None:
         return [user_id]
-    return await repo.hane_uye_idleri(uyelik.household_id)
+    hid = uyelik.household_id
+    ids = _uye_id_cache.get(hid)
+    if ids is None:
+        ids = await repo.hane_uye_idleri(hid)
+        _uye_id_cache[hid] = ids
+    return ids

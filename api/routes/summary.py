@@ -1,6 +1,7 @@
 """/v1/summary — dönem (hafta/ay/yıl) özeti + önceki döneme kıyas + bütçe ilerlemesi."""
 from __future__ import annotations
 
+import asyncio
 from datetime import date
 
 from fastapi import APIRouter, Query
@@ -26,21 +27,32 @@ async def summary(
     onceki_ref = donem_kaydir(period, ref, -1)  # type: ignore[arg-type]
     obas, obit = donem_araligi(period, onceki_ref)  # type: ignore[arg-type]
 
-    ids = await deps.kapsam(user_id)  # hane üyesiyse tüm üyeler, değilse [user_id]
-    bu_txs = await repo.list_period(ids, bas, bit)
-    onceki_txs = await repo.list_period(ids, obas, obit)
+    # Supabase uzakta; her sorgu ~300 ms gidiş-dönüş. Bağımsız olanlar sıralı
+    # beklenince uç ~1,6 sn sürüyordu. İki paralel dalgaya indirildi.
+    # Dalga 1: kapsam + bütçe + hedef (üçü de yalnız user_id'ye bağlı)
+    ids, butceler, g = await asyncio.gather(
+        deps.kapsam(user_id),
+        repo.budgets_list(user_id),
+        repo.goal_get(user_id, "yatirim"),
+        return_exceptions=True,  # bütçe/hedef tabloları yoksa özet yine dönsün
+    )
+    if isinstance(ids, BaseException):
+        raise ids
+    if isinstance(butceler, BaseException):
+        butceler = []
+    if isinstance(g, BaseException):
+        g = None
+
+    # Dalga 2: iki dönemin işlemleri (ids geldikten sonra, ikisi paralel)
+    bu_txs, onceki_txs = await asyncio.gather(
+        repo.list_period(ids, bas, bit),
+        repo.list_period(ids, obas, obit),
+    )
 
     hedefler: list[HedefIlerlemeModel] = []
-    yatirim: YatirimModel | None = None
-    hedef_tutar = 0.0
-    try:
-        butceler = await repo.budgets_list(user_id)
-        if butceler:
-            hedefler = [HedefIlerlemeModel.from_h(h) for h in hedef_ilerleme(bu_txs, butceler)]
-        g = await repo.goal_get(user_id, "yatirim")
-        hedef_tutar = g.hedef_amount if g else 0.0
-    except Exception:  # bütçe tabloları henüz yoksa özet yine dönsün
-        pass
+    if butceler:
+        hedefler = [HedefIlerlemeModel.from_h(h) for h in hedef_ilerleme(bu_txs, butceler)]
+    hedef_tutar = g.hedef_amount if g else 0.0
     # yatırım kartı: hedef olmasa bile bu ay birikeni göster
     yatirim = YatirimModel(**yatirim_ilerleme(bu_txs, hedef_tutar))
 

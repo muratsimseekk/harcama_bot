@@ -1,6 +1,7 @@
 """/v1/notifications — bütçe durumu + son aktiviteden üretilen bildirimler."""
 from __future__ import annotations
 
+import asyncio
 import calendar
 
 from fastapi import APIRouter
@@ -36,15 +37,27 @@ def _kalan_gun() -> int:
 @router.get("/notifications", response_model=BildirimYanit)
 async def notifications(user_id: CurrentUser) -> BildirimYanit:
     bas, bit = donem_araligi("month", today())
-    ids = await deps.kapsam(user_id)
-    txs = await repo.list_period(ids, bas, bit)
+    # kapsam + bütçe + hedef bağımsız → tek dalgada (bkz. summary.py'deki not)
+    ids, butceler, g = await asyncio.gather(
+        deps.kapsam(user_id),
+        repo.budgets_list(user_id),
+        repo.goal_get(user_id, "yatirim"),
+        return_exceptions=True,
+    )
+    if isinstance(ids, BaseException):
+        raise ids
+    if isinstance(butceler, BaseException):
+        butceler = []
+    if isinstance(g, BaseException):
+        g = None
+
+    # Dalga 2: dönem işlemleri + son aktivite (ikisi de ids'e bağlı ama bağımsız)
+    txs, son_islemler = await asyncio.gather(
+        repo.list_period(ids, bas, bit),
+        repo.list_recent(ids, 4),
+    )
     kalan_gun = _kalan_gun()
     out: list[Bildirim] = []
-
-    try:
-        butceler = await repo.budgets_list(user_id)
-    except Exception:
-        butceler = []
 
     for h in hedef_ilerleme(txs, butceler):
         if h.durum == "asti":
@@ -69,10 +82,6 @@ async def notifications(user_id: CurrentUser) -> BildirimYanit:
                        f"bunu yatırımda değerlendirebilirsin."),
             ))
 
-    try:
-        g = await repo.goal_get(user_id, "yatirim")
-    except Exception:
-        g = None
     if g:
         y = yatirim_ilerleme(txs, g.hedef_amount)
         if y["oran"] >= 100:
@@ -89,7 +98,7 @@ async def notifications(user_id: CurrentUser) -> BildirimYanit:
                        f"Şu ana kadar {turkce_tutar(y['birikmis'])} ₺."),
             ))
 
-    for t in (await repo.list_recent(ids, 4)):
+    for t in son_islemler:
         isaret = "+" if t.direction == "gelir" else "-"
         out.append(Bildirim(
             tur="islem", grup="Bu hafta", ikon="cash",
