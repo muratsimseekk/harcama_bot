@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { useRenkler } from "@/lib/theme";

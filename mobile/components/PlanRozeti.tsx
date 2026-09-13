@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import type { Ben } from "@/lib/types";

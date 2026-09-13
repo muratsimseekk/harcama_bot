@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import { golge, R, SP, T, useRenkler } from "@/lib/theme";

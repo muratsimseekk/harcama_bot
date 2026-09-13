@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useRef } from "react";
 import { BarChart, PieChart } from "react-native-gifted-charts";
 import { Animated, Easing, StyleSheet, View } from "react-native";
