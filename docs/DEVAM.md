@@ -7,7 +7,18 @@
 > `~/.claude/` altındaki hafıza ve plan dosyaları makineye özeldir, taşınmaz — bu dosya
 > onların yerine geçer. Güncel tutulmalı: her önemli adımdan sonra Claude bunu günceller.
 
-Son güncelleme: 2026-09-06 · Dal: `faz-m1-mobil` · Son commit: `bbf0029`
+Son güncelleme: 2026-09-25 · Dal: `faz-m1-mobil` · Son commit: `1415abb`
+
+> **2026-09-25 — 12 commit push edildi (`207bed6..1415abb`), origin artık güncel.**
+> 09-10..09-13 arası yapılan iş push'lanmamış kalmıştı: iOS silme/uyarı donma düzeltmeleri
+> (`114da46`, `13e1bbd`), popup'ları tema'ya taşıma + kaydet/sil geri bildirimi (`c4e4eb3`),
+> son işlemler sıralaması (`b65c2fe`), ana sayfa dağılım başlığı + pasta grafiği animasyonu
+> (`3f8579e`, `fdd29f1`), analiz grafiği eksen etiketleri (`38930db`), API'de bağımsız
+> Supabase sorgularını paralelleştirme ~%60 hızlanma (`f7c9a6d`), kullanılmayan font/ikon
+> importlarını temizleme (`1415abb`). **Bu adımlar §5'teki "emülatörde ekranları gez" ve
+> Sentry/cron/Firebase adımlarından ÖNCE yapılmış görünüyor ama DEVAM.md güncellenmemişti —
+> emülatör QA turunun ne kadarının fiilen yapıldığı belirsiz, sıradaki oturumda kullanıcıya
+> sorulmalı.**
 
 > **2026-09-06 — Geliştirme makinesi değişti: MacBook → Windows 11 PC.** Ortam bu PC'ye
 > yeniden kuruldu (bkz §1.1). Python 3.11.9 + Node 24.19 (LTS) + eas-cli 23.2 kurulu,
