@@ -64,7 +64,11 @@ export default function Profil() {
         </Text>
         {!DEV_NOAUTH && <PlanRozeti ben={me.data} />}
         <Text style={[s.id, { color: renk.textMuted }]}>
-          {me.data ? `${me.data.toplam_kayit} kayıt · bu ay ${me.data.ay_kayit} AI` : "…"}
+          {me.data
+            ? `${me.data.toplam_kayit} kayıt · bugün ${me.data.gun_kayit}/${
+                me.data.gunluk_limit >= 1_000_000 ? "Sınırsız" : me.data.gunluk_limit
+              }`
+            : "…"}
         </Text>
       </View>
 

@@ -5,11 +5,14 @@
  * çalışır — Expo Go'da yoktur. Bu yüzden savunmalı yüklüyoruz: modül veya RC API
  * anahtarı yoksa tüm fonksiyonlar sessizce no-op döner, paywall "yakında" gösterir.
  *
+ * Yalnız Pro satın alınabilir — Free (reklamlı) katmanın RC'de ürünü/entitlement'ı yok,
+ * ödüllü reklamla kazanılır (bkz `mobile/lib/reklam.ts`).
+ *
  * CANLIYA ÇIKMADAN:
  *  1. RevenueCat → Project → API Keys → iOS (`appl_…`) + Android (`goog_…`)
  *  2. `EXPO_PUBLIC_RC_IOS_KEY` / `EXPO_PUBLIC_RC_ANDROID_KEY` → eas.json (preview+production)
- *  3. RevenueCat Offering "default" → 4 package: base_aylik, base_yillik, pro_aylik, pro_yillik
- *  4. Entitlements: `base`, `pro` (ürünlere bağlı)
+ *  3. RevenueCat Offering "default" → 2 package: pro_aylik, pro_yillik
+ *  4. Entitlement: `pro`
  *  5. `eas build --profile production` — bu noktadan sonra ödeme aktif
  */
 import { Platform } from "react-native";
@@ -31,24 +34,21 @@ const RC_KEY =
   }) ?? "";
 
 const ENT_PRO = "pro";
-const ENT_BASE = "base";
 
 let yapilandirildi = false;
 
-export type EtkinPlan = "pro" | "base" | null;
+export type EtkinPlan = "pro" | null;
 
 export type Paket = {
-  id: string; // RC package / ürün id ("base_aylik" vb.)
-  plan: "base" | "pro";
+  id: string; // RC package / ürün id ("pro_aylik" vb.)
+  plan: "pro";
   period: "aylik" | "yillik";
-  fiyat: string; // yerelleştirilmiş, "₺59,99"
+  fiyat: string; // yerelleştirilmiş, "₺99,99"
   _rc: unknown; // PurchasesPackage — satinAl'e verilir
 };
 
 /** Mağazadan teklif alınamadığında paywall'ın göstereceği referans fiyatlar (TR). */
 export const STATIK_FIYAT: Record<string, string> = {
-  base_aylik: "₺59,99",
-  base_yillik: "₺479,99",
   pro_aylik: "₺99,99",
   pro_yillik: "₺799,99",
 };
@@ -70,9 +70,7 @@ export function baslat(userId: string): void {
 }
 
 function planCoz(aktifEntitlements: Record<string, unknown>): EtkinPlan {
-  if (aktifEntitlements[ENT_PRO]) return "pro";
-  if (aktifEntitlements[ENT_BASE]) return "base";
-  return null;
+  return aktifEntitlements[ENT_PRO] ? "pro" : null;
 }
 
 function paketCoz(p: {
@@ -80,7 +78,7 @@ function paketCoz(p: {
   product?: { identifier?: string; priceString?: string };
 }): Paket {
   const id = (p.identifier || p.product?.identifier || "").toLowerCase();
-  const plan: "base" | "pro" = id.includes("pro") ? "pro" : "base";
+  const plan: "pro" = "pro";
   const yillik = /yil|year|annual|annually/.test(id);
   return {
     id,

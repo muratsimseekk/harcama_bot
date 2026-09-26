@@ -9,7 +9,7 @@ from core.dates import today
 def _patch(monkeypatch, content):
     """llm._chat_json'ı sabit içerik döndürecek şekilde değiştirir."""
     def _fake(system, user, *, max_tokens, temperature=0.1, reasoning_effort="low"):
-        return content
+        return content, {}
     monkeypatch.setattr(llm, "_chat_json", _fake)
 
 
@@ -99,7 +99,7 @@ async def test_parse_kategoriler_prompta_girer(monkeypatch):
 
     def _fake(system, user, *, max_tokens, temperature=0.1, reasoning_effort="low"):
         yakalanan["system"] = system
-        return json.dumps({"kayitlar": []})
+        return json.dumps({"kayitlar": []}), {}
 
     monkeypatch.setattr(llm, "_chat_json", _fake)
     cats = [

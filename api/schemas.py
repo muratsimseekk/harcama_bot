@@ -102,13 +102,14 @@ class IslemGuncelleIstek(BaseModel):
 
 
 class BenModel(BaseModel):
-    plan: str                       # etkin plan: base | pro
-    ham_plan: str = "base"          # DB değeri: trial | base | pro
+    plan: str                       # etkin plan: free | pro
+    ham_plan: str = "free"          # DB değeri: trial | free | pro
     trial_bitis: datetime | None = None
-    ai_limit: int                   # aylık AI kayıt tavanı (pro → çok büyük)
-    base_ai_limit: int              # Base katmanının sabit aylık tavanı (karşılaştırma tablosu)
-    ay_kayit: int                   # bu ay kullanılan AI kaydı
-    limit: int                      # geriye dönük alias (= ai_limit)
+    gunluk_limit: int               # bugünkü toplam kayıt (elle+AI) tavanı — taban + reklam kredisi; pro → çok büyük
+    gunluk_enerji: int              # Free katmanının sabit günlük tabanı (reklamsız, karşılaştırma tablosu)
+    gun_kayit: int                  # bugün eklenen kayıt (elle+AI)
+    gun_reklam_kredisi: int = 0     # bugün reklam izleyerek kazanılan ek kayıt hakkı
+    limit: int                      # geriye dönük alias (= gunluk_limit)
     toplam_kayit: int = 0
     hane_rol: str | None = None     # hanedeyse rolü, değilse null
 

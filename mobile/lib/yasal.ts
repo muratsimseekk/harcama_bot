@@ -10,7 +10,7 @@ export const YASAL_URL = {
 export const DESTEK_EPOSTA = "iletisim@ornek.com";
 
 export const GIZLILIK_METNI = `GİZLİLİK POLİTİKASI
-Son güncelleme: 2026-09-08
+Son güncelleme: 2026-09-25
 
 Bu politika, "Harcama" uygulamasını kullandığında hangi kişisel verilerini, neden ve nasıl
 işlediğimizi; kimlerle paylaştığımızı ve haklarını açıklar. Uygulama 6698 sayılı KVKK ve —
@@ -25,10 +25,12 @@ AB'deki kullanıcılar için — GDPR kapsamında yürütülür.
 • Kategori, bütçe ve hedef ayarların.
 • Hane bilgisi — bir haneye katılır/oluşturursan, üyelerle harcamaları ortak görmek için.
 • Cihaz bildirim jetonu — bildirim izni verirsen, bütçe/hedef bildirimleri göndermek için.
+• Reklam kimliği ve genel cihaz bilgisi — Free katmanda ödüllü reklam izlersen, Google
+  AdMob'un reklam sunması ve ödülü doğrulaması için.
 • Kısa süreli teknik/hata kayıtları — hata teşhisi ve kötüye kullanımı önlemek için.
 
-TOPLAMADIKLARIMIZ: Konum, kişi listesi, reklam kimliği, banka/kart bilgisi. Uygulama hiçbir
-bankaya veya ödeme sistemine bağlanmaz. Reklam göstermiyoruz, veri satmıyoruz.
+TOPLAMADIKLARIMIZ: Konum, kişi listesi, banka/kart bilgisi. Uygulama hiçbir bankaya veya
+ödeme sistemine bağlanmaz. Verini satmıyoruz.
 
 2) SESLİ GİRDİLER
 Sesli işlem eklediğinde ses kaydın, metne çevrilmek üzere yapay zeka sağlayıcımıza gönderilir.
@@ -45,33 +47,42 @@ Verini üçüncü kişilere satmayız. Uygulamanın çalışması için:
 Yurt dışına (ABD) aktarım, hizmetin sağlanması için gereklidir ve kayıt olurken açık
 rızanla gerçekleşir. Yasal zorunluluk hâlinde yetkili mercilerle paylaşabiliriz.
 
-4) SAKLAMA SÜRESİ
+4) REKLAM (GOOGLE ADMOB)
+Free katmanda günlük ortak kayıt hakkın (elle veya sesli/yazılı yapay zeka ile eklediğin
+her kayıt bu haktan düşer) dolunca isteğe bağlı, tavansız ödüllü video reklam izleyerek ek
+hak kazanabilirsin — hak her gece yarısı sıfırlanır. Pro üyelikte hiç reklam gösterilmez,
+hak sınırsızdır. Reklamları Google AdMob sağlar; reklam gösterimi ve ödül doğrulaması için
+AdMob'a reklam kimliğin ve genel cihaz bilgisi iletilir. iOS'ta ilk reklamdan önce İzleme
+Şeffaflığı izni istenir — izin vermesen de reklam izleyip kredi kazanabilirsin. Ödül, sunucu
+tarafında (AdMob Server-Side Verification) doğrulanır.
+
+5) SAKLAMA SÜRESİ
 Hesap ve işlem verilerin, hesabın aktif olduğu sürece saklanır. Hesabını sildiğinde tüm
 kayıtların ve kimlik bilgilerin kalıcı olarak silinir (en geç 30 gün içinde yedeklerden de).
 Ses kayıtları saklanmaz.
 
-5) HAKLARIN (KVKK m.11 / GDPR)
+6) HAKLARIN (KVKK m.11 / GDPR)
 Verilerinin işlenip işlenmediğini öğrenme, erişme ve kopyasını alma, düzeltme, SİLME
 (uygulama içinden "Hesabı Sil" ile kendin yapabilirsin), işlemeye itiraz, rızanı geri çekme.
 Talepler için: ${DESTEK_EPOSTA} — en geç 30 gün içinde yanıtlarız.
 
-6) GÜVENLİK
+7) GÜVENLİK
 Tüm veri aktarımı HTTPS/TLS ile şifrelenir. Şifren tek yönlü şifrelenir. Veritabanı erişimi
 yetkili sunucularımızla sınırlıdır.
 
-7) ÇOCUKLAR
+8) ÇOCUKLAR
 Uygulama 18 yaş altına yönelik değildir; bilerek 18 yaş altından veri toplamayız.
 
-8) DEĞİŞİKLİKLER
+9) DEĞİŞİKLİKLER
 Politikayı güncelleyebiliriz; önemli değişiklikleri uygulama içinde bildiririz. Güncel sürüm
 ${YASAL_URL.gizlilik} adresinde yayınlanır.
 
-9) İLETİŞİM
+10) İLETİŞİM
 Veri sorumlusu ve iletişim: ${DESTEK_EPOSTA}
 `;
 
 export const KOSULLAR_METNI = `KULLANIM KOŞULLARI
-Son güncelleme: 2026-09-08
+Son güncelleme: 2026-09-25
 
 "Harcama" uygulamasını kullanarak bu koşulları kabul etmiş olursun.
 
@@ -87,12 +98,12 @@ işlemlerden sen sorumlusun. 18 yaşından büyük olmalısın. Hesabını isted
 "Ayarlar → Hesabı Sil" ile silebilirsin.
 
 3) ÜYELİK VE ÖDEMELER
-Ücretsiz 7 günlük deneme süresi vardır. Deneme sonunda ücretli Base veya Pro üyeliğe
-geçebilirsin. TÜM ÖDEMELER YALNIZCA App Store (Apple) veya Google Play üzerinden alınır;
-uygulama dışında ödeme yöntemi sunmayız. Abonelikler iptal edilmezse dönem sonunda otomatik
-yenilenir (bitiminden en az 24 saat önce iptal edilmezse). Abonelik yönetimi/iptali
-cihazının App Store / Google Play ayarlarından yapılır. İadeler Apple/Google politikalarına
-tabidir.
+Ücretsiz 7 günlük deneme süresi vardır. Deneme sonunda Free (reklamlı, ücretsiz) katmanda
+devam edebilir ya da ücretli Pro üyeliğe geçebilirsin. TÜM ÖDEMELER YALNIZCA App Store
+(Apple) veya Google Play üzerinden alınır; uygulama dışında ödeme yöntemi sunmayız.
+Abonelikler iptal edilmezse dönem sonunda otomatik yenilenir (bitiminden en az 24 saat önce
+iptal edilmezse). Abonelik yönetimi/iptali cihazının App Store / Google Play ayarlarından
+yapılır. İadeler Apple/Google politikalarına tabidir.
 
 4) KABUL EDİLEBİLİR KULLANIM
 Uygulamayı yasa dışı amaçlarla, başkalarının haklarını ihlal ederek, sistemi kötüye

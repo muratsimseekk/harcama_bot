@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -8,6 +9,7 @@ import { useUyari } from "@/components/Uyari";
 import { PlanRozeti, denemeGunKalan } from "@/components/PlanRozeti";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { useMe } from "@/lib/queries";
+import { reklamAktif, reklamGoster } from "@/lib/reklam";
 import {
   type EtkinPlan,
   type Paket,
@@ -22,47 +24,48 @@ import { R, SP, T, useRenkler } from "@/lib/theme";
 type Hucre = boolean | string;
 type Period = "aylik" | "yillik";
 
-function ozellikler(baseAiLimit: number): { ad: string; base: Hucre; pro: Hucre }[] {
+function ozellikler(gunlukEnerji: number): { ad: string; free: Hucre; pro: Hucre }[] {
   return [
-    { ad: "Elle işlem ekleme", base: true, pro: true },
-    { ad: "Bütçe, hedef, özet & analiz", base: true, pro: true },
-    { ad: "AI kayıt (sesli/yazılı)", base: `${baseAiLimit}/ay`, pro: "Sınırsız" },
-    { ad: "Hane / aile paylaşımı", base: false, pro: true },
+    { ad: "Günlük kayıt hakkı (elle + AI)", free: `${gunlukEnerji}/gün + reklamla`, pro: "Sınırsız" },
+    { ad: "Bütçe, hedef, özet & analiz", free: true, pro: true },
+    { ad: "Hane / aile paylaşımı", free: false, pro: true },
+    { ad: "Reklam", free: "Ödüllü video (isteğe bağlı)", pro: "Yok" },
   ];
 }
 
 // Mağazadan teklif gelmezse gösterilecek referans (STATIK_FIYAT'tan türetilir)
-function statikPaket(plan: "base" | "pro", period: Period): Paket {
-  const id = `${plan}_${period}`;
-  return { id, plan, period, fiyat: STATIK_FIYAT[id] ?? "", _rc: null };
+function statikPaket(period: Period): Paket {
+  const id = `pro_${period}`;
+  return { id, plan: "pro", period, fiyat: STATIK_FIYAT[id] ?? "", _rc: null };
 }
 
 export default function Uyelik() {
   const renk = useRenkler();
   const uyari = useUyari();
   const router = useRouter();
+  const qc = useQueryClient();
   const me = useMe();
   const deneme = me.data?.ham_plan === "trial" ? denemeGunKalan(me.data.trial_bitis) : null;
-  const baseAiLimit = me.data?.base_ai_limit ?? 150;
-  const OZELLIKLER = ozellikler(baseAiLimit);
+  const gunlukEnerji = me.data?.gunluk_enerji ?? 3;
+  const OZELLIKLER = ozellikler(gunlukEnerji);
   const mevcutPro = me.data?.plan === "pro";
 
   const [period, setPeriod] = useState<Period>("yillik");
-  const [paketler, setPaketler] = useState<Paket[]>([]);
+  const [paket, setPaket] = useState<Paket | null>(null);
   const [yukleniyor, setYukleniyor] = useState(satinalmaAktif());
   const [islemde, setIslemde] = useState<string | null>(null);
+  const [reklamIslemde, setReklamIslemde] = useState(false);
 
   useEffect(() => {
     if (!satinalmaAktif()) return;
     teklifler()
-      .then(setPaketler)
+      .then((liste) => setPaket(liste.find((p) => p.period === period) ?? null))
       .finally(() => setYukleniyor(false));
-  }, []);
+  }, [period]);
 
-  const paketBul = useCallback(
-    (plan: "base" | "pro"): Paket =>
-      paketler.find((p) => p.plan === plan && p.period === period) ?? statikPaket(plan, period),
-    [paketler, period],
+  const aktifPaket = useCallback(
+    (): Paket => paket ?? statikPaket(period),
+    [paket, period],
   );
 
   async function planaGuncelle(sonuc: EtkinPlan, mesaj: string) {
@@ -73,7 +76,7 @@ export default function Uyelik() {
     }
   }
 
-  async function sec(plan: "base" | "pro") {
+  async function sec() {
     if (!satinalmaAktif()) {
       uyari(
         "Abonelikler yakında",
@@ -82,14 +85,14 @@ export default function Uyelik() {
       );
       return;
     }
-    const paket = paketBul(plan);
-    if (!paket._rc) {
+    const p = aktifPaket();
+    if (!p._rc) {
       uyari("Hata", "Bu paket şu an mağazada bulunamadı. Daha sonra tekrar dene.");
       return;
     }
-    setIslemde(paket.id);
+    setIslemde(p.id);
     try {
-      const sonuc = await satinAl(paket);
+      const sonuc = await satinAl(p);
       await planaGuncelle(sonuc, "Üyeliğin güncellendi.");
     } catch (e) {
       uyari("Tamamlanamadı", e instanceof Error ? e.message : "Satın alma başarısız oldu.");
@@ -110,7 +113,28 @@ export default function Uyelik() {
     }
   }
 
+  async function reklamIzle() {
+    setReklamIslemde(true);
+    try {
+      const sonuc = await reklamGoster();
+      if (sonuc === "hata") {
+        uyari("Reklam yüklenemedi", "Birazdan tekrar dene.");
+        return;
+      }
+      if (sonuc === "izlendi") {
+        await new Promise((r) => setTimeout(r, 2000));
+        await qc.invalidateQueries({ queryKey: ["me"] });
+        uyari("Teşekkürler", "Kayıt hakkın eklendi.");
+      }
+    } finally {
+      setReklamIslemde(false);
+    }
+  }
+
   const yillikMi = period === "yillik";
+  const gunKayit = me.data?.gun_kayit ?? 0;
+  const gunlukLimit = me.data?.gunluk_limit ?? gunlukEnerji;
+  const limiteYakin = !mevcutPro && me.data?.ham_plan !== "trial" && gunKayit >= gunlukLimit;
 
   return (
     <ScrollView style={{ backgroundColor: renk.bg }} contentContainerStyle={s.icerik}>
@@ -118,59 +142,66 @@ export default function Uyelik() {
         <PlanRozeti ben={me.data} />
         {deneme != null && (
           <Text style={{ color: renk.textMuted, fontSize: 13, textAlign: "center" }}>
-            Denemene {deneme} gün kaldı. Sonra Base'e geçersin — istediğin an yükseltebilirsin.
+            Denemene {deneme} gün kaldı. Sonra Free'ye geçersin — istediğin an yükseltebilirsin.
           </Text>
         )}
         {mevcutPro && (
           <Text style={{ color: renk.aksan, fontSize: 13, fontWeight: "700" }}>Pro üyesin 🎉</Text>
         )}
+        {!mevcutPro && me.data && me.data.ham_plan !== "trial" && (
+          <Text style={{ color: renk.textMuted, fontSize: 13, textAlign: "center" }}>
+            Bugün {gunKayit}/{gunlukLimit} kayıt hakkını kullandın.
+          </Text>
+        )}
+        {limiteYakin && reklamAktif() && (
+          <Pressable onPress={reklamIzle} disabled={reklamIslemde} style={s.reklamBtn}>
+            {reklamIslemde ? (
+              <ActivityIndicator color={renk.aksan} />
+            ) : (
+              <>
+                <Ionicons name="play-circle-outline" size={16} color={renk.aksan} />
+                <Text style={{ color: renk.aksan, fontSize: 13, fontWeight: "700" }}>
+                  Reklam izleyerek kayıt hakkı kazan
+                </Text>
+              </>
+            )}
+          </Pressable>
+        )}
       </View>
 
-      <Sekmeli
-        secenekler={["aylik", "yillik"] as const}
-        etiket={(x) => (x === "aylik" ? "Aylık" : "Yıllık · %33 indirim")}
-        secili={period}
-        onSec={setPeriod}
-      />
+      {!mevcutPro && (
+        <>
+          <Sekmeli
+            secenekler={["aylik", "yillik"] as const}
+            etiket={(x) => (x === "aylik" ? "Aylık" : "Yıllık · %33 indirim")}
+            secili={period}
+            onSec={setPeriod}
+          />
 
-      {yukleniyor ? (
-        <YuklemeHalkasi boyut={64} yazi="Paketler alınıyor" />
-      ) : (
-        <View style={{ gap: SP.md }}>
-          <PlanKart
-            baslik="Base"
-            paket={paketBul("base")}
-            yillikMi={yillikMi}
-            aciklama="Sınırlı AI, hane yok"
-            vurgulu={false}
-            mevcut={me.data?.plan === "base" && me.data?.ham_plan === "base"}
-            islemde={islemde}
-            onSec={() => sec("base")}
-          />
-          <PlanKart
-            baslik="Pro"
-            paket={paketBul("pro")}
-            yillikMi={yillikMi}
-            aciklama="Sınırsız AI + hane paylaşımı"
-            vurgulu
-            mevcut={mevcutPro}
-            islemde={islemde}
-            onSec={() => sec("pro")}
-          />
-        </View>
+          {yukleniyor ? (
+            <YuklemeHalkasi boyut={64} yazi="Paketler alınıyor" />
+          ) : (
+            <PlanKart
+              paket={aktifPaket()}
+              yillikMi={yillikMi}
+              islemde={islemde}
+              onSec={sec}
+            />
+          )}
+        </>
       )}
 
       <Kart>
         <View style={s.tablo}>
           <View style={s.satir}>
             <Text style={[s.hucreAd, { color: renk.textFaint }]} />
-            <Text style={[s.hucreBaslik, { color: renk.textMuted }]}>Base</Text>
+            <Text style={[s.hucreBaslik, { color: renk.textMuted }]}>Free</Text>
             <Text style={[s.hucreBaslik, { color: renk.aksan }]}>Pro</Text>
           </View>
           {OZELLIKLER.map((o) => (
             <View key={o.ad} style={s.satir}>
               <Text style={[s.hucreAd, { color: renk.text }]}>{o.ad}</Text>
-              <Isaret var={o.base} renk={renk} />
+              <Isaret var={o.free} renk={renk} />
               <Isaret var={o.pro} renk={renk} />
             </View>
           ))}
@@ -201,21 +232,13 @@ export default function Uyelik() {
 }
 
 function PlanKart({
-  baslik,
   paket,
   yillikMi,
-  aciklama,
-  vurgulu,
-  mevcut,
   islemde,
   onSec,
 }: {
-  baslik: string;
   paket: Paket;
   yillikMi: boolean;
-  aciklama: string;
-  vurgulu: boolean;
-  mevcut: boolean;
   islemde: string | null;
   onSec: () => void;
 }) {
@@ -223,22 +246,17 @@ function PlanKart({
   const busy = islemde === paket.id;
 
   return (
-    <View
-      style={[
-        s.plan,
-        { backgroundColor: renk.card, borderColor: vurgulu ? renk.aksan : renk.border },
-      ]}
-    >
+    <View style={[s.plan, { backgroundColor: renk.card, borderColor: renk.aksan }]}>
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <Text style={{ color: renk.text, fontSize: 17, fontWeight: "800" }}>{baslik}</Text>
-          {vurgulu && (
-            <View style={[s.rozet, { backgroundColor: renk.aksanSoft }]}>
-              <Text style={{ color: renk.aksan, fontSize: 10.5, fontWeight: "800" }}>ÖNERİLEN</Text>
-            </View>
-          )}
+          <Text style={{ color: renk.text, fontSize: 17, fontWeight: "800" }}>Pro</Text>
+          <View style={[s.rozet, { backgroundColor: renk.aksanSoft }]}>
+            <Text style={{ color: renk.aksan, fontSize: 10.5, fontWeight: "800" }}>ÖNERİLEN</Text>
+          </View>
         </View>
-        <Text style={{ color: renk.textMuted, fontSize: 12.5, marginTop: 2 }}>{aciklama}</Text>
+        <Text style={{ color: renk.textMuted, fontSize: 12.5, marginTop: 2 }}>
+          Sınırsız kayıt + hane paylaşımı, reklamsız
+        </Text>
         <Text style={{ color: renk.text, fontSize: 20, fontWeight: "800", marginTop: 8 }}>
           {paket.fiyat}
           <Text style={{ color: renk.textFaint, fontSize: 13, fontWeight: "600" }}>
@@ -247,33 +265,17 @@ function PlanKart({
         </Text>
       </View>
 
-      {mevcut ? (
-        <Text style={{ color: renk.textFaint, fontSize: 13, fontWeight: "700" }}>Mevcut plan</Text>
-      ) : (
-        <Pressable
-          onPress={onSec}
-          disabled={!!islemde}
-          style={[
-            s.secBtn,
-            { backgroundColor: vurgulu ? renk.aksan : renk.aksanSoft },
-            !!islemde && { opacity: 0.5 },
-          ]}
-        >
-          {busy ? (
-            <ActivityIndicator color={vurgulu ? renk.aksanUstu : renk.aksan} />
-          ) : (
-            <Text
-              style={{
-                color: vurgulu ? renk.aksanUstu : renk.aksan,
-                fontWeight: "800",
-                fontSize: 14,
-              }}
-            >
-              Seç
-            </Text>
-          )}
-        </Pressable>
-      )}
+      <Pressable
+        onPress={onSec}
+        disabled={!!islemde}
+        style={[s.secBtn, { backgroundColor: renk.aksan }, !!islemde && { opacity: 0.5 }]}
+      >
+        {busy ? (
+          <ActivityIndicator color={renk.aksanUstu} />
+        ) : (
+          <Text style={{ color: renk.aksanUstu, fontWeight: "800", fontSize: 14 }}>Seç</Text>
+        )}
+      </Pressable>
     </View>
   );
 }
@@ -282,7 +284,7 @@ function Isaret({ var: v, renk }: { var: Hucre; renk: ReturnType<typeof useRenkl
   if (typeof v === "string") {
     return (
       <View style={s.hucre}>
-        <Text style={{ color: renk.text, fontSize: 12, fontWeight: "700", textAlign: "center" }}>
+        <Text style={{ color: renk.text, fontSize: 11, fontWeight: "700", textAlign: "center" }}>
           {v}
         </Text>
       </View>
@@ -311,10 +313,11 @@ const s = StyleSheet.create({
   },
   rozet: { borderRadius: R.pill, paddingHorizontal: 7, paddingVertical: 2 },
   secBtn: { borderRadius: R.pill, paddingHorizontal: 22, paddingVertical: 10, minWidth: 76, alignItems: "center" },
+  reklamBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4 },
   tablo: { gap: 2 },
   satir: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
   hucreAd: { flex: 1, fontSize: 13.5, fontWeight: "500" },
-  hucreBaslik: { width: 68, textAlign: "center", fontSize: 13, fontWeight: "800" },
-  hucre: { width: 68, alignItems: "center" },
+  hucreBaslik: { width: 78, textAlign: "center", fontSize: 13, fontWeight: "800" },
+  hucre: { width: 78, alignItems: "center", paddingHorizontal: 2 },
   kucukYazi: { color: "#8F8B80", fontSize: 11, lineHeight: 16, textAlign: "center" },
 });

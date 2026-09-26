@@ -34,7 +34,7 @@ export function PlanRozeti({ ben }: { ben?: Ben }) {
     zemin = renk.aksan;
     renkli = renk.aksanUstu;
   } else {
-    yazi = "Base";
+    yazi = "Free";
     ikon = "person-outline";
     zemin = renk.cardAlt;
     renkli = renk.textMuted;

@@ -728,6 +728,32 @@ async def profil_plan_guncelle(
 
 
 # --------------------------------------------------------------------------- #
+# Reklam kredisi (Free katman — ödüllü video reklam → günlük kayıt hakkı)
+# --------------------------------------------------------------------------- #
+async def ad_reward_ekle(user_id: str, transaction_id: str, credited_amount: int) -> None:
+    """AdMob SSV doğrulandıktan sonra kredi yazar. `transaction_id` unique index sayesinde
+    aynı ödül iki kez yazılmaz (Google'ın SSV retry'ı no-op olur). Tavan YOK — kullanıcı
+    istediği kadar reklam izleyip enerji açabilir."""
+    def _run() -> None:
+        (
+            _db().table("ad_rewards")
+            .upsert(
+                {
+                    "user_id": user_id,
+                    "ad_network": "admob",
+                    "transaction_id": transaction_id,
+                    "credited_amount": credited_amount,
+                },
+                on_conflict="ad_network,transaction_id",
+                ignore_duplicates=True,
+            )
+            .execute()
+        )
+
+    await _call(_run)
+
+
+# --------------------------------------------------------------------------- #
 # Hesap silme (KVKK / App Store zorunluluğu)
 # --------------------------------------------------------------------------- #
 async def kullanici_sil(user_id: str) -> None:

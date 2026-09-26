@@ -91,8 +91,12 @@ async def _isle(fn, *args, **kwargs):
 def _chat_json(
     system: str, user: str, *, max_tokens: int, temperature: float = 0.1,
     reasoning_effort: str = "low",
-) -> str:
-    """JSON-object modunda sohbet tamamlaması; ham içerik string döner. Senkron."""
+) -> tuple[str, dict]:
+    """JSON-object modunda sohbet tamamlaması; (ham içerik, token kullanımı) döner. Senkron.
+
+    Token kullanımı Free (reklamlı) katmanın ekonomisini doğrulamak için loglanır (bkz
+    `~/.claude/plans/swirling-discovering-jellyfish.md` §1) — şimdilik yalnız log, DB'ye
+    yazılmıyor (bunun için çağıranların user_id geçmesi gerekir, ayrı bir adım)."""
     yanit = _c().chat.completions.create(
         model=settings.PARSE_MODEL,
         messages=[
@@ -104,7 +108,23 @@ def _chat_json(
         reasoning_effort=reasoning_effort,
         response_format={"type": "json_object"},
     )
-    return yanit.choices[0].message.content.strip()
+    kullanim: dict = {}
+    if getattr(yanit, "usage", None):
+        kullanim = {
+            "prompt_tokens": yanit.usage.prompt_tokens,
+            "completion_tokens": yanit.usage.completion_tokens,
+            "model": settings.PARSE_MODEL,
+        }
+    return yanit.choices[0].message.content.strip(), kullanim
+
+
+def _kullanim_logla(kaynak: str, kullanim: dict) -> None:
+    if kullanim:
+        logger.info(
+            "groq_kullanim kaynak=%s model=%s prompt_tokens=%s completion_tokens=%s",
+            kaynak, kullanim.get("model"), kullanim.get("prompt_tokens"),
+            kullanim.get("completion_tokens"),
+        )
 
 
 def _transcribe_raw(dosya_yolu: str) -> str:
@@ -252,10 +272,11 @@ async def parse_transactions(
     )
 
     try:
-        ham = await _isle(
+        ham, kullanim = await _isle(
             _chat_json, sistem, metin,
             max_tokens=1500, reasoning_effort=settings.PARSE_REASONING,
         )
+        _kullanim_logla(kaynak, kullanim)
     except GroqBusy:
         raise
     except BadRequestError as e:
@@ -335,7 +356,8 @@ YON: "gelir","maas","kazanc" -> "gelir"; "gider","harcama" -> "gider"; belirtilm
 """
 
     try:
-        ham = await _isle(_chat_json, sistem, soru, max_tokens=400)
+        ham, kullanim = await _isle(_chat_json, sistem, soru, max_tokens=400)
+        _kullanim_logla("analyze_query", kullanim)
         return json.loads(ham)
     except Exception as e:
         logger.error(f"analyze_query hatasi: {e}", exc_info=True)
@@ -376,9 +398,10 @@ async def classify_intent(metin: str) -> str:
         return "rapor"
 
     try:
-        ham = await _isle(
+        ham, kullanim = await _isle(
             _chat_json, _INTENT_SISTEM, metin, max_tokens=200, temperature=0.0
         )
+        _kullanim_logla("classify_intent", kullanim)
         niyet = json.loads(ham).get("niyet", "islem")
         return niyet if niyet in ("islem", "rapor", "duzeltme", "yardim") else "islem"
     except Exception as e:
@@ -401,9 +424,10 @@ _DUZELTME_SISTEM = (
 async def parse_correction(metin: str) -> dict:
     """'kategori market, tutar 95' → {'kategori': 'market', 'tutar': 95.0}"""
     try:
-        ham = await _isle(
+        ham, kullanim = await _isle(
             _chat_json, _DUZELTME_SISTEM, metin, max_tokens=120, temperature=0.0
         )
+        _kullanim_logla("parse_correction", kullanim)
         veri = json.loads(ham)
         return veri if isinstance(veri, dict) else {}
     except Exception as e:

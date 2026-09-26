@@ -1,6 +1,6 @@
 # Gizlilik Politikası
 
-**Son güncelleme:** 2026-09-08
+**Son güncelleme:** 2026-09-25
 **Uygulama:** Harcama (bütçe ve harcama takip uygulaması)
 **Veri sorumlusu:** [AD SOYAD / firma unvanı], [adres], e-posta: [iletisim@ornek.com]
 
@@ -24,11 +24,12 @@ kullanıcılar için — GDPR kapsamında yürütülür.
 | **Kategori ve bütçe/hedef ayarları** | Siz oluşturdukça | Kişiselleştirilmiş bütçe takibi |
 | **Hane bilgisi** | Bir haneye katılır/oluşturursanız | Hane üyeleriyle harcamaları ortak görüntülemek |
 | **Cihaz bildirim jetonu (push token)** | Bildirim izni verirseniz | Bütçe/hedef bildirimleri göndermek |
+| **Reklam kimliği (Advertising ID) ve genel cihaz bilgisi** | Free (reklamlı) katmanda ödüllü reklam izlediğinizde | Google AdMob'un reklam sunması ve ödülü doğrulaması (bkz. Madde 4) |
 | **Teknik/hata kayıtları** | Uygulama çalışırken | Hataları teşhis etmek, kötüye kullanımı önlemek (kısa süreli tutulur) |
 
-**Toplamadıklarımız:** Konum, kişi listesi, reklam kimliği, banka/kart bilgisi.
-Uygulama herhangi bir banka veya ödeme sistemine bağlanmaz; tüm kayıtlar sizin elle
-veya sesle girdiğiniz verilerdir. Reklam göstermiyoruz, veri satmıyoruz.
+**Toplamadıklarımız:** Konum, kişi listesi, banka/kart bilgisi. Uygulama herhangi bir
+banka veya ödeme sistemine bağlanmaz; işlem kayıtları sizin elle veya sesle
+girdiğiniz verilerdir. Verilerinizi satmıyoruz.
 
 ## 2. Sesli girdiler hakkında
 
@@ -48,6 +49,7 @@ sağlayıcıları (veri işleyenler) kullanıyoruz:
 | **Groq, Inc.** | Yapay zeka: ses→metin ve işlem çıkarımı | ABD | groq.com/privacy-policy |
 | **Render Inc.** | Uygulama sunucusu (API barındırma) | ABD | render.com/privacy |
 | **Expo (EAS)** | Push bildirim iletimi | ABD | expo.dev/privacy |
+| **Google AdMob** | Free katmanda ödüllü reklam gösterimi + ödül doğrulama | ABD | policies.google.com/privacy |
 | **Apple / Google** | Uygulama dağıtımı, satın alma (abonelik) | — | apple.com/legal/privacy · policies.google.com/privacy |
 
 Bu sağlayıcılar verilerinizi yalnızca bize hizmet vermek için işler. Yurt dışına
@@ -57,14 +59,34 @@ kayıt oluştururken açık rızanızla gerçekleşir.
 Ayrıca yasal bir yükümlülük (mahkeme kararı vb.) hâlinde verileri yetkili mercilerle
 paylaşabiliriz.
 
-## 4. Ne kadar süre saklıyoruz
+## 4. Reklam (Google AdMob)
+
+Uygulamanın **Free** (reklamlı) katmanında, günlük ortak kayıt hakkınız (elle veya sesli/
+yazılı yapay zeka ile eklediğiniz her kayıt bu haktan düşer) dolduğunda isteğe bağlı olarak
+**ödüllü video reklam** izleyerek ek hak kazanabilirsiniz. Hak, her gece yarısı yeniden
+sıfırlanır. **Pro üyelikte hiç reklam gösterilmez, hak sınırsızdır.**
+
+- Reklamları Google AdMob sağlar. Reklam gösterimi ve ödülün gerçekten izlendiğinin
+  doğrulanması için AdMob'a **reklam kimliğiniz (Advertising ID)** ve genel cihaz/uygulama
+  kullanım bilgisi (işletim sistemi, uygulama sürümü gibi) iletilir.
+- Reklam izlemek **tamamen isteğe bağlıdır** ve **tavansızdır** — istediğiniz kadar reklam
+  izleyerek o gün için ek kayıt hakkı kazanabilir, ya da Pro'ya geçebilirsiniz.
+- iOS'ta, cihazınız ilk reklam gösteriminden önce **İzleme Şeffaflığı (App Tracking
+  Transparency)** izni ister; izin vermezseniz reklamlar kişiselleştirilmemiş olarak
+  gösterilir, reklam izleyerek kazandığınız hak etkilenmez.
+- Ödül doğrulaması sunucu tarafında (Server-Side Verification) yapılır: AdMob, izlenen
+  reklamı imzalı bir istekle sunucumuza bildirir, biz de hesabınıza kayıt hakkını buna
+  göre ekleriz.
+- AdMob'un kendi gizlilik politikası: policies.google.com/privacy
+
+## 5. Ne kadar süre saklıyoruz
 
 - Hesap ve işlem verileriniz, hesabınız aktif olduğu sürece saklanır.
 - **Hesabınızı sildiğinizde**, tüm işlem/kategori/bütçe/hedef kayıtlarınız ve kimlik
   bilgileriniz **kalıcı olarak silinir** (en geç 30 gün içinde yedeklerden de).
 - Ses kayıtları saklanmaz (bkz. Madde 2).
 
-## 5. Haklarınız (KVKK m.11 / GDPR)
+## 6. Haklarınız (KVKK m.11 / GDPR)
 
 Şunları talep edebilirsiniz:
 - Kişisel verilerinizin işlenip işlenmediğini öğrenme,
@@ -75,23 +97,23 @@ paylaşabiliriz.
 
 Talepleriniz için: **[iletisim@ornek.com]**. En geç 30 gün içinde yanıtlarız.
 
-## 6. Güvenlik
+## 7. Güvenlik
 
 Tüm veri aktarımı HTTPS/TLS ile şifrelenir. Şifreniz tek yönlü şifrelenir. Veritabanına
 erişim yetkilendirilmiş sunucularımızla sınırlıdır. Buna rağmen internet üzerinden
 iletimin %100 güvenli olduğu garanti edilemez.
 
-## 7. Çocuklar
+## 8. Çocuklar
 
 Uygulama 18 yaş altı kullanıcılara yönelik değildir; bilerek 18 yaş altından veri
 toplamayız.
 
-## 8. Değişiklikler
+## 9. Değişiklikler
 
 Bu politikayı güncelleyebiliriz. Önemli değişiklikleri uygulama içinde bildiririz.
 Güncel sürüm her zaman bu adreste yayınlanır.
 
-## 9. İletişim
+## 10. İletişim
 
 Veri sorumlusu: **[AD SOYAD / firma]**
 E-posta: **[iletisim@ornek.com]**

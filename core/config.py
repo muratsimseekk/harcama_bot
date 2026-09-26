@@ -48,12 +48,25 @@ class Settings:
     # Opsiyonel: verilirse JWT'ler yerelde HS256 ile doğrulanır (ağ çağrısı yok).
     SUPABASE_JWT_SECRET: str = os.environ.get("SUPABASE_JWT_SECRET", "")
 
-    # --- Mobil API ---
-    # Base üyelikte aylık AI (sesli/yazılı) kayıt tavanı. Elle işlem ekleme sınırsız.
-    # Eski ad FREE_AYLIK_LIMIT env uyumu için okunur.
-    BASE_AI_AYLIK: int = _int("BASE_AI_AYLIK", _int("FREE_AYLIK_LIMIT", 150))
-    FREE_AYLIK_LIMIT: int = _int("FREE_AYLIK_LIMIT", 150)  # geriye dönük
+    # --- Mobil API — Free katman günlük "enerji" ---
+    # Free katmanda günlük toplam kayıt hakkı (ELLE + AI, ayrım yok — her kayıt 1 enerji
+    # harcar). Gece yarısı (Europe/Istanbul) sıfırlanır. Taban dolunca ödüllü reklamla
+    # kredi kazanılır.
+    GUNLUK_ENERJI: int = _int("GUNLUK_ENERJI", 3)
     TRIAL_GUN: int = _int("TRIAL_GUN", 7)  # referans; trigger'da sabit 7
+
+    # --- Reklam (AdMob ödüllü video) → enerji kredisi ---
+    AD_KREDI_ADET: int = _int("AD_KREDI_ADET", 2)  # 1 izlenen reklam = +N kayıt hakkı
+    # Kasıtlı olarak tavan YOK — kullanıcı istediği kadar reklam izleyip enerji açabilir.
+    ADS_SSV_ONLY: bool = os.environ.get("ADS_SSV_ONLY", "true").lower() == "true"
+    ADMOB_SSV_PUBLIC_KEYS_URL: str = os.environ.get(
+        "ADMOB_SSV_PUBLIC_KEYS_URL", "https://gstatic.com/admob/reward/verifier-keys.json"
+    )
+    # /v1/ads/request-token imzası — ayrı ayarlanmazsa CRON_SECRET'a düşer (o da yoksa boş,
+    # o zaman token doğrulaması başarısız olur; prod'da mutlaka ayarlanmalı).
+    ADS_TOKEN_SECRET: str = os.environ.get("ADS_TOKEN_SECRET", "") or os.environ.get(
+        "CRON_SECRET", ""
+    )
     API_CORS_ORIGINS: str = os.environ.get("API_CORS_ORIGINS", "*")
     # /v1/capture kişi başı hız limiti: PENCERE saniyede en çok İSTEK adet.
     CAPTURE_LIMIT_ISTEK: int = _int("CAPTURE_LIMIT_ISTEK", 20)
@@ -67,10 +80,9 @@ class Settings:
     CRON_SECRET: str = os.environ.get("CRON_SECRET", "")
     # RevenueCat webhook Authorization header'ı (RC dashboard'da ayarlanan bearer).
     RC_WEBHOOK_SECRET: str = os.environ.get("RC_WEBHOOK_SECRET", "")
-    # RC product id → plan eşlemesi (virgülle: "pro_aylik:pro,pro_yillik:pro,base_aylik:base")
-    RC_URUN_PLAN: str = os.environ.get(
-        "RC_URUN_PLAN", "pro_aylik:pro,pro_yillik:pro,base_aylik:base,base_yillik:base"
-    )
+    # RC product id → plan eşlemesi (virgülle: "pro_aylik:pro,pro_yillik:pro"). Free satın
+    # alınamaz (reklamla kazanılır), bu yüzden burada yalnız pro ürünleri var.
+    RC_URUN_PLAN: str = os.environ.get("RC_URUN_PLAN", "pro_aylik:pro,pro_yillik:pro")
 
     # --- Hata izleme ---
     SENTRY_DSN: str = os.environ.get("SENTRY_DSN", "")

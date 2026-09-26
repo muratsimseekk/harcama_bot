@@ -10,6 +10,8 @@ import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
 import { useUyari } from "@/components/Uyari";
 import { api, ApiError } from "@/lib/api";
 import { turkceTutar } from "@/lib/format";
+import { enerji402Mesaj, enerji402Secenekleri } from "@/lib/kullanim402";
+import { reklamGoster } from "@/lib/reklam";
 import { golge, R, SP, useRenkler } from "@/lib/theme";
 import type { Aday, CaptureYanit } from "@/lib/types";
 
@@ -55,14 +57,23 @@ export default function Confirm() {
       });
     } catch (e) {
       if (e instanceof ApiError && e.status === 402) {
-        uyari("AI limiti doldu", e.message, [
-          { yazi: "Kapat", stil: "vazgec" },
-          { yazi: "Pro'ya Geç", onPress: () => router.push("/uyelik") },
-        ]);
+        uyari("Kayıt hakkın bitti", enerji402Mesaj(e) ?? e.message, enerji402Secenekleri(e, router, reklamIzleVeTekrarDene));
         return;
       }
       uyari("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene.");
     }
+  }
+
+  async function reklamIzleVeTekrarDene() {
+    const sonuc = await reklamGoster();
+    if (sonuc !== "izlendi") {
+      if (sonuc === "hata") uyari("Reklam yüklenemedi", "Birazdan tekrar dene.");
+      return;
+    }
+    // SSV birkaç saniye içinde işler — /v1/me'yi tazeleyip kaydı tekrar dene.
+    await new Promise((r) => setTimeout(r, 2000));
+    await qc.invalidateQueries({ queryKey: ["me"] });
+    onayla();
   }
 
   return (

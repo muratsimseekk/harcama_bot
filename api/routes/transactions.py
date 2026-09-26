@@ -9,6 +9,7 @@ from api import deps, usage
 from api.deps import CurrentUser
 from api.schemas import IslemGuncelleIstek, IslemModel, IslemOlusturIstek
 from core import repo
+from core.config import settings
 
 router = APIRouter(prefix="/v1/transactions", tags=["transactions"])
 
@@ -16,15 +17,20 @@ router = APIRouter(prefix="/v1/transactions", tags=["transactions"])
 @router.post("", response_model=list[IslemModel], status_code=status.HTTP_201_CREATED)
 async def olustur(user_id: CurrentUser, istek: IslemOlusturIstek) -> list[IslemModel]:
     durum = await usage.plan_durum(user_id)
-    ai_yeni = sum(1 for m in istek.candidates if m.kaynak in usage.AI_KAYNAKLARI)
-    if not durum.pro and ai_yeni > 0:
-        mevcut = await usage.ay_kayit_sayisi(user_id)
-        if mevcut + ai_yeni > durum.ai_limit:
+    yeni = len(istek.candidates)  # her kayıt (elle veya AI) 1 enerji harcar, ayrım yok
+    if not durum.pro:
+        mevcut = await usage.gun_kayit_sayisi(user_id)
+        if mevcut + yeni > durum.gunluk_limit:
             raise HTTPException(
                 status.HTTP_402_PAYMENT_REQUIRED,
-                f"Base üyelikte aylık {durum.ai_limit} AI kaydı hakkın var. "
-                "Pro'ya geçerek sınırsız sesli/yazılı kayıt yapabilirsin. "
-                "(Elle işlem ekleme sınırsız.)",
+                detail={
+                    "kod": "enerji_bitti",
+                    "mesaj": f"Bugünkü {durum.gunluk_limit} kayıt hakkını kullandın.",
+                    "reklam_izlenebilir": True,  # tavansız — istediği kadar reklamla açabilir
+                    "reklam_kredi": settings.AD_KREDI_ADET,
+                    "gunluk_limit": durum.gunluk_limit,
+                    "gun_kayit": mevcut,
+                },
             )
 
     adaylar = [m.to_candidate() for m in istek.candidates]

@@ -390,30 +390,46 @@ Banka SMS okuma · işletme/KDV modu.
 - GitHub: https://github.com/muratsimseekk/harcama_bot/tree/faz-m1-mobil
 - Supabase proje: `mwuuicgxxruoesutbicv` · EAS proje: `@muratsimseekk/harcama-mobil` (`b2e4ce51-3042-4535-9644-89f867234215`)
 
-## 8. Üyelik / fiyatlandırma — 3 katman (fiyatlar karar verildi 2026-09-09)
+## 8. Üyelik / fiyatlandırma — 2 katman: Free (günlük enerji + reklam) + Pro (güncellendi 2026-09-25)
 
-**Kod tarafı hazır** (`api/usage.py` `plan_durum`, `scripts/schema_uyelik.sql`).
-Gerçek ödeme (RevenueCat + mağaza) = Faz 0.5 — plan: `~/.claude/plans/gentle-fluttering-unicorn.md`.
+> **2026-09-25 — İki aşamalı değişiklik bu oturumda yapıldı.** (1) Base kaldırıldı, yerine
+> Free (reklamlı) geldi — aylık AI-only kota modeliyle başlandı. (2) Kullanıcı aynı oturumda
+> modeli **günlük "enerji" sistemine** çevirdi: artık **elle VE AI ayrımı yok**, her kayıt
+> (nasıl eklenirse eklensin) günlük ortak bir haktan düşer, gece yarısı sıfırlanır, reklamda
+> tavan yok. Güncel karar/gerekçe kullanıcı mesajında; kod bu ikinci modele göre yazıldı —
+> aşağıdaki tablo GÜNCEL. `api/usage.py` (`_coz()` → `gunluk_limit`), `api/routes/transactions.py`
+> (artık `len(candidates)` bazlı, kaynak ayrımı yok), `api/routes/reklam.py` (tavan kontrolü
+> kaldırıldı), `mobile/app/uyelik.tsx` (tek "Günlük kayıt hakkı" satırı). `pytest` + `tsc` temiz.
+> **Kalan:** AdMob hesabı + `react-native-google-mobile-ads` kurulumu + EAS dev build
+> (RevenueCat Faz 2 ile aynı build'e binebilir) — plan dosyası `~/.claude/plans/swirling-discovering-jellyfish.md`
+> yalnız ilk (aylık) modeli anlatıyor, günlük enerji modelini yansıtmıyor — güncellenmedi.
+
+**Kod tarafı hazır** (`api/usage.py` `plan_durum`, `scripts/schema_uyelik.sql`,
+`scripts/schema_reklam_kredi.sql`). Gerçek ödeme (RevenueCat + mağaza) = Faz 0.5 — plan:
+`~/.claude/plans/gentle-fluttering-unicorn.md` (Base/`base_aylik` referansları eski, artık
+yalnız Pro satın alınabilir).
 
 | Katman | Kapsam |
 |---|---|
-| **Deneme (trial)** | Yeni kullanıcı, 7 gün otomatik. **Base özellikleri + sınırsız AI.** Hane KİLİTLİ (Pro'ya geçiş sebebi). Kodda: `_coz()` trial → `etkin='base'`, `ai_limit=sınırsız`. |
-| **Base** | Aylık **150 AI kaydı** (`BASE_AI_AYLIK`), elle giriş sınırsız, özet/analiz/bütçe/hedef. Hane YOK. |
-| **Pro** | Sınırsız AI · **hane paylaşımı** · (ileride: fiş okuma, YZ öngörüleri, export, kişi-bazı hane kırılımı — bkz `docs/HANE-PRO.md`) |
+| **Deneme (trial)** | Yeni kullanıcı, 7 gün otomatik. **Free özellikleri + sınırsız kayıt.** Hane KİLİTLİ (Pro'ya geçiş sebebi). Kodda: `_coz()` trial → `etkin='free'`, `gunluk_limit=sınırsız`. |
+| **Free** | Günlük **3 kayıt hakkı** (`GUNLUK_ENERJI`), **elle + AI ortak** — hangi yoldan eklenirse eklensin her kayıt 1 hak harcar. Hak gece yarısı (Europe/Istanbul) sıfırlanır. Hak biterse ödüllü reklamla +2 hak (`AD_KREDI_ADET`) — **tavansız**, istediği kadar izleyebilir. Hane YOK. |
+| **Pro** | Sınırsız kayıt · **hane paylaşımı** · reklamsız · (ileride: fiş okuma, YZ öngörüleri, export, kişi-bazı hane kırılımı — bkz `docs/HANE-PRO.md`) |
 
-### Fiyatlar (Türkiye — öncelik) — güncellendi 2026-09-09
+### Fiyatlar (Türkiye — öncelik) — Pro fiyatı değişmedi (2026-09-09'da karar verildi)
 | | Aylık | Yıllık (~%33 indirim) |
 |---|---|---|
-| Base | **₺59,99** | **₺479,99** (≈₺40/ay) |
 | Pro  | **₺99,99** | **₺799,99** (≈₺67/ay) |
 
-Diğer pazarlar USD anchor: Base $3.99/$29.99 · Pro $6.99/$59.99 (mağaza otomatik lokalize;
-TR manuel override). Ürün ID: `base_aylik`, `base_yillik`, `pro_aylik`, `pro_yillik`.
+Diğer pazarlar USD anchor: Pro $6.99/$59.99 (mağaza otomatik lokalize; TR manuel override).
+Ürün ID: `pro_aylik`, `pro_yillik` (yalnız bu ikisi — `base_aylik`/`base_yillik` iptal).
 Mobil referans fiyatlar `mobile/lib/satinalma.ts` `STATIK_FIYAT` (mağaza teklifi gelmezse gösterilir).
 
-Ekonomi: Groq ~$0.001/AI kaydı → tipik kullanıcı ~₺2,5/ay maliyet, power-user ~₺20.
-Net gelir (KDV + %15 Apple SBP): Base ~₺42/ay, Pro ~₺71/ay. Marj %80+.
-Deneme bitip ödeme yoksa kullanıcı Base limitleriyle devam eder (kilitlenmez), Pro'ya davet edilir.
+Ekonomi: Groq ~$0.001/AI kaydı (teorik, ölçülmedi — `core/llm.py` artık token kullanımını
+loglar; elle kayıtların LLM maliyeti zaten sıfır). Rewarded reklam TR eCPM tipik
+~₺0,50-2,50/gösterim → 1 reklam = 2 kayıt hakkı geniş marjla karşılanır, tavan olmaması
+ekonomik risk değil (günlük 3 taban zaten çok düşük, reklamla açılan haklar da büyük
+kısmı elle giriş için kullanılacak — LLM maliyeti yok). Deneme bitip ödeme yoksa kullanıcı
+Free limitleriyle devam eder (kilitlenmez), Pro'ya davet edilir.
 
 ---
 

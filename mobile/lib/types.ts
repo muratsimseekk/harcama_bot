@@ -11,7 +11,7 @@ export interface Aday {
   para_birimi: string;
   emin: boolean;
   neden?: string;
-  kaynak?: string; // capture'dan gelen adaylarda mobile_text/mobile_voice → AI limitine sayılır
+  kaynak?: string; // mobile_manual/mobile_text/mobile_voice — hepsi günlük kayıt hakkına sayılır
   inceleme_sebepleri: string[];
 }
 
@@ -53,15 +53,26 @@ export interface Hane {
 }
 
 export interface Ben {
-  plan: "base" | "pro"; // etkin plan
-  ham_plan?: string; // trial | base | pro
+  plan: "free" | "pro"; // etkin plan
+  ham_plan?: string; // trial | free | pro
   trial_bitis?: string | null;
-  ai_limit: number;
-  base_ai_limit: number; // Base katmanının sabit aylık tavanı
-  ay_kayit: number; // bu ay kullanılan AI kaydı
-  limit: number; // = ai_limit (geriye dönük)
+  gunluk_limit: number; // bugünkü toplam kayıt (elle+AI) tavanı — taban + reklamla kazanılan (pro → çok büyük)
+  gunluk_enerji: number; // Free katmanının sabit günlük tabanı (reklamsız)
+  gun_kayit: number; // bugün eklenen kayıt (elle+AI)
+  gun_reklam_kredisi: number; // bugün reklamla kazanılan ek kayıt hakkı
+  limit: number; // = gunluk_limit (geriye dönük)
   toplam_kayit: number;
   hane_rol?: HaneRol | null;
+}
+
+/** 402 (günlük kayıt hakkı bitti) yanıt gövdesi — api/routes/transactions.py::olustur() */
+export interface EnerjiBitti402 {
+  kod: "enerji_bitti";
+  mesaj: string;
+  reklam_izlenebilir: boolean;
+  reklam_kredi: number;
+  gunluk_limit: number;
+  gun_kayit: number;
 }
 
 export interface Kategori {

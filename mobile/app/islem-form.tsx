@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -8,7 +9,9 @@ import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { ApiError } from "@/lib/api";
+import { enerji402Mesaj, enerji402Secenekleri } from "@/lib/kullanim402";
 import { useDeleteTransaction, usePatchTransaction, useSaveTransactions } from "@/lib/queries";
+import { reklamGoster } from "@/lib/reklam";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 import type { Islem } from "@/lib/types";
 
@@ -20,6 +23,7 @@ function bugun(): string {
 export default function IslemForm() {
   const renk = useRenkler();
   const router = useRouter();
+  const qc = useQueryClient();
   const { islem } = useLocalSearchParams<{ islem?: string }>();
   const mevcut: Islem | null = islem ? JSON.parse(String(islem)) : null;
   const patch = usePatchTransaction();
@@ -56,11 +60,23 @@ export default function IslemForm() {
         sonra: () => router.back(),
       });
     } catch (e) {
-      uyari(
-        e instanceof ApiError && e.status === 402 ? "Limit doldu" : "Kaydedilemedi",
-        e instanceof Error ? e.message : "Tekrar dene.",
-      );
+      if (e instanceof ApiError && e.status === 402) {
+        uyari("Kayıt hakkın bitti", enerji402Mesaj(e) ?? e.message, enerji402Secenekleri(e, router, reklamIzleVeTekrarDene));
+        return;
+      }
+      uyari("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene.");
     }
+  }
+
+  async function reklamIzleVeTekrarDene() {
+    const sonuc = await reklamGoster();
+    if (sonuc !== "izlendi") {
+      if (sonuc === "hata") uyari("Reklam yüklenemedi", "Birazdan tekrar dene.");
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+    await qc.invalidateQueries({ queryKey: ["me"] });
+    kaydet();
   }
 
   function silSor() {

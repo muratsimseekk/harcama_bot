@@ -45,7 +45,7 @@
 ## 4. Backend hazırlık (inceleme sırasında çalışmalı)
 
 - [x] `/v1/rc/webhook` — RevenueCat → `profiles.plan` senkronu
-- [x] `plan_bitis` süre dolunca Base'e düşürme
+- [x] `plan_bitis` süre dolunca Free'ye düşürme
 - [ ] **Render soğuk başlatma çöz** (inceleyen 40 sn beklerse red):
       - En basit: `.github/workflows/keep-warm.yml` (eklendi) + repo Secret `API_URL`
       - Daha güvenilir: **cron-job.org / UptimeRobot** ile 5 dk'da bir `/health` ping (ücretsiz)
@@ -54,15 +54,15 @@
       Supabase'de çalıştırıldı mı? (evet)
 - [ ] Render env: `RC_WEBHOOK_SECRET`, `RC_URUN_PLAN`
 
-## 5. Abonelik / ödeme (RevenueCat) — fiyatlar karar verildi
+## 5. Abonelik / ödeme (RevenueCat) — yalnız Pro satın alınabilir
 
-Tam plan: `~/.claude/plans/gentle-fluttering-unicorn.md` (Faz 2-4).
+Tam plan: `~/.claude/plans/gentle-fluttering-unicorn.md` (Faz 2-4). Base kaldırıldı —
+onun yerine Free (reklamlı, ücretsiz) geldi; Free'nin RC'de ürünü/entitlement'ı yok,
+ödüllü reklamla kazanılır (bkz `~/.claude/plans/swirling-discovering-jellyfish.md`).
 
-**4 abonelik ürünü (tek grup), fiyatlar (güncel 2026-09-09):**
+**2 abonelik ürünü (tek grup), fiyatlar (güncel 2026-09-09):**
 | ID | TR | USD baz | entitlement |
 |---|---|---|---|
-| `base_aylik`  | ₺59,99  | $3.99  | base |
-| `base_yillik` | ₺479,99 | $29.99 | base |
 | `pro_aylik`   | ₺99,99  | $6.99  | pro |
 | `pro_yillik`  | ₺799,99 | $59.99 | pro |
 
@@ -72,11 +72,11 @@ geri yükle), `_layout.tsx` auth sonrası RC init, webhook entitlement-bazlı. E
 mağaza hesapları + RC anahtarları + `eas build`.
 
 - [ ] **Apple → Small Business Program başvurusu** (%15 komisyon, %30 değil) — hesap açar açmaz
-- [ ] App Store Connect → Subscriptions → grup "Harcama Üyelik" → 4 ürün (yukarıdaki ID+fiyat)
+- [ ] App Store Connect → Subscriptions → grup "Harcama Üyelik" → 2 ürün (yukarıdaki ID+fiyat)
       - TR fiyatı manuel; USD baz gir → Apple diğer bölgeleri doldurur; spot kontrol
       - Her ürüne: TR ad/açıklama + **inceleme ekran görüntüsü** (paywall)
-- [ ] Play Console → Monetize → Subscriptions → aynı 4 ürün, monthly/annual base plans
-- [ ] RevenueCat → iki mağazayı bağla → Entitlements: `pro`, `base` → Offering "default" (4 package)
+- [ ] Play Console → Monetize → Subscriptions → aynı 2 ürün, monthly/annual base plans
+- [ ] RevenueCat → iki mağazayı bağla → Entitlement: `pro` → Offering "default" (2 package)
 - [ ] RevenueCat → Integrations → Webhooks → `https://harcama-api.onrender.com/v1/rc/webhook`
       + Authorization header = `Bearer <RC_WEBHOOK_SECRET>`
 - [x] `react-native-purchases` kurulu · `satinalma.ts` gerçek impl · `_layout.tsx` RC init
@@ -84,8 +84,27 @@ mağaza hesapları + RC anahtarları + `eas build`.
 - [x] Webhook entitlement-bazlı + esnek auth header · `.env.example` + `eas.json` RC key alanları
 - [ ] RC anahtarlarını `eas.json` preview+production env'e yaz (`EXPO_PUBLIC_RC_IOS_KEY` / `_ANDROID_KEY`)
 - [ ] **`eas build --profile development`** — Expo Go artık native modülü çalıştırmaz, dev build şart
-- [ ] Sandbox test hesaplarıyla satın alma + geri yükleme + iptal + trial→base düşüş test
-- [ ] Render env: `RC_WEBHOOK_SECRET`, `BASE_AI_AYLIK=150` (`RC_URUN_PLAN` default doğru)
+- [ ] Sandbox test hesaplarıyla satın alma + geri yükleme + iptal + trial→free düşüş test
+- [ ] Render env: `RC_WEBHOOK_SECRET`, `GUNLUK_ENERJI=3` (`RC_URUN_PLAN` default doğru)
+
+## 5b. Reklam (Google AdMob) — Free katman AI kredisi
+
+Günlük "enerji" modeli — elle+AI ortak, gece yarısı sıfırlanır, reklamda tavan yok (bkz
+`docs/DEVAM.md` §8). Yalnız **ödüllü video** reklam — banner/interstitial yok. Kod tarafı
+HAZIR (istek tokeni + SSV doğrulama + kredi mantığı), AdMob hesabı/native modül kuruluma gated.
+
+- [ ] Google AdMob hesabı → Android + iOS için ayrı app ID
+- [ ] AdMob'da ödüllü video ad unit oluştur (Android + iOS ayrı unit ID)
+- [ ] AdMob → Server-Side Verification callback URL = `https://harcama-api.onrender.com/v1/ads/ssv`
+- [ ] `npx expo install react-native-google-mobile-ads` + `mobile/app.json` plugin
+      (gerçek app ID'ler) + `expo-tracking-transparency` (iOS ATT prompt)
+- [ ] `EXPO_PUBLIC_ADMOB_REWARDED_ANDROID` / `_IOS` → `eas.json` (preview+production)
+- [ ] AdMob dashboard'da test cihazı reklam ID'si ekle (dev build test sürecinde)
+- [ ] Render env: `GUNLUK_ENERJI` (vars. 3), `AD_KREDI_ADET` (vars. 2 — tavan YOK),
+      `ADS_TOKEN_SECRET`, `ADS_SSV_ONLY=true`
+- [ ] `eas build --profile development` — RC ile aynı build'e binebilir
+- [ ] Test reklamı izle → `/v1/me`'de `gun_reklam_kredisi` artıyor mu, "Reklam İzle" →
+      başarılı kayıt akışı uçtan uca çalışıyor mu
 
 ## 6. Mağaza varlıkları
 
@@ -107,10 +126,15 @@ mağaza hesapları + RC anahtarları + `eas build`.
 
 - [ ] **Apple Privacy Nutrition Labels** (App Store Connect):
       E-posta (hesaba bağlı), Finansal Bilgi (işlemler, hesaba bağlı), Ses Verisi (geçici),
-      Kullanım Verisi. "Üçüncü taraf reklamı" YOK, "izleme" YOK.
-- [ ] **Google Data Safety** (Play Console): aynı veriler + "transit'te şifreli: evet" +
-      "kullanıcı silme talebi: evet" (in-app + web form)
-- [ ] İkisi de gizlilik politikasıyla **birebir tutarlı** olmalı
+      Kullanım Verisi, **Identifiers (Device ID) — amaç: Advertising** (Free katman ödüllü
+      reklam nedeniyle). "İzleme" (Tracking) yalnız kullanıcı ATT izni verirse — reklam
+      SDK'sı izin yoksa otomatik non-personalized reklama düşer.
+- [ ] **Google Data Safety** (Play Console): aynı veriler + **"Advertising ID"** +
+      "transit'te şifreli: evet" + "kullanıcı silme talebi: evet" (in-app + web form) +
+      App Content → Ads → "Uygulama reklam içeriyor: Evet"
+- [ ] **iOS App Tracking Transparency**: `expo-tracking-transparency` kurulu, ilk reklam
+      gösteriminden önce `requestTrackingPermissionsAsync()` çağrılıyor
+- [ ] İkisi de gizlilik politikasıyla **birebir tutarlı** olmalı (AdMob bölümü dahil)
 
 ## 8. Build & gönderim
 

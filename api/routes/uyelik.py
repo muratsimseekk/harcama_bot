@@ -28,14 +28,14 @@ _BITEN = {"EXPIRATION"}
 
 
 def _plan_coz(olay: dict) -> str:
-    """Önce entitlement_ids (RC'nin verdiği en güvenilir sinyal), sonra product_id eşlemesi."""
+    """Önce entitlement_ids (RC'nin verdiği en güvenilir sinyal), sonra product_id eşlemesi.
+
+    Yalnız Pro satın alınabilir (Free reklamla kazanılır, RC'de ürünü/entitlement'ı yok)."""
     ents = olay.get("entitlement_ids") or []
     if not ents and olay.get("entitlement_id"):
         ents = [olay["entitlement_id"]]
     if "pro" in ents:
         return "pro"
-    if "base" in ents:
-        return "base"
     return _URUN_PLAN.get(olay.get("product_id", ""), "pro")  # bilinmeyen → pro varsay
 
 
@@ -66,8 +66,8 @@ async def webhook(istek: Request, authorization: str = Header(default="")) -> di
         logger.info("rc webhook: %s → %s (%s), bitiş=%s", user_id, plan, tur, plan_bitis)
 
     elif tur in _BITEN:
-        await repo.profil_plan_guncelle(user_id, "base", None)
-        logger.info("rc webhook: %s → base (%s)", user_id, tur)
+        await repo.profil_plan_guncelle(user_id, "free", None)
+        logger.info("rc webhook: %s → free (%s)", user_id, tur)
 
     # CANCELLATION / BILLING_ISSUE / vb. → süre dolana kadar aktif kalır, dokunma.
     return {"ok": True}

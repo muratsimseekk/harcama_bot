@@ -28,9 +28,12 @@ const BASE = process.env.EXPO_PUBLIC_API_URL ?? "";
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  /** 402 gibi uç noktaların döndürdüğü yapısal gövde (bkz Ai Limit402 tip). */
+  detail?: Record<string, unknown>;
+  constructor(status: number, message: string, detail?: Record<string, unknown>) {
     super(message);
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -42,14 +45,20 @@ async function authHeader(): Promise<Record<string, string>> {
 
 async function handle<T>(res: Response): Promise<T> {
   if (res.ok) return (res.status === 204 ? undefined : await res.json()) as T;
-  let detay = `HTTP ${res.status}`;
+  let mesaj = `HTTP ${res.status}`;
+  let detail: Record<string, unknown> | undefined;
   try {
     const j = await res.json();
-    detay = j.detail ?? j.detay ?? detay;
+    if (j.detail && typeof j.detail === "object") {
+      detail = j.detail;
+      mesaj = typeof j.detail.mesaj === "string" ? j.detail.mesaj : mesaj;
+    } else {
+      mesaj = j.detail ?? j.detay ?? mesaj;
+    }
   } catch {
     /* yoksay */
   }
-  throw new ApiError(res.status, detay);
+  throw new ApiError(res.status, mesaj, detail);
 }
 
 async function jsonReq<T>(path: string, method: string, body?: unknown): Promise<T> {
@@ -207,5 +216,9 @@ export const api = {
 
   pushTokenSil(token: string): Promise<{ ok: boolean }> {
     return jsonReq("/v1/push/token", "DELETE", { token });
+  },
+
+  adsRequestToken(): Promise<{ token: string }> {
+    return jsonReq("/v1/ads/request-token", "POST");
   },
 };

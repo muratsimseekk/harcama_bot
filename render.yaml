@@ -19,8 +19,8 @@ services:
         value: "3.11.9"
       - key: TZ
         value: Europe/Istanbul
-      - key: FREE_AYLIK_LIMIT
-        value: "50"
+      - key: GUNLUK_ENERJI
+        value: "3"
       # Prod'da kimlik doğrulama atlanmamalı → boş.
       - key: DEV_BYPASS_USER_ID
         value: ""

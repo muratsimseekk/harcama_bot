@@ -107,53 +107,69 @@ def test_capture_hiz_limiti_429(client, monkeypatch):
     deps._capture_pencere.clear()
 
 
-def _durum(etkin="base", limit=50):
+def _durum(etkin="free", limit=3):
     from api.usage import PlanDurum
-    return PlanDurum(ham=etkin, etkin=etkin, trial_bitis=None, ai_limit=limit)
+    return PlanDurum(ham=etkin, etkin=etkin, trial_bitis=None, gunluk_limit=limit)
 
 
-def test_transactions_olustur_ai_limit_asimi_402(client, monkeypatch):
+def test_transactions_olustur_enerji_asimi_402(client, monkeypatch):
     async def fake_durum(uid):
-        return _durum("base", 50)
+        return _durum("free", 3)
     async def fake_sayac(uid):
-        return 50
+        return 3  # bugünkü 3 hakkı da kullanılmış
     monkeypatch.setattr(usage, "plan_durum", fake_durum)
-    monkeypatch.setattr(usage, "ay_kayit_sayisi", fake_sayac)
+    monkeypatch.setattr(usage, "gun_kayit_sayisi", fake_sayac)
 
     r = client.post("/v1/transactions", json={"candidates": [{
         "aciklama": "kahve", "tutar": 90, "kategori": "Kafe/Restoran",
         "tarih": "2026-08-28", "kaynak": "mobile_text",
     }]})
     assert r.status_code == 402
+    assert r.json()["detail"]["kod"] == "enerji_bitti"
 
 
-def test_transactions_elle_giris_limitten_muaf(client, monkeypatch):
+def test_transactions_elle_giris_de_enerji_harcar(client, monkeypatch):
+    """Elle giriş artık muaf değil — günlük enerji elle+AI arasında paylaşılıyor."""
+    async def fake_durum(uid):
+        return _durum("free", 3)
+    async def fake_sayac(uid):
+        return 3  # bugünkü hak dolmuş
+    monkeypatch.setattr(usage, "plan_durum", fake_durum)
+    monkeypatch.setattr(usage, "gun_kayit_sayisi", fake_sayac)
+
+    r = client.post("/v1/transactions", json={"candidates": [{
+        "aciklama": "kahve", "tutar": 90, "kategori": "Kafe/Restoran", "tarih": "2026-08-28",
+    }]})  # kaynak yok → varsayılan mobile_manual, yine de 402
+    assert r.status_code == 402
+
+
+def test_transactions_elle_giris_hak_varsa_gecer(client, monkeypatch):
     from core.models import Transaction
 
     async def fake_durum(uid):
-        return _durum("base", 50)
+        return _durum("free", 3)
     async def fake_sayac(uid):
-        return 999  # limit çok aşılmış ama elle giriş sayılmaz
+        return 1  # bugün 1 kayıt yapılmış, 2 hak kaldı
     async def fake_add_many(adaylar, uid):
         return [Transaction(
             id="tx1", user_id=uid, direction=a.direction, tip=a.tip, kategori=a.kategori,
             aciklama=a.aciklama, tutar=a.tutar, para_birimi="TRY", tarih=a.tarih, kaynak=a.kaynak,
         ) for a in adaylar]
     monkeypatch.setattr(usage, "plan_durum", fake_durum)
-    monkeypatch.setattr(usage, "ay_kayit_sayisi", fake_sayac)
+    monkeypatch.setattr(usage, "gun_kayit_sayisi", fake_sayac)
     monkeypatch.setattr(transactions.repo, "add_many", fake_add_many)
 
     r = client.post("/v1/transactions", json={"candidates": [{
         "aciklama": "kahve", "tutar": 90, "kategori": "Kafe/Restoran", "tarih": "2026-08-28",
-    }]})  # kaynak yok → varsayılan mobile_manual
+    }]})
     assert r.status_code == 201
 
 
-def test_trial_sinirsiz_ai(client, monkeypatch):
+def test_trial_sinirsiz_gunluk_limit(client, monkeypatch):
     from core.models import Transaction
 
     async def fake_durum(uid):
-        return _durum("base", 10**9)  # deneme: etkin='base' ama ai_limit sınırsız
+        return _durum("free", 10**9)  # deneme: etkin='free' ama gunluk_limit sınırsız
     async def fake_sayac(uid):
         return 999  # tavan çok aşılmış görünse de deneme sınırsız
     async def fake_add_many(adaylar, uid):
@@ -162,7 +178,7 @@ def test_trial_sinirsiz_ai(client, monkeypatch):
             aciklama=a.aciklama, tutar=a.tutar, para_birimi="TRY", tarih=a.tarih, kaynak=a.kaynak,
         ) for a in adaylar]
     monkeypatch.setattr(usage, "plan_durum", fake_durum)
-    monkeypatch.setattr(usage, "ay_kayit_sayisi", fake_sayac)
+    monkeypatch.setattr(usage, "gun_kayit_sayisi", fake_sayac)
     monkeypatch.setattr(transactions.repo, "add_many", fake_add_many)
 
     r = client.post("/v1/transactions", json={"candidates": [{

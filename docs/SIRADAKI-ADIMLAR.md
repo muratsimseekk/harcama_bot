@@ -2,6 +2,13 @@
 
 > **Bu dosya sohbetler arası devam noktasıdır.** Yeni bir konuşmaya başlarken önce bunu oku.
 > Son güncelleme: **2026-09-10**
+>
+> **2026-09-25 — GÜNCEL DEĞİL: fiyatlama modeli değişti.** Bu dosyadaki "Base" katmanı
+> (₺59,99/ay, 150 AI kaydı, reklamsız) **kaldırıldı**. Yerine **Free** (reklam destekli,
+> ücretsiz, aylık taban + ödüllü reklamla ek AI kredisi) geldi — Pro değişmedi. Aşağıdaki
+> Base/`base_aylik`/`BASE_AI_AYLIK` referansları eskidir. Güncel plan ve gerekçe:
+> `~/.claude/plans/swirling-discovering-jellyfish.md`. Kod tarafı yapıldı (bkz commit
+> geçmişi); kalan işler o plandaki "AdMob hesabı + EAS dev build'e gated" bölümünde.
 
 ---
 

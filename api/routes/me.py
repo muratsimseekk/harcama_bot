@@ -1,4 +1,4 @@
-"""GET /v1/me — plan ve bu ayki kullanım."""
+"""GET /v1/me — plan ve bugünkü kullanım."""
 from __future__ import annotations
 
 import asyncio
@@ -19,20 +19,22 @@ async def me(user_id: CurrentUser) -> BenModel:
     # Beş sorgu da birbirinden bağımsız — sıralı beklemek ~1,5 sn ediyordu.
     # profil_garanti upsert'i plan_durum'dan önce bitmeli, o yüzden o ayrı.
     await usage.profil_garanti(user_id)
-    durum, ay_kayit, toplam, uyelik = await asyncio.gather(
+    durum, gun_kayit, toplam, uyelik, gun_reklam = await asyncio.gather(
         usage.plan_durum(user_id),
-        usage.ay_kayit_sayisi(user_id),
+        usage.gun_kayit_sayisi(user_id),
         usage.toplam_kayit(user_id),
         deps.hane_uyeligi(user_id),
+        usage.gun_ad_kredisi(user_id),
     )
     return BenModel(
         plan=durum.etkin,
         ham_plan=durum.ham,
         trial_bitis=durum.trial_bitis,
-        ai_limit=durum.ai_limit,
-        base_ai_limit=settings.BASE_AI_AYLIK,
-        limit=durum.ai_limit,
-        ay_kayit=ay_kayit,
+        gunluk_limit=durum.gunluk_limit,
+        gunluk_enerji=settings.GUNLUK_ENERJI,
+        limit=durum.gunluk_limit,
+        gun_kayit=gun_kayit,
+        gun_reklam_kredisi=gun_reklam,
         toplam_kayit=toplam,
         hane_rol=uyelik.rol if uyelik else None,
     )

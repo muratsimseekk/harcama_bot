@@ -1,6 +1,6 @@
 # Kullanım Koşulları
 
-**Son güncelleme:** 2026-09-08
+**Son güncelleme:** 2026-09-25
 **Uygulama:** Harcama
 
 > Yayınlamadan önce köşeli parantezli alanları doldurun ve bir hukukçuya gözden geçirtin.
@@ -25,8 +25,13 @@ amaçlıdır; finansal kararlarınızdan siz sorumlusunuz.
 
 ## 3. Üyelik ve ödemeler
 
-- Uygulamanın ücretsiz **7 günlük deneme** süresi vardır. Deneme sonunda ücretli
-  **Base** veya **Pro** üyeliğe geçebilirsiniz.
+- Uygulamanın ücretsiz **7 günlük deneme** süresi vardır. Deneme sonunda **Free**
+  (reklamlı, ücretsiz) katmanda devam edebilir ya da ücretli **Pro** üyeliğe
+  geçebilirsiniz.
+- Free katmanda günlük ortak bir kayıt hakkınız vardır — elle veya sesli/yazılı yapay
+  zeka ile eklediğiniz her kayıt bu haktan düşer; hak her gece yarısı sıfırlanır.
+  İsteğe bağlı, tavansız **ödüllü video reklam** izleyerek ek hak kazanabilirsiniz.
+  Reklam ayrıntıları: [Gizlilik Politikası](gizlilik-politikasi.md) Madde 4.
 - **Tüm ödemeler yalnızca App Store (Apple) veya Google Play üzerinden alınır.**
   Uygulama dışında ödeme yöntemi sunmayız.
 - Abonelikler, iptal edilmediği sürece dönem sonunda otomatik yenilenir. Yenilenme,

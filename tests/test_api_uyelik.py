@@ -27,20 +27,21 @@ def test_webhook_satin_alma_pro_yapar(client, monkeypatch):
     assert yak["v"][0] == "u1" and yak["v"][1] == "pro" and yak["v"][2] is not None
 
 
-def test_webhook_entitlement_base(client, monkeypatch):
+def test_webhook_bilinmeyen_entitlement_pro_varsayar(client, monkeypatch):
     yak = {}
 
     async def guncelle(uid, plan, plan_bitis):
         yak["v"] = (uid, plan, plan_bitis)
 
     monkeypatch.setattr(rota.repo, "profil_plan_guncelle", guncelle)
-    # product_id bilinmese bile entitlement_ids belirleyici
+    # Free satın alınamaz (RC'de ürünü/entitlement'ı yok) — bilinmeyen product_id + tanınmayan
+    # entitlement → güvenli varsayılan olarak pro.
     r = client.post("/v1/rc/webhook", json={"event": {
         "type": "RENEWAL", "app_user_id": "u2",
-        "product_id": "bilinmeyen", "entitlement_ids": ["base"],
+        "product_id": "bilinmeyen", "entitlement_ids": ["bilinmeyen_ent"],
     }})
     assert r.status_code == 200
-    assert yak["v"][1] == "base"
+    assert yak["v"][1] == "pro"
 
 
 def test_webhook_secret_bearer_opsiyonel(client, monkeypatch):
@@ -58,7 +59,7 @@ def test_webhook_secret_bearer_opsiyonel(client, monkeypatch):
         assert r.status_code == 200
 
 
-def test_webhook_expiration_base_yapar(client, monkeypatch):
+def test_webhook_expiration_free_yapar(client, monkeypatch):
     yak = {}
 
     async def guncelle(uid, plan, plan_bitis):
@@ -69,7 +70,7 @@ def test_webhook_expiration_base_yapar(client, monkeypatch):
         "type": "EXPIRATION", "app_user_id": "u1", "product_id": "pro_aylik",
     }})
     assert r.status_code == 200
-    assert yak["v"] == ("u1", "base", None)
+    assert yak["v"] == ("u1", "free", None)
 
 
 def test_webhook_yanlis_secret_401(client, monkeypatch):
