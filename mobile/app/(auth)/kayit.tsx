@@ -10,8 +10,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Linking from "expo-linking";
 import { Alan } from "@/components/Alan";
 import { Buton } from "@/components/Buton";
+import { SosyalGirisSatiri } from "@/components/SosyalGirisSatiri";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { supabase } from "@/lib/supabase";
@@ -40,7 +42,7 @@ export default function Kayit() {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password: sifre,
-      options: { data: { ad: ad.trim() } },
+      options: { data: { ad: ad.trim() }, emailRedirectTo: Linking.createURL("/") },
     });
     setYukleniyor(false);
     if (error) return uyari("Kayıt başarısız", error.message);
@@ -114,6 +116,8 @@ export default function Kayit() {
           <Pressable onPress={() => router.replace("/(auth)/giris")}>
             <Text style={[s.link, { color: renk.text }]}>Zaten hesabın var mı? Giriş Yap</Text>
           </Pressable>
+
+          <SosyalGirisSatiri onHata={(mesaj) => uyari("Kayıt başarısız", mesaj)} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

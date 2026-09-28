@@ -6,6 +6,7 @@ import { DEV_NOAUTH } from "@/app/_layout";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { PlanRozeti } from "@/components/PlanRozeti";
+import { kullaniciAdi, useAuth } from "@/lib/auth";
 import { useMe, useNotifications } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
 import { golge, R, SERIF, SP, T, useRenkler } from "@/lib/theme";
@@ -22,6 +23,7 @@ export default function Profil() {
   const renk = useRenkler();
   const uyari = useUyari();
   const router = useRouter();
+  const { session } = useAuth();
   const me = useMe();
   const bildirim = useNotifications();
   const uyariVar = (bildirim.data?.bildirimler ?? []).some((b) => b.tur === "uyari");
@@ -60,7 +62,7 @@ export default function Profil() {
           <Ionicons name="person" size={44} color={renk.aksan} />
         </View>
         <Text style={[s.isim, { color: renk.text }]}>
-          {DEV_NOAUTH ? "Yönetici" : "Kullanıcı"}
+          {DEV_NOAUTH ? "Yönetici" : kullaniciAdi(session) || "Kullanıcı"}
         </Text>
         {!DEV_NOAUTH && <PlanRozeti ben={me.data} />}
         <Text style={[s.id, { color: renk.textMuted }]}>

@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet } from "react-native";
 import { Alan } from "@/components/Alan";
 import { Buton } from "@/components/Buton";
 import { useUyari } from "@/components/Uyari";
-import { useAuth } from "@/lib/auth";
+import { kullaniciAdi, useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { SP, useRenkler } from "@/lib/theme";
 
@@ -11,8 +11,7 @@ export default function ProfilDuzenle() {
   const renk = useRenkler();
   const uyari = useUyari();
   const { session } = useAuth();
-  const meta = (session?.user?.user_metadata ?? {}) as { ad?: string };
-  const [ad, setAd] = useState(meta.ad ?? "");
+  const [ad, setAd] = useState(kullaniciAdi(session));
   const [yukleniyor, setYukleniyor] = useState(false);
 
   async function kaydet() {

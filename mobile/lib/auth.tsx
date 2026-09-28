@@ -28,3 +28,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useAuth = () => useContext(Ctx);
+
+/** Kayıt formundaki "Ad" (`user_metadata.ad`) öncelikli; Google girişinde bunun yerine
+ * `full_name`/`name` geliyor — onları da profil ismi olarak kabul et. */
+export function kullaniciAdi(session: Session | null): string {
+  const meta = (session?.user?.user_metadata ?? {}) as Record<string, unknown>;
+  const aday = meta.ad ?? meta.full_name ?? meta.name;
+  return typeof aday === "string" && aday.trim() ? aday.trim() : "";
+}

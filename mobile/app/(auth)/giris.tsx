@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Alan } from "@/components/Alan";
 import { Buton } from "@/components/Buton";
+import { SosyalGirisSatiri } from "@/components/SosyalGirisSatiri";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { supabase } from "@/lib/supabase";
@@ -57,6 +58,8 @@ export default function Giris() {
           </Pressable>
 
           <Buton yazi="Kayıt Ol" varyant="ikincil" onPress={() => router.push("/(auth)/kayit")} />
+
+          <SosyalGirisSatiri onHata={(mesaj) => uyari("Giriş başarısız", mesaj)} />
         </View>
       </KeyboardAvoidingView>
     </View>
