@@ -29,12 +29,12 @@ async def me(user_id: CurrentUser) -> BenModel:
     return BenModel(
         plan=durum.etkin,
         ham_plan=durum.ham,
-        trial_bitis=durum.trial_bitis,
         gunluk_limit=durum.gunluk_limit,
         gunluk_enerji=settings.GUNLUK_ENERJI,
         limit=durum.gunluk_limit,
         gun_kayit=gun_kayit,
         gun_reklam_kredisi=gun_reklam,
+        reklam_kredi_adet=settings.AD_KREDI_ADET,
         toplam_kayit=toplam,
         hane_rol=uyelik.rol if uyelik else None,
     )

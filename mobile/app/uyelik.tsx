@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "reac
 import { Kart, Sekmeli } from "@/components/base";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
-import { PlanRozeti, denemeGunKalan } from "@/components/PlanRozeti";
+import { PlanRozeti } from "@/components/PlanRozeti";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { useMe } from "@/lib/queries";
 import { reklamAktif, reklamGoster } from "@/lib/reklam";
@@ -45,7 +45,6 @@ export default function Uyelik() {
   const router = useRouter();
   const qc = useQueryClient();
   const me = useMe();
-  const deneme = me.data?.ham_plan === "trial" ? denemeGunKalan(me.data.trial_bitis) : null;
   const gunlukEnerji = me.data?.gunluk_enerji ?? 3;
   const OZELLIKLER = ozellikler(gunlukEnerji);
   const mevcutPro = me.data?.plan === "pro";
@@ -80,8 +79,7 @@ export default function Uyelik() {
     if (!satinalmaAktif()) {
       uyari(
         "Abonelikler yakında",
-        "Mağaza abonelikleri bir sonraki güncellemede açılacak. " +
-          "Şu an tüm özellikler deneme sürende açık.",
+        "Mağaza abonelikleri bir sonraki güncellemede açılacak.",
       );
       return;
     }
@@ -134,21 +132,16 @@ export default function Uyelik() {
   const yillikMi = period === "yillik";
   const gunKayit = me.data?.gun_kayit ?? 0;
   const gunlukLimit = me.data?.gunluk_limit ?? gunlukEnerji;
-  const limiteYakin = !mevcutPro && me.data?.ham_plan !== "trial" && gunKayit >= gunlukLimit;
+  const limiteYakin = !mevcutPro && gunKayit >= gunlukLimit;
 
   return (
     <ScrollView style={{ backgroundColor: renk.bg }} contentContainerStyle={s.icerik}>
       <View style={{ alignItems: "center", gap: SP.sm }}>
         <PlanRozeti ben={me.data} />
-        {deneme != null && (
-          <Text style={{ color: renk.textMuted, fontSize: 13, textAlign: "center" }}>
-            Denemene {deneme} gün kaldı. Sonra Free'ye geçersin — istediğin an yükseltebilirsin.
-          </Text>
-        )}
         {mevcutPro && (
           <Text style={{ color: renk.aksan, fontSize: 13, fontWeight: "700" }}>Pro üyesin 🎉</Text>
         )}
-        {!mevcutPro && me.data && me.data.ham_plan !== "trial" && (
+        {!mevcutPro && me.data && (
           <Text style={{ color: renk.textMuted, fontSize: 13, textAlign: "center" }}>
             Bugün {gunKayit}/{gunlukLimit} kayıt hakkını kullandın.
           </Text>

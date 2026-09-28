@@ -54,12 +54,12 @@ export interface Hane {
 
 export interface Ben {
   plan: "free" | "pro"; // etkin plan
-  ham_plan?: string; // trial | free | pro
-  trial_bitis?: string | null;
+  ham_plan?: string; // free | pro
   gunluk_limit: number; // bugünkü toplam kayıt (elle+AI) tavanı — taban + reklamla kazanılan (pro → çok büyük)
   gunluk_enerji: number; // Free katmanının sabit günlük tabanı (reklamsız)
   gun_kayit: number; // bugün eklenen kayıt (elle+AI)
   gun_reklam_kredisi: number; // bugün reklamla kazanılan ek kayıt hakkı
+  reklam_kredi_adet: number; // bir reklam izleyince kazanılacak kayıt hakkı
   limit: number; // = gunluk_limit (geriye dönük)
   toplam_kayit: number;
   hane_rol?: HaneRol | null;

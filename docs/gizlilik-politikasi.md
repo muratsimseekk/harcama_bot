@@ -1,13 +1,13 @@
 # Gizlilik Politikası
 
 **Son güncelleme:** 2026-09-25
-**Uygulama:** Harcama (bütçe ve harcama takip uygulaması)
+**Uygulama:** Paraİzi (bütçe ve harcama takip uygulaması)
 **Veri sorumlusu:** [AD SOYAD / firma unvanı], [adres], e-posta: [iletisim@ornek.com]
 
 > Bu metin, uygulamanın gerçek veri akışına göre hazırlanmıştır. Yayınlamadan önce
 > köşeli parantezli alanları doldurun ve bir hukukçuya gözden geçirtin.
 
-Bu politika, "Harcama" mobil uygulamasını kullandığınızda hangi kişisel verilerinizi,
+Bu politika, "Paraİzi" mobil uygulamasını kullandığınızda hangi kişisel verilerinizi,
 neden ve nasıl işlediğimizi; kimlerle paylaştığımızı ve haklarınızı açıklar. Uygulama
 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) ve — Avrupa Birliği'nde bulunan
 kullanıcılar için — GDPR kapsamında yürütülür.

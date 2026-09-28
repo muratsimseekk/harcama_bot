@@ -12,7 +12,7 @@ export const DESTEK_EPOSTA = "iletisim@ornek.com";
 export const GIZLILIK_METNI = `GİZLİLİK POLİTİKASI
 Son güncelleme: 2026-09-25
 
-Bu politika, "Harcama" uygulamasını kullandığında hangi kişisel verilerini, neden ve nasıl
+Bu politika, "Paraİzi" uygulamasını kullandığında hangi kişisel verilerini, neden ve nasıl
 işlediğimizi; kimlerle paylaştığımızı ve haklarını açıklar. Uygulama 6698 sayılı KVKK ve —
 AB'deki kullanıcılar için — GDPR kapsamında yürütülür.
 
@@ -84,7 +84,7 @@ Veri sorumlusu ve iletişim: ${DESTEK_EPOSTA}
 export const KOSULLAR_METNI = `KULLANIM KOŞULLARI
 Son güncelleme: 2026-09-25
 
-"Harcama" uygulamasını kullanarak bu koşulları kabul etmiş olursun.
+"Paraİzi" uygulamasını kullanarak bu koşulları kabul etmiş olursun.
 
 1) HİZMET
 Uygulama, harcama ve gelirlerini elle veya sesle kaydedip bütçe/hedef takibi ve özet/analiz
@@ -98,8 +98,10 @@ işlemlerden sen sorumlusun. 18 yaşından büyük olmalısın. Hesabını isted
 "Ayarlar → Hesabı Sil" ile silebilirsin.
 
 3) ÜYELİK VE ÖDEMELER
-Ücretsiz 7 günlük deneme süresi vardır. Deneme sonunda Free (reklamlı, ücretsiz) katmanda
-devam edebilir ya da ücretli Pro üyeliğe geçebilirsin. TÜM ÖDEMELER YALNIZCA App Store
+Uygulama iki katmanda sunulur: Free (reklamlı, ücretsiz) ve ücretli Pro. Free katmanda
+günlük ortak bir kayıt hakkın vardır — elle veya sesli/yazılı yapay zeka ile eklediğin her
+kayıt bu haktan düşer, hak her gece yarısı sıfırlanır; isteğe bağlı ödüllü video reklam
+izleyerek ek hak kazanabilirsin. Pro'da bu sınır yoktur. TÜM ÖDEMELER YALNIZCA App Store
 (Apple) veya Google Play üzerinden alınır; uygulama dışında ödeme yöntemi sunmayız.
 Abonelikler iptal edilmezse dönem sonunda otomatik yenilenir (bitiminden en az 24 saat önce
 iptal edilmezse). Abonelik yönetimi/iptali cihazının App Store / Google Play ayarlarından

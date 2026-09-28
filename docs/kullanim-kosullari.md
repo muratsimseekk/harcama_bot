@@ -5,7 +5,7 @@
 
 > Yayınlamadan önce köşeli parantezli alanları doldurun ve bir hukukçuya gözden geçirtin.
 
-"Harcama" uygulamasını ("Uygulama") kullanarak bu koşulları kabul etmiş olursunuz.
+"Paraİzi" uygulamasını ("Uygulama") kullanarak bu koşulları kabul etmiş olursunuz.
 Kabul etmiyorsanız Uygulamayı kullanmayın.
 
 ## 1. Hizmet
@@ -25,9 +25,7 @@ amaçlıdır; finansal kararlarınızdan siz sorumlusunuz.
 
 ## 3. Üyelik ve ödemeler
 
-- Uygulamanın ücretsiz **7 günlük deneme** süresi vardır. Deneme sonunda **Free**
-  (reklamlı, ücretsiz) katmanda devam edebilir ya da ücretli **Pro** üyeliğe
-  geçebilirsiniz.
+- Uygulama iki katmanda sunulur: **Free** (reklamlı, ücretsiz) ve ücretli **Pro**.
 - Free katmanda günlük ortak bir kayıt hakkınız vardır — elle veya sesli/yazılı yapay
   zeka ile eklediğiniz her kayıt bu haktan düşer; hak her gece yarısı sıfırlanır.
   İsteğe bağlı, tavansız **ödüllü video reklam** izleyerek ek hak kazanabilirsiniz.

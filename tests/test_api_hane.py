@@ -20,7 +20,7 @@ def _pro(monkeypatch):
     from api.usage import PlanDurum
 
     async def _durum(uid):
-        return PlanDurum(ham="pro", etkin="pro", trial_bitis=None, gunluk_limit=10**9)
+        return PlanDurum(ham="pro", etkin="pro", gunluk_limit=10**9)
     monkeypatch.setattr(usage, "plan_durum", _durum)
 
 
@@ -36,15 +36,11 @@ def test_getir_hanede_degil_null(client, monkeypatch):
     assert r.status_code == 200 and r.json() is None
 
 
-@pytest.mark.parametrize(
-    ("ham", "gunluk_limit"),
-    [("free", 3), ("trial", 10**9)],  # trial de hane kuramaz (deneme = Free kapsamı)
-)
-def test_olustur_pro_degil_402(client, monkeypatch, ham, gunluk_limit):
+def test_olustur_pro_degil_402(client, monkeypatch):
     from api.usage import PlanDurum
 
     async def _durum(uid):
-        return PlanDurum(ham=ham, etkin="free", trial_bitis=None, gunluk_limit=gunluk_limit)
+        return PlanDurum(ham="free", etkin="free", gunluk_limit=3)
     monkeypatch.setattr(usage, "plan_durum", _durum)
 
     async def yok(uid):

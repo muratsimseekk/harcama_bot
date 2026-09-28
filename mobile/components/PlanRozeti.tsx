@@ -4,41 +4,11 @@ import { Metin as Text } from "@/components/Metin";
 import type { Ben } from "@/lib/types";
 import { R, useRenkler } from "@/lib/theme";
 
-export function denemeGunKalan(trialBitis?: string | null): number | null {
-  if (!trialBitis) return null;
-  const bitis = new Date(trialBitis).getTime();
-  if (Number.isNaN(bitis)) return null;
-  const gun = Math.ceil((bitis - Date.now()) / 86_400_000);
-  return gun > 0 ? gun : null;
-}
-
+/** Yalnız Pro için rozet gösterir — Free katmanda günlük limit zaten ayrı bir
+ * satırda yazıyor, burada tekrar "Free" yazmaya gerek yok. */
 export function PlanRozeti({ ben }: { ben?: Ben }) {
   const renk = useRenkler();
-  if (!ben) return null;
-
-  const deneme = ben.ham_plan === "trial" ? denemeGunKalan(ben.trial_bitis) : null;
-
-  let yazi: string;
-  let ikon: keyof typeof Ionicons.glyphMap;
-  let zemin: string;
-  let renkli: string;
-
-  if (deneme != null) {
-    yazi = `Deneme · ${deneme} gün`;
-    ikon = "time-outline";
-    zemin = renk.aksanSoft;
-    renkli = renk.aksan;
-  } else if (ben.plan === "pro") {
-    yazi = "Pro";
-    ikon = "star";
-    zemin = renk.aksan;
-    renkli = renk.aksanUstu;
-  } else {
-    yazi = "Free";
-    ikon = "person-outline";
-    zemin = renk.cardAlt;
-    renkli = renk.textMuted;
-  }
+  if (!ben || ben.plan !== "pro") return null;
 
   return (
     <View
@@ -50,11 +20,11 @@ export function PlanRozeti({ ben }: { ben?: Ben }) {
         paddingHorizontal: 12,
         paddingVertical: 5,
         borderRadius: R.pill,
-        backgroundColor: zemin,
+        backgroundColor: renk.aksan,
       }}
     >
-      <Ionicons name={ikon} size={13} color={renkli} />
-      <Text style={{ color: renkli, fontSize: 12.5, fontWeight: "700" }}>{yazi}</Text>
+      <Ionicons name="star" size={13} color={renk.aksanUstu} />
+      <Text style={{ color: renk.aksanUstu, fontSize: 12.5, fontWeight: "700" }}>Pro</Text>
     </View>
   );
 }

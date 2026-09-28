@@ -1,4 +1,4 @@
-"""Üyelik katmanları (Deneme → Free[reklamlı] → Pro) ve günlük "enerji" sayacı.
+"""Üyelik katmanları (Free[reklamlı] / Pro) ve günlük "enerji" sayacı.
 
 Free katmanda her kayıt (elle VEYA AI — ayrım yok) günlük 1 enerji harcar; gece yarısı
 (Europe/Istanbul) sıfırlanır. Enerji biterse ödüllü reklam izleyerek kredi kazanılır
@@ -22,10 +22,9 @@ _SINIRSIZ = 10**9
 
 @dataclass
 class PlanDurum:
-    ham: str                      # DB değeri: free | trial | pro (legacy: base)
-    etkin: str                    # geçerli davranış: free | pro
-    trial_bitis: datetime | None
-    gunluk_limit: int             # bugünkü toplam kayıt (elle+AI) tavanı; taban + reklam kredisi (pro/trial → çok büyük)
+    ham: str                      # rapor edilen plan: free | pro (legacy trial/base satırları da free'ye döner)
+    etkin: str                    # geçerli davranış: free | pro (şu an ham ile aynı)
+    gunluk_limit: int             # bugünkü toplam kayıt (elle+AI) tavanı; taban + reklam kredisi (pro → çok büyük)
 
     @property
     def pro(self) -> bool:
@@ -42,7 +41,7 @@ def _gun_basi_iso() -> str:
 
 def _profil_oku(user_id: str) -> dict:
     res = (
-        _db().table("profiles").select("plan,trial_bitis,plan_bitis")
+        _db().table("profiles").select("plan,plan_bitis")
         .eq("id", user_id).limit(1).execute()
     )
     return res.data[0] if res.data else {"plan": "free"}
@@ -110,34 +109,28 @@ async def gun_ad_kredisi(user_id: str) -> int:
 
 def _coz(profil: dict, ad_kredisi: int = 0) -> PlanDurum:
     ham = profil.get("plan") or "free"
-    tb = _tarih(profil.get("trial_bitis"))
     pb = _tarih(profil.get("plan_bitis"))
 
     # Pro süresi dolmuşsa Free'ye düş.
     if ham == "pro" and pb is not None and pb <= now():
-        return PlanDurum(ham, "free", tb, settings.GUNLUK_ENERJI + ad_kredisi)
+        return PlanDurum("free", "free", settings.GUNLUK_ENERJI + ad_kredisi)
 
     if ham == "pro":
-        return PlanDurum(ham, "pro", tb, _SINIRSIZ)
-    if ham == "trial":
-        # Deneme = Free özellikleri + sınırsız kayıt. Hane KAPALI (etkin='free' → .pro=False).
-        aktif = tb is not None and tb > now()
-        return PlanDurum(ham, "free", tb,
-                         _SINIRSIZ if aktif else settings.GUNLUK_ENERJI + ad_kredisi)
-    # free / legacy 'base' satırı / bilinmeyen → hepsi free davranışı
-    return PlanDurum(ham, "free", tb, settings.GUNLUK_ENERJI + ad_kredisi)
+        return PlanDurum("pro", "pro", _SINIRSIZ)
+    # free / legacy 'trial'/'base' satırı / bilinmeyen → hepsi free davranışı
+    return PlanDurum("free", "free", settings.GUNLUK_ENERJI + ad_kredisi)
 
 
 async def plan_durum(user_id: str) -> PlanDurum:
     if _dev_user(user_id):
-        return PlanDurum("pro", "pro", None, _SINIRSIZ)
+        return PlanDurum("pro", "pro", _SINIRSIZ)
     try:
         profil, ad_kredisi = await asyncio.gather(
             asyncio.to_thread(_profil_oku, user_id),
             gun_ad_kredisi(user_id),
         )
     except Exception:
-        return PlanDurum("free", "free", None, settings.GUNLUK_ENERJI)
+        return PlanDurum("free", "free", settings.GUNLUK_ENERJI)
     return _coz(profil, ad_kredisi)
 
 

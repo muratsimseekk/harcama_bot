@@ -109,7 +109,7 @@ def test_capture_hiz_limiti_429(client, monkeypatch):
 
 def _durum(etkin="free", limit=3):
     from api.usage import PlanDurum
-    return PlanDurum(ham=etkin, etkin=etkin, trial_bitis=None, gunluk_limit=limit)
+    return PlanDurum(ham=etkin, etkin=etkin, gunluk_limit=limit)
 
 
 def test_transactions_olustur_enerji_asimi_402(client, monkeypatch):
@@ -165,13 +165,13 @@ def test_transactions_elle_giris_hak_varsa_gecer(client, monkeypatch):
     assert r.status_code == 201
 
 
-def test_trial_sinirsiz_gunluk_limit(client, monkeypatch):
+def test_reklam_kredisiyle_sinirsiz_gunluk_limit_asilmaz(client, monkeypatch):
     from core.models import Transaction
 
     async def fake_durum(uid):
-        return _durum("free", 10**9)  # deneme: etkin='free' ama gunluk_limit sınırsız
+        return _durum("free", 10**9)  # ör. çok sayıda reklam kredisiyle gunluk_limit sınırsız
     async def fake_sayac(uid):
-        return 999  # tavan çok aşılmış görünse de deneme sınırsız
+        return 999  # tavan çok aşılmış görünse de limit sınırsız olduğu için geçmeli
     async def fake_add_many(adaylar, uid):
         return [Transaction(
             id="tx1", user_id=uid, direction=a.direction, tip=a.tip, kategori=a.kategori,

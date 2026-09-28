@@ -18,7 +18,7 @@ def test_me_plan_alanlari(client, monkeypatch):
     from api.usage import PlanDurum
 
     async def durum(uid):
-        return PlanDurum(ham="trial", etkin="pro", trial_bitis=None, gunluk_limit=10**9)
+        return PlanDurum(ham="pro", etkin="pro", gunluk_limit=10**9)
     async def sayac(uid):
         return 2
     async def toplam(uid):
@@ -32,7 +32,7 @@ def test_me_plan_alanlari(client, monkeypatch):
     monkeypatch.setattr(usage, "profil_garanti", garanti)
 
     j = client.get("/v1/me").json()
-    assert j["plan"] == "pro" and j["ham_plan"] == "trial"
+    assert j["plan"] == "pro" and j["ham_plan"] == "pro"
     assert j["gun_kayit"] == 2 and j["toplam_kayit"] == 40
     assert j["gunluk_enerji"] == usage.settings.GUNLUK_ENERJI
 
