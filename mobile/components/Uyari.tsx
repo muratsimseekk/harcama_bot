@@ -1,3 +1,4 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { BackHandler, Pressable, StyleSheet, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
@@ -27,9 +28,16 @@ export type UyariButon = {
   stil?: "normal" | "vazgec" | "tehlike";
 };
 
-export type UyariGoster = (baslik: string, mesaj?: string, butonlar?: UyariButon[]) => void;
+export type UyariSecenek = { ikon?: keyof typeof Ionicons.glyphMap };
 
-type Icerik = { baslik: string; mesaj?: string; butonlar: UyariButon[] };
+export type UyariGoster = (
+  baslik: string,
+  mesaj?: string,
+  butonlar?: UyariButon[],
+  secenek?: UyariSecenek,
+) => void;
+
+type Icerik = { baslik: string; mesaj?: string; butonlar: UyariButon[]; ikon?: UyariSecenek["ikon"] };
 
 const Ctx = createContext<UyariGoster>(() => {});
 
@@ -40,11 +48,12 @@ export function useUyari(): UyariGoster {
 export function UyariProvider({ children }: { children: React.ReactNode }) {
   const [icerik, setIcerik] = useState<Icerik | null>(null);
 
-  const goster = useCallback<UyariGoster>((baslik, mesaj, butonlar) => {
+  const goster = useCallback<UyariGoster>((baslik, mesaj, butonlar, secenek) => {
     setIcerik({
       baslik,
       mesaj,
       butonlar: butonlar?.length ? butonlar : [{ yazi: "Tamam" }],
+      ikon: secenek?.ikon,
     });
   }, []);
 
@@ -82,12 +91,37 @@ function UyariPenceresi({ icerik, onKapat }: { icerik: Icerik; onKapat: () => vo
   return (
     <Pressable style={s.arka} onPress={onKapat}>
       <Pressable
-        style={[s.kutu, { backgroundColor: renk.card, borderColor: renk.hairline }, golge(3)]}
+        style={[
+          s.kutu,
+          { backgroundColor: renk.card, borderColor: renk.hairline },
+          golge(3),
+          !!icerik.ikon && s.kutuBuyuk,
+        ]}
         onPress={() => {}}
       >
-        <Text style={[T.heading, { color: renk.text }]}>{icerik.baslik}</Text>
+        {!!icerik.ikon && (
+          <View style={[s.ikonKutu, { backgroundColor: renk.aksanSoft }]}>
+            <Ionicons name={icerik.ikon} size={30} color={renk.aksan} />
+          </View>
+        )}
+        <Text
+          style={[
+            icerik.ikon ? T.title : T.heading,
+            { color: renk.text, textAlign: icerik.ikon ? "center" : "left" },
+          ]}
+        >
+          {icerik.baslik}
+        </Text>
         {!!icerik.mesaj && (
-          <Text style={[T.body, { color: renk.textMuted, lineHeight: 21 }]}>{icerik.mesaj}</Text>
+          <Text
+            style={[
+              T.body,
+              { color: renk.textMuted, lineHeight: 21 },
+              !!icerik.ikon && { textAlign: "center" },
+            ]}
+          >
+            {icerik.mesaj}
+          </Text>
         )}
 
         <View style={[s.butonlar, yatay ? s.yatay : s.dikey]}>
@@ -149,7 +183,21 @@ const s = StyleSheet.create({
     padding: SP.xl,
     gap: SP.sm,
   },
-  butonlar: { marginTop: SP.md, gap: SP.sm },
+  kutuBuyuk: {
+    maxWidth: 400,
+    padding: SP.xl + 4,
+    gap: SP.md,
+    alignItems: "center",
+  },
+  ikonKutu: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  butonlar: { marginTop: SP.md, gap: SP.sm, alignSelf: "stretch" },
   yatay: { flexDirection: "row" },
   dikey: { flexDirection: "column" },
   buton: {

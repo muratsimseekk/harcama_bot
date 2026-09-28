@@ -4,14 +4,16 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { EnerjiSheet, type EnerjiSheetDurum } from "@/components/EnerjiSheet";
 import { IslemFormu } from "@/components/IslemFormu";
 import { Metin as Text } from "@/components/Metin";
 import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
 import { useUyari } from "@/components/Uyari";
 import { api, ApiError } from "@/lib/api";
 import { turkceTutar } from "@/lib/format";
-import { enerji402Mesaj, enerji402Secenekleri } from "@/lib/kullanim402";
-import { reklamGoster } from "@/lib/reklam";
+import { reklamIzleVeTekrarDene } from "@/lib/kullanim402";
+import { useMe } from "@/lib/queries";
+import { reklamAktif } from "@/lib/reklam";
 import { golge, R, SP, useRenkler } from "@/lib/theme";
 import type { Aday, CaptureYanit } from "@/lib/types";
 
@@ -26,6 +28,9 @@ export default function Confirm() {
   const uyari = useUyari();
   const katman = useIslemKatmani();
   const kaydediliyor = katman.durum !== null;
+  const me = useMe();
+  const [sheetAcik, setSheetAcik] = useState(false);
+  const [sheetDurum, setSheetDurum] = useState<EnerjiSheetDurum>(null);
 
   const toplam = adaylar.reduce((t, a) => t + (a.direction === "gelir" ? a.tutar : -a.tutar), 0);
 
@@ -57,23 +62,24 @@ export default function Confirm() {
       });
     } catch (e) {
       if (e instanceof ApiError && e.status === 402) {
-        uyari("Kayıt hakkın bitti", enerji402Mesaj(e) ?? e.message, enerji402Secenekleri(e, router, reklamIzleVeTekrarDene));
+        await qc.invalidateQueries({ queryKey: ["me"] });
+        setSheetAcik(true);
         return;
       }
       uyari("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene.");
     }
   }
 
-  async function reklamIzleVeTekrarDene() {
-    const sonuc = await reklamGoster();
-    if (sonuc !== "izlendi") {
-      if (sonuc === "hata") uyari("Reklam yüklenemedi", "Birazdan tekrar dene.");
-      return;
-    }
-    // SSV birkaç saniye içinde işler — /v1/me'yi tazeleyip kaydı tekrar dene.
-    await new Promise((r) => setTimeout(r, 2000));
-    await qc.invalidateQueries({ queryKey: ["me"] });
-    onayla();
+  async function reklamIzle() {
+    await reklamIzleVeTekrarDene(
+      qc,
+      async () => {
+        setSheetAcik(false);
+        await onayla();
+      },
+      uyari,
+      setSheetDurum,
+    );
   }
 
   return (
@@ -146,6 +152,18 @@ export default function Confirm() {
       </View>
 
       <IslemKatmani durum={katman.durum} />
+      <EnerjiSheet
+        acik={sheetAcik}
+        onKapat={() => setSheetAcik(false)}
+        ben={me.data}
+        reklamGosterilebilir={reklamAktif()}
+        durum={sheetDurum}
+        onReklamIzle={reklamIzle}
+        onProGec={() => {
+          setSheetAcik(false);
+          router.push("/uyelik");
+        }}
+      />
     </SafeAreaView>
   );
 }

@@ -7,9 +7,11 @@
  * veya ad unit ID yoksa `reklamAktif()` false döner, `reklamGoster()` sessizce "hata" verir
  * — arayan taraf (confirm.tsx/islem-form.tsx) "Reklam İzle" butonunu hiç göstermez.
  *
- * Kredi YALNIZ backend'de, AdMob Server-Side Verification (SSV) callback'i doğrulandıktan
- * sonra yazılır (`api/routes/reklam.py::ssv_callback`) — bu dosya kendi başına kredi
- * eklemez, yalnız "izlendi" sinyalini üretir; arayan taraf `/v1/me`'yi yeniden çeker.
+ * Kredi backend'de iki yoldan yazılabilir: AdMob Server-Side Verification (SSV) callback'i
+ * (en güvenilir ama gecikebilir/test reklamlarında hiç gelmez) VE bu dosyanın kendisi —
+ * native SDK'nın EARNED_REWARD event'i tetiklenince `/v1/ads/claim`'i çağırıp krediyi hemen
+ * ister (bkz api/routes/reklam.py modül docstring — güvenlik ödünü orada açıklanıyor).
+ * İkisi de aynı token'ı idempotency anahtarı kullandığı için çifte kredi verilmez.
  *
  * CANLIYA ÇIKMADAN:
  *  1. `npx expo install react-native-google-mobile-ads`
@@ -20,6 +22,7 @@
  *  6. `eas build --profile development` — bu noktadan sonra gerçek reklam yüklenir
  */
 import { Platform } from "react-native";
+import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
 import { api } from "@/lib/api";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -54,6 +57,11 @@ export type ReklamSonuc = "izlendi" | "iptal" | "hata";
 export async function reklamGoster(): Promise<ReklamSonuc> {
   if (!reklamAktif()) return "hata";
   try {
+    // Apple zorunlu tutuyor: SDK kendiliğinden prompt açmaz, ilk reklamdan önce iste
+    // (kullanıcı daha önce cevapladıysa no-op — tekrar prompt çıkmaz).
+    if (Platform.OS === "ios") {
+      await requestTrackingPermissionsAsync().catch(() => {});
+    }
     const { token } = await api.adsRequestToken();
     const { RewardedAd, RewardedAdEventType, AdEventType } = RGMA;
 
@@ -67,9 +75,12 @@ export async function reklamGoster(): Promise<ReklamSonuc> {
         RewardedAdEventType.EARNED_REWARD,
         () => {
           kazanildi = true;
+          // SSV'yi beklemeden krediyi hemen iste — sessizce başarısız olursa (ağ/token
+          // süresi vs.) SSV zaten aynı token'la yedek olarak dener.
+          api.adsClaim(token).catch(() => {});
         },
       );
-      const kaldir2 = reklam.addAdEventListener(AdEventType.LOADED, () => reklam.show());
+      const kaldir2 = reklam.addAdEventListener(RewardedAdEventType.LOADED, () => reklam.show());
       const kaldir3 = reklam.addAdEventListener(AdEventType.CLOSED, () => {
         kaldir1();
         kaldir2();

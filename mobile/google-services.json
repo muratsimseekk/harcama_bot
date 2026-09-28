@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "411491050602",
+    "project_id": "harcama-takip-9ce6b",
+    "storage_bucket": "harcama-takip-9ce6b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:411491050602:android:ed9485fd1ff76ec7fd5613",
+        "android_client_info": {
+          "package_name": "com.harcama.mobil"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-waq0gapu1yxXNud8QR20df_0S_5KUAs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -18,12 +18,14 @@
       "bundleIdentifier": "com.harcama.mobil",
       "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "Paraİzi"
       }
     },
     "android": {
       "package": "com.harcama.mobil",
       "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
@@ -44,7 +46,30 @@
         {
           "color": "#D97757"
         }
-      ]
+      ],
+      "expo-web-browser",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-8731282143908044~6009970530",
+          "iosAppId": "ca-app-pub-8731282143908044~2025570052",
+          "userTrackingUsageDescription": "Reklamların sana daha alakalı gösterilmesi için kullanılır. İzin vermesen de reklam izleyip kredi kazanabilirsin.",
+          "delayAppMeasurementInit": true
+        }
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "Reklamların sana daha alakalı gösterilmesi için kullanılır. İzin vermesen de reklam izleyip kredi kazanabilirsin."
+        }
+      ],
+      [
+        "./plugins/withAndroidAppName",
+        "Paraİzi"
+      ],
+      "expo-asset",
+      "expo-font",
+      "expo-splash-screen"
     ],
     "extra": {
       "router": {},

@@ -4,14 +4,15 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Buton } from "@/components/Buton";
+import { EnerjiRozeti, EnerjiSheet, type EnerjiSheetDurum } from "@/components/EnerjiSheet";
 import { IslemFormu, type IslemAlanlari } from "@/components/IslemFormu";
 import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { ApiError } from "@/lib/api";
-import { enerji402Mesaj, enerji402Secenekleri } from "@/lib/kullanim402";
-import { useDeleteTransaction, usePatchTransaction, useSaveTransactions } from "@/lib/queries";
-import { reklamGoster } from "@/lib/reklam";
+import { reklamIzleVeTekrarDene } from "@/lib/kullanim402";
+import { useDeleteTransaction, useMe, usePatchTransaction, useSaveTransactions } from "@/lib/queries";
+import { reklamAktif } from "@/lib/reklam";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 import type { Islem } from "@/lib/types";
 
@@ -41,6 +42,9 @@ export default function IslemForm() {
   const uyari = useUyari();
   const katman = useIslemKatmani();
   const mesgul = katman.durum !== null;
+  const me = useMe();
+  const [sheetAcik, setSheetAcik] = useState(false);
+  const [sheetDurum, setSheetDurum] = useState<EnerjiSheetDurum>(null);
 
   const guncelle = (yama: Partial<IslemAlanlari>) => setAlan((e) => ({ ...e, ...yama }));
 
@@ -61,22 +65,24 @@ export default function IslemForm() {
       });
     } catch (e) {
       if (e instanceof ApiError && e.status === 402) {
-        uyari("Kayıt hakkın bitti", enerji402Mesaj(e) ?? e.message, enerji402Secenekleri(e, router, reklamIzleVeTekrarDene));
+        await qc.invalidateQueries({ queryKey: ["me"] });
+        setSheetAcik(true);
         return;
       }
       uyari("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene.");
     }
   }
 
-  async function reklamIzleVeTekrarDene() {
-    const sonuc = await reklamGoster();
-    if (sonuc !== "izlendi") {
-      if (sonuc === "hata") uyari("Reklam yüklenemedi", "Birazdan tekrar dene.");
-      return;
-    }
-    await new Promise((r) => setTimeout(r, 2000));
-    await qc.invalidateQueries({ queryKey: ["me"] });
-    kaydet();
+  async function reklamIzle() {
+    await reklamIzleVeTekrarDene(
+      qc,
+      async () => {
+        setSheetAcik(false);
+        await kaydet();
+      },
+      uyari,
+      setSheetDurum,
+    );
   }
 
   function silSor() {
@@ -120,6 +126,7 @@ export default function IslemForm() {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={s.icerik} keyboardShouldPersistTaps="handled">
+          {!mevcut && <EnerjiRozeti ben={me.data} onPress={() => setSheetAcik(true)} />}
           <IslemFormu deger={alan} guncelle={guncelle} />
           <Buton
             yazi={mevcut ? "Kaydet" : "Ekle"}
@@ -131,6 +138,18 @@ export default function IslemForm() {
       </KeyboardAvoidingView>
 
       <IslemKatmani durum={katman.durum} />
+      <EnerjiSheet
+        acik={sheetAcik}
+        onKapat={() => setSheetAcik(false)}
+        ben={me.data}
+        reklamGosterilebilir={reklamAktif()}
+        durum={sheetDurum}
+        onReklamIzle={reklamIzle}
+        onProGec={() => {
+          setSheetAcik(false);
+          router.push("/uyelik");
+        }}
+      />
     </SafeAreaView>
   );
 }

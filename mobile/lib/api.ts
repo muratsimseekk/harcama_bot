@@ -221,4 +221,10 @@ export const api = {
   adsRequestToken(): Promise<{ token: string }> {
     return jsonReq("/v1/ads/request-token", "POST");
   },
+
+  /** İstemci tarafı ödül talebi — reklam SDK'sının EARNED_REWARD event'i tetiklenince
+   * SSV'yi beklemeden krediyi hemen ister (bkz api/routes/reklam.py modül docstring). */
+  adsClaim(token: string): Promise<{ eklendi: boolean }> {
+    return jsonReq("/v1/ads/claim", "POST", { token });
+  },
 };

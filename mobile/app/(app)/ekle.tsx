@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AudioModule,
   RecordingPresets,
@@ -22,10 +23,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EkranBasligi } from "@/components/EkranBasligi";
+import { EnerjiRozeti, EnerjiSheet, type EnerjiSheetDurum } from "@/components/EnerjiSheet";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { api, ApiError } from "@/lib/api";
+import { reklamIzleProaktif } from "@/lib/kullanim402";
+import { useMe } from "@/lib/queries";
+import { reklamAktif } from "@/lib/reklam";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
 import type { CaptureYanit } from "@/lib/types";
 
@@ -37,9 +42,13 @@ export default function Ekle() {
   const renk = useRenkler();
   const uyari = useUyari();
   const router = useRouter();
+  const qc = useQueryClient();
   const insets = useSafeAreaInsets();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const rState = useAudioRecorderState(recorder);
+  const me = useMe();
+  const [sheetAcik, setSheetAcik] = useState(false);
+  const [sheetDurum, setSheetDurum] = useState<EnerjiSheetDurum>(null);
   const [metin, setMetin] = useState("");
   const [yaziyor, setYaziyor] = useState(false);
   const [durum, setDurum] = useState<Durum>("bos");
@@ -163,6 +172,7 @@ export default function Ekle() {
       geri={yaziyor}
       onGeri={yaziVazgec}
       icerikStil={{ padding: 0, gap: 0 }}
+      ustAlan={<EnerjiRozeti ben={me.data} onPress={() => setSheetAcik(true)} />}
     >
       <KeyboardAvoidingView
         style={s.flex}
@@ -267,6 +277,19 @@ export default function Ekle() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      <EnerjiSheet
+        acik={sheetAcik}
+        onKapat={() => setSheetAcik(false)}
+        ben={me.data}
+        reklamGosterilebilir={reklamAktif()}
+        durum={sheetDurum}
+        onReklamIzle={() => reklamIzleProaktif(qc, uyari, setSheetDurum)}
+        onProGec={() => {
+          setSheetAcik(false);
+          router.push("/uyelik");
+        }}
+      />
     </EkranBasligi>
   );
 }
