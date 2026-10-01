@@ -69,7 +69,8 @@
       ],
       "expo-asset",
       "expo-font",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "router": {},
