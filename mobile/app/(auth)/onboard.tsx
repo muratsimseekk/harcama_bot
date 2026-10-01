@@ -10,7 +10,7 @@ import { R, SP, T, useRenkler } from "@/lib/theme";
 const { width } = Dimensions.get("window");
 
 const SLAYTLAR = [
-  { ikon: "wallet-outline" as const, baslik: "Harcama Yöneticine\nHoş Geldin", metin: "Gelir ve giderlerini tek yerde, zahmetsizce takip et." },
+  { ikon: "wallet-outline" as const, baslik: "Paraİzi'ne\nHoş Geldin", metin: "Gelir ve giderlerini tek yerde, zahmetsizce takip et." },
   { ikon: "mic-outline" as const, baslik: "Konuş, Gerisini\nBırak", metin: "“Market 250, dün benzin 600” de — yapay zeka tutarı, kategoriyi ve tarihi ayıklasın." },
   { ikon: "flag-outline" as const, baslik: "Hedeflerine\nUlaş", metin: "Aylık bütçe ve yatırım hedefi koy; sınıra yaklaşınca sana haber verelim." },
 ];

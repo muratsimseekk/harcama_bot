@@ -36,11 +36,14 @@ try {
   RGMA = null;
 }
 
+// Debug build'de her zaman Google'ın test birimi: kendi gerçek reklamını izlemek/tıklamak
+// AdMob politikası gereği hesabın askıya alınmasına yol açabilir.
 const AD_UNIT_ID =
-  Platform.select({
+  (__DEV__ && RGMA?.TestIds?.REWARDED) ||
+  (Platform.select({
     ios: process.env.EXPO_PUBLIC_ADMOB_REWARDED_IOS,
     android: process.env.EXPO_PUBLIC_ADMOB_REWARDED_ANDROID,
-  }) ?? "";
+  }) ?? "");
 
 /** react-native-google-mobile-ads kurulu + ad unit ID mevcut mu. */
 export function reklamAktif(): boolean {

@@ -1,6 +1,6 @@
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
-import { supabase } from "@/lib/supabase";
+import { koduOturumaCevir, supabase } from "@/lib/supabase";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -26,6 +26,5 @@ export async function sosyalGirisYap(saglayici: SosyalSaglayici): Promise<{ hata
   const code = parcalar.queryParams?.code as string | undefined;
   if (!code) return { hata: "Giriş tamamlanamadı" };
 
-  const { error: degisimHata } = await supabase.auth.exchangeCodeForSession(code);
-  return { hata: degisimHata?.message ?? null };
+  return koduOturumaCevir(code);
 }

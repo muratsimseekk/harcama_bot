@@ -27,7 +27,7 @@ import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { izinVeToken, platformAdi } from "@/lib/bildirim";
 import { baslat as rcBaslat } from "@/lib/satinalma";
-import { supabase } from "@/lib/supabase";
+import { koduOturumaCevir, supabase } from "@/lib/supabase";
 import { TemaProvider, useEtkinSema } from "@/lib/tema";
 import { useRenkler } from "@/lib/theme";
 
@@ -80,9 +80,17 @@ function Kapi() {
     }
     if (yukleniyor || onboardGoruldu === null) return;
     const grup = segments[0];
+    // Oturum varsa karşılama durumu önemsiz: onboardGoruldu açılışta bir kez okunuyor,
+    // yeni kullanıcı karşılamayı bitirip giriş yapınca hâlâ false — önce kontrol edilirse
+    // (app) ↔ onboard arasında sonsuz yönlendirme döngüsü oluşuyordu.
+    if (session) {
+      // Şifre yenileme oturum açıkken (kurtarma oturumu) gösterilmeli, atlanmamalı.
+      const sifreYenile = (segments as string[])[1] === "sifre-yenile";
+      if (grup === "(auth)" && !sifreYenile) router.replace("/(app)");
+      return;
+    }
     if (!onboardGoruldu && grup !== "(auth)") router.replace("/(auth)/onboard");
-    else if (onboardGoruldu && !session && grup !== "(auth)") router.replace("/(auth)/giris");
-    else if (session && grup === "(auth)") router.replace("/(app)");
+    else if (onboardGoruldu && grup !== "(auth)") router.replace("/(auth)/giris");
   }, [session, yukleniyor, segments, onboardGoruldu]);
 
   // Şifre sıfırlama bağlantısıyla dönüşte yeni şifre ekranına git
@@ -93,7 +101,7 @@ function Kapi() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Şifre sıfırlama e-postasındaki derin bağlantıyı işle (harcama://sifre-yenile?code=... )
+  // Şifre sıfırlama e-postasındaki derin bağlantıyı işle (paraizi://sifre-yenile?code=... )
   useEffect(() => {
     async function isle(url: string | null) {
       if (!url) return;
@@ -103,8 +111,8 @@ function Kapi() {
         parcalar.path?.includes("sifre-yenile") ||
         (parcalar.queryParams?.type as string | undefined) === "recovery";
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!error && kurtarma) router.replace("/(auth)/sifre-yenile");
+        const { hata } = await koduOturumaCevir(code);
+        if (!hata && kurtarma) router.replace("/(auth)/sifre-yenile");
       }
     }
     Linking.getInitialURL().then(isle);

@@ -21,7 +21,8 @@ export function Buton({
   const renk = useRenkler();
   const zemin =
     varyant === "birincil" ? renk.aksan : varyant === "ikincil" ? renk.aksanSoft : "transparent";
-  const metin = varyant === "hayalet" ? renk.aksan : renk.aksanUstu;
+  // ikincil zemin açık (aksanSoft) → beyaz yazı okunmuyor, aksan rengi kullan
+  const metin = varyant === "birincil" ? renk.aksanUstu : renk.aksan;
 
   return (
     <Pressable

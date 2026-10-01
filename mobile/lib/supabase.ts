@@ -19,3 +19,20 @@ export const supabase = createClient(url, anon, {
     flowType: "pkce", // şifre sıfırlama derin bağlantısı ?code= ile gelir → exchangeCodeForSession
   },
 });
+
+// PKCE kodu tek kullanımlık. Android'de OAuth dönüşü hem openAuthSessionAsync'e hem de
+// uygulamanın Linking dinleyicisine (_layout) aynı ?code= ile düşüyor — ikisi de takas
+// etmeye çalışınca ikincisi "invalid flow state" alıyordu. Aynı kod için tek istek at,
+// tüm çağıranlar onun sonucunu paylaşsın.
+const takaslar = new Map<string, Promise<{ hata: string | null }>>();
+
+export function koduOturumaCevir(code: string): Promise<{ hata: string | null }> {
+  let p = takaslar.get(code);
+  if (!p) {
+    p = supabase.auth
+      .exchangeCodeForSession(code)
+      .then(({ error }) => ({ hata: error?.message ?? null }));
+    takaslar.set(code, p);
+  }
+  return p;
+}
