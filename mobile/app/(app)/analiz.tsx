@@ -38,6 +38,19 @@ function granOf(s: Sekme): Granularity {
   return s === "day" ? "week" : (s as Granularity);
 }
 
+/** "2026-09-28".."2026-10-04" → her gün için ISO tarih (yerel saat, UTC kayması yok). */
+function gunAraligi(bas?: string, bit?: string): string[] {
+  if (!bas || !bit) return [];
+  const [y1, m1, d1] = bas.split("-").map(Number);
+  const [y2, m2, d2] = bit.split("-").map(Number);
+  const son = new Date(y2, m2 - 1, d2);
+  const sonuc: string[] = [];
+  for (let d = new Date(y1, m1 - 1, d1); d <= son && sonuc.length < 400; d.setDate(d.getDate() + 1)) {
+    sonuc.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+  }
+  return sonuc;
+}
+
 export default function Analiz() {
   const renk = useRenkler();
   const router = useRouter();
@@ -60,24 +73,26 @@ export default function Analiz() {
       }
       return { etiketler: AYLAR, gelir: gg, gider: ge };
     }
+    // API yalnız kaydı olan günleri döndürür → dönemin TÜM günlerini üret, boşları 0 yap
+    // (yoksa haftalıkta kayıtsız Salı düşüyor, aylıkta tek çubuk kalıyordu).
+    const gunler = gunAraligi(ozet.data?.baslangic, ozet.data?.bitis);
+    const harita = new Map(g.gunluk.map((x) => [x.tarih, x]));
+    const gelir = gunler.map((t) => harita.get(t)?.gelir ?? 0);
+    const gider = gunler.map((t) => harita.get(t)?.gider ?? 0);
     if (gran === "week") {
       // 7 gün → hafta günü kısaltması (Pzt, Sal…) — "1.9" gibi tarih kodu değil
-      return {
-        etiketler: g.gunluk.map((x) => gunAdi(x.tarih)),
-        gelir: g.gunluk.map((x) => x.gelir),
-        gider: g.gunluk.map((x) => x.gider),
-      };
+      return { etiketler: gunler.map(gunAdi), gelir, gider };
     }
     // Aylık: ~30 çubuk. Her güne etiket sığmaz → sadece 1, 5, 10, 15, 20, 25, 30
     return {
-      etiketler: g.gunluk.map((x) => {
-        const gun = Number(x.tarih.slice(8, 10));
+      etiketler: gunler.map((t) => {
+        const gun = Number(t.slice(8, 10));
         return gun === 1 || gun % 5 === 0 ? String(gun) : "";
       }),
-      gelir: g.gunluk.map((x) => x.gelir),
-      gider: g.gunluk.map((x) => x.gider),
+      gelir,
+      gider,
     };
-  }, [g, gran]);
+  }, [g, gran, ozet.data?.baslangic, ozet.data?.bitis]);
 
   const bolumler = useMemo(() => {
     const map = new Map<string, Islem[]>();

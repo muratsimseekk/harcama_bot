@@ -1,5 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BarChart, PieChart } from "react-native-gifted-charts";
 import { Animated, Easing, StyleSheet, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
@@ -132,7 +132,28 @@ export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
   );
 }
 
-/** İkili çubuk: her birim için gelir + gider yan yana */
+/** Ekseni yuvarlak değerlere oturtur: 3 bölme, adım 1/2/2,5/5 × 10^k (51.749 gibi değil). */
+function yuvarlakAdim(enBuyuk: number, bolme: number): number {
+  const ham = Math.max(enBuyuk, 1) / bolme;
+  const us = 10 ** Math.floor(Math.log10(ham));
+  const f = ham / us;
+  const carpan = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+  return carpan * us;
+}
+
+/** Eksen etiketi: 20.000 → "20 B", 1.500.000 → "1,5 Mn" (dar eksene sığsın). */
+function eksenEtiketi(x: number): string {
+  if (x >= 1_000_000) return `${(x / 1_000_000).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} Mn`;
+  if (x >= 1_000) return `${(x / 1_000).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} B`;
+  return tutarKisa(x);
+}
+
+const BOLME = 3;
+const Y_EKSEN = 40; // gifted-charts y ekseni etiket alanı
+const BASLANGIC = 8;
+
+/** İkili çubuk: her birim için gelir + gider yan yana. Tüm birimler kartın genişliğine
+ * sığdırılır (yıllıkta 12 ay yana kaymasın, Ekim ekran dışında kalmasın). */
 export function IkiliCubukGrafik({
   etiketler,
   gelir,
@@ -143,6 +164,7 @@ export function IkiliCubukGrafik({
   gider: number[];
 }) {
   const renk = useRenkler();
+  const [genislik, setGenislik] = useState(0);
   const hepsi = [...gelir, ...gider];
   if (hepsi.length === 0 || hepsi.every((v) => v === 0)) {
     return (
@@ -151,35 +173,70 @@ export function IkiliCubukGrafik({
       </Text>
     );
   }
-  const enBuyuk = Math.max(...hepsi, 1);
+  const adim = yuvarlakAdim(Math.max(...hepsi) * 1.05, BOLME);
   const n = etiketler.length;
+  // Birim başına: gelir + iç boşluk + gider + birim arası boşluk. Çok birimde (aylık ~31 gün)
+  // boşluklar daralır ki hepsi tek ekrana sığsın.
+  const icAra = n > 20 ? 0 : 2;
+  const birimArasi = n > 20 ? 3 : n > 8 ? 6 : 14;
+  const SON = 16; // son etiket ("Ara", "Paz") kenarda kesilmesin
+  // `width` = y ekseni hariç çizim alanı; içine başlangıç + çubuklar + son boşluk sığmalı
+  const cizimAlani = Math.max(0, genislik - Y_EKSEN);
+  const cubukAlani = cizimAlani - BASLANGIC - SON - n * (icAra + birimArasi);
+  const barWidth = genislik ? Math.max(2, Math.min(14, cubukAlani / (2 * n))) : 0;
   const data = etiketler.flatMap((et, i) => [
-    { value: gelir[i] ?? 0, frontColor: renk.success, spacing: 3, label: "" },
-    { value: gider[i] ?? 0, frontColor: renk.blue, spacing: n > 8 ? 8 : 16, label: et },
+    { value: gelir[i] ?? 0, frontColor: renk.success, spacing: icAra, label: "" },
+    {
+      value: gider[i] ?? 0,
+      frontColor: renk.blue,
+      spacing: birimArasi,
+      label: et,
+      // Etiket iki çubuğun ortasına, birimin tamamı genişliğinde ("O…", "Ş…" diye kesilmesin)
+      labelWidth: 2 * barWidth + icAra + birimArasi,
+      labelTextStyle: {
+        color: renk.textMuted,
+        fontSize: 9,
+        textAlign: "center" as const,
+        marginLeft: -(barWidth + icAra),
+      },
+    },
   ]);
 
   return (
-    <BarChart
-      data={data}
-      barWidth={Math.max(5, Math.min(12, 150 / n))}
-      initialSpacing={10}
-      barBorderTopLeftRadius={3}
-      barBorderTopRightRadius={3}
-      noOfSections={3}
-      maxValue={enBuyuk * 1.15}
-      yAxisThickness={0}
-      xAxisThickness={1}
-      xAxisColor={renk.border}
-      xAxisLabelTextStyle={{ color: renk.textMuted, fontSize: 9 }}
-      yAxisTextStyle={{ color: renk.textFaint, fontSize: 9 }}
-      formatYLabel={(l: string) => tutarKisa(Number(l))}
-      rulesType="dashed"
-      rulesColor={renk.hairline}
-      dashWidth={3}
-      dashGap={6}
-      isAnimated
-      animationDuration={500}
-    />
+    <View onLayout={(e) => setGenislik(e.nativeEvent.layout.width)}>
+      {genislik > 0 && (
+        <BarChart
+          // Görünüm (gün/hafta/ay/yıl) değişince sıfırdan çiz: kütüphane aynı örnekte
+          // çubuk sayısı değişince eski çubukları yerinde bırakıyordu (yıllıkta "Oca"
+          // sütununda aylık görünümün çubukları kalıyordu).
+          key={`${n}-${etiketler.join("|")}`}
+          data={data}
+          width={cizimAlani}
+          barWidth={barWidth}
+          initialSpacing={BASLANGIC}
+          endSpacing={SON}
+          disableScroll
+          barBorderTopLeftRadius={3}
+          barBorderTopRightRadius={3}
+          noOfSections={BOLME}
+          stepValue={adim}
+          maxValue={adim * BOLME}
+          yAxisLabelWidth={Y_EKSEN}
+          yAxisThickness={0}
+          xAxisThickness={1}
+          xAxisColor={renk.border}
+          xAxisLabelTextStyle={{ color: renk.textMuted, fontSize: 9 }}
+          yAxisTextStyle={{ color: renk.textFaint, fontSize: 9 }}
+          formatYLabel={(l: string) => eksenEtiketi(Number(l))}
+          rulesType="dashed"
+          rulesColor={renk.hairline}
+          dashWidth={3}
+          dashGap={6}
+          isAnimated
+          animationDuration={500}
+        />
+      )}
+    </View>
   );
 }
 
