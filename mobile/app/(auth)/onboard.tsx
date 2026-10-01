@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dimensions, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { onboardTamamla } from "@/app/_layout";
@@ -20,6 +20,11 @@ export default function Onboard() {
   const router = useRouter();
   const ref = useRef<ScrollView>(null);
   const [i, setI] = useState(0);
+
+  // Ekrana geldiği an "görüldü" — yarıda kapatılsa da bir daha gösterilmez.
+  useEffect(() => {
+    onboardTamamla().catch(() => {});
+  }, []);
 
   function ileri() {
     if (i < SLAYTLAR.length - 1) {

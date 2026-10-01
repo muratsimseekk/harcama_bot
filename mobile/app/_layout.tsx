@@ -16,7 +16,7 @@ import * as Linking from "expo-linking";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -64,9 +64,12 @@ function Kapi() {
   const router = useRouter();
   const renk = useRenkler();
   const [onboardGoruldu, setOnboardGoruldu] = useState<boolean | null>(DEV_NOAUTH ? true : null);
+  const karsilamaYonlendi = useRef(false);
 
   useEffect(() => {
     if (DEV_NOAUTH) return;
+    // Karşılama yalnız uygulamanın İLK açılışında: onboard ekranı açıldığı an "görüldü"
+    // yazar — yarıda kapatılsa da, sonradan çıkış yapılsa da bir daha çıkmaz.
     AsyncStorage.getItem(ONBOARD_ANAHTAR)
       .then((v) => setOnboardGoruldu(v === "1"))
       .catch(() => setOnboardGoruldu(true));
@@ -89,8 +92,17 @@ function Kapi() {
       if (grup === "(auth)" && !sifreYenile) router.replace("/(app)");
       return;
     }
-    if (!onboardGoruldu && grup !== "(auth)") router.replace("/(auth)/onboard");
-    else if (onboardGoruldu && grup !== "(auth)") router.replace("/(auth)/giris");
+    // Bu açılışta da bir kez yeter: çıkış yapınca karşılamaya değil girişe dönülsün.
+    // (state değil ref — setState efekti yönlendirme tamamlanmadan yeniden tetikleyip
+    // karşılamayı atlatabilirdi)
+    // İlk replace navigasyon hazır olmadan gelirse yok sayılabiliyor → karşılamaya fiilen
+    // ulaşılana kadar tekrar dene, ulaşınca işaretle.
+    if (!onboardGoruldu && !karsilamaYonlendi.current) {
+      if ((segments as string[])[1] === "onboard") karsilamaYonlendi.current = true;
+      else router.replace("/(auth)/onboard");
+      return;
+    }
+    if (grup !== "(auth)") router.replace("/(auth)/giris");
   }, [session, yukleniyor, segments, onboardGoruldu]);
 
   // Şifre sıfırlama bağlantısıyla dönüşte yeni şifre ekranına git
