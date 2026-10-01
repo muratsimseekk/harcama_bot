@@ -18,6 +18,7 @@ from api.routes import (
     notifications,
     push,
     reklam,
+    sayfalar,
     summary,
     transactions,
     uyelik,
@@ -79,6 +80,7 @@ app.include_router(me.router)
 app.include_router(hane.router)
 app.include_router(uyelik.router)
 app.include_router(reklam.router)
+app.include_router(sayfalar.router)
 
 
 @app.get("/health", tags=["meta"])

@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Linking from "expo-linking";
 import { Alan } from "@/components/Alan";
 import { Buton } from "@/components/Buton";
 import { SosyalGirisSatiri } from "@/components/SosyalGirisSatiri";
@@ -43,7 +42,12 @@ export default function Kayit() {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password: sifre,
-      options: { data: { ad: ad.trim() }, emailRedirectTo: Linking.createURL("/") },
+      options: {
+        data: { ad: ad.trim() },
+        // Doğrulama sonrası Türkçe "doğrulandı" sayfası (api/routes/sayfalar.py) — doğrudan
+        // paraizi:/// bilgisayarda/uygulama yokken boş sayfa gösteriyordu.
+        emailRedirectTo: `${process.env.EXPO_PUBLIC_API_URL}/dogrulandi`,
+      },
     });
     setYukleniyor(false);
     if (error) return uyari("Kayıt başarısız", hataMesaji(error));

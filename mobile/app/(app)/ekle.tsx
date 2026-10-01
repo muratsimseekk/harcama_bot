@@ -14,15 +14,13 @@ import {
   Animated,
   Easing,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EkranBasligi } from "@/components/EkranBasligi";
+import { KlavyeAlani } from "@/components/KlavyeAlani";
 import { EnerjiRozeti, EnerjiSheet, type EnerjiSheetDurum } from "@/components/EnerjiSheet";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
@@ -44,7 +42,6 @@ export default function Ekle() {
   const uyari = useUyari();
   const router = useRouter();
   const qc = useQueryClient();
-  const insets = useSafeAreaInsets();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const rState = useAudioRecorderState(recorder);
   const me = useMe();
@@ -175,11 +172,7 @@ export default function Ekle() {
       icerikStil={{ padding: 0, gap: 0 }}
       ustAlan={<EnerjiRozeti ben={me.data} onPress={() => setSheetAcik(true)} />}
     >
-      <KeyboardAvoidingView
-        style={s.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={insets.top + 56}
-      >
+      <KlavyeAlani>
         <View style={s.orta}>
           <View style={s.micSar}>
             {kayitta && (
@@ -277,7 +270,7 @@ export default function Ekle() {
             <Ionicons name="arrow-up" size={20} color={renk.aksanUstu} />
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </KlavyeAlani>
 
       <EnerjiSheet
         acik={sheetAcik}

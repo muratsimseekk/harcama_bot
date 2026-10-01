@@ -31,3 +31,10 @@ def test_dogrulama_hatasi_turkce_422(client):
     r = client.post("/v1/ads/claim", json={})  # token alanı eksik
     assert r.status_code == 422
     assert r.json() == {"detail": "Gönderilen bilgiler eksik ya da hatalı."}
+
+
+def test_dogrulandi_sayfasi_turkce_html():
+    r = TestClient(app).get("/dogrulandi")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "E-postan doğrulandı" in r.text

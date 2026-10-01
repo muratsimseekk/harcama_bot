@@ -43,36 +43,27 @@ VARSAYILAN_KATEGORILER: dict[str, list[dict]] = {
             "sigara", "tütün", "puro", "içki", "alkol", "bira", "rakı", "şarap",
         ]},
     ],
+    # Her sektöre uyan 5 temel işletme gideri — kullanıcı düzenleyebilir/ekleyebilir.
     "isletme": [
-        {"name": "Hammadde", "keywords": [
-            "demir", "alüminyum", "çelik", "sac", "sac levha", "profil",
-            "hammadde", "malzeme", "boru", "lama",
-        ]},
-        {"name": "Nakliye", "keywords": [
-            "nakliye", "kargo", "sevkiyat", "taşıma", "lojistik", "navlun",
-            "kamyon", "tır",
+        {"name": "Kira", "keywords": [
+            "kira", "dükkan kirası", "işyeri kirası", "ofis kirası", "depo kirası",
+            "fabrika kirası", "işyeri aidatı",
         ]},
         {"name": "Personel", "keywords": [
-            "maaş", "işçi", "personel", "yevmiye", "sgk", "prim", "mesai",
-            "avans", "bordro",
+            "maaş", "personel", "işçi", "eleman", "yevmiye", "sgk", "prim",
+            "bordro", "avans", "mesai",
         ]},
-        {"name": "Yakıt/Araç", "keywords": [
-            "mazot", "motorin", "yakıt", "araç", "servis", "lastik", "yağ değişimi",
-            "araç bakım",
+        {"name": "Malzeme/Stok", "keywords": [
+            "malzeme", "hammadde", "stok", "mal alımı", "ürün alımı", "toptan",
+            "tedarik", "ambalaj", "demir", "sac",
         ]},
-        {"name": "Elektrik/Su", "keywords": [
-            "fabrika elektrik", "sanayi elektrik", "işyeri su", "fabrika su",
-            "tesis elektrik",
+        {"name": "İşyeri Faturaları", "keywords": [
+            "işyeri elektrik", "fabrika elektrik", "işyeri su", "işyeri doğalgaz",
+            "işyeri internet", "sabit hat", "pos", "işyeri faturası",
         ]},
-        {"name": "Kira", "keywords": [
-            "kira", "dükkan kirası", "işyeri kirası", "depo kirası", "fabrika kirası",
-        ]},
-        {"name": "Makine/Ekipman", "keywords": [
-            "makine", "ekipman", "tezgah", "cnc", "kaynak makinesi", "kompresör",
-            "alet", "el aleti",
-        ]},
-        {"name": "Galvaniz", "keywords": [
-            "galvaniz", "kaplama", "boya", "astar", "toz boya", "elektrostatik",
+        {"name": "Vergi/Muhasebe", "keywords": [
+            "vergi", "kdv", "stopaj", "muhasebe", "mali müşavir", "muhasebeci",
+            "harç", "beyanname", "bağkur",
         ]},
     ],
     "yatirim": [

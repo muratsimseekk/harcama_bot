@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { AyarGrup, AyarSatir } from "@/components/base";
+import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
 import { useUyari } from "@/components/Uyari";
 import { api } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
@@ -17,20 +17,19 @@ export default function Ayarlar() {
   const uyari = useUyari();
   const router = useRouter();
   const { mod } = useTemaMod();
-  const [siliniyor, setSiliniyor] = useState(false);
+  const katman = useIslemKatmani();
 
   async function hesabiSil() {
-    setSiliniyor(true);
     try {
-      await api.hesapSil();
-      await supabase.auth.signOut();
-      // Oturum kapanınca _layout otomatik giriş ekranına yönlendirir.
+      await katman.calistir({
+        bekleyen: "Hesabın siliniyor",
+        basarili: "Hesabın silindi",
+        is: () => api.hesapSil(),
+        // Oturum kapanınca _layout otomatik giriş ekranına yönlendirir.
+        sonra: () => void supabase.auth.signOut(),
+      });
     } catch (e) {
-      setSiliniyor(false);
-      uyari(
-        "Silinemedi",
-        hataMesaji(e, undefined, { ekran: "hesap-sil" }),
-      );
+      uyari("Silinemedi", hataMesaji(e, undefined, { ekran: "hesap-sil" }));
     }
   }
 
@@ -54,53 +53,56 @@ export default function Ayarlar() {
     );
 
   return (
-    <ScrollView style={{ backgroundColor: renk.bg }} contentContainerStyle={s.icerik}>
-      <AyarGrup baslik="GENEL">
-        <AyarSatir
-          ikon="color-palette-outline"
-          baslik="Görünüm"
-          deger={TEMA[mod]}
-          son
-          onPress={() => router.navigate("/ayarlar/gorunum")}
-        />
-      </AyarGrup>
-
-      <AyarGrup baslik="YASAL">
-        <AyarSatir
-          ikon="shield-checkmark-outline"
-          baslik="Gizlilik Politikası"
-          onPress={() => router.navigate("/yasal?belge=gizlilik")}
-        />
-        <AyarSatir
-          ikon="document-text-outline"
-          baslik="Kullanım Koşulları"
-          son
-          onPress={() => router.navigate("/yasal?belge=kosullar")}
-        />
-      </AyarGrup>
-
-      {!DEV_NOAUTH && (
-        <AyarGrup baslik="HESAP">
+    <View style={{ flex: 1 }}>
+      <ScrollView style={{ backgroundColor: renk.bg }} contentContainerStyle={s.icerik}>
+        <AyarGrup baslik="GENEL">
           <AyarSatir
-            ikon="key-outline"
-            baslik="Şifre Değiştir"
-            onPress={() => router.navigate("/ayarlar/guvenlik")}
-          />
-          <AyarSatir
-            ikon="log-out-outline"
-            baslik="Çıkış Yap"
-            onPress={() => supabase.auth.signOut()}
-          />
-          <AyarSatir
-            ikon="trash-outline"
-            baslik={siliniyor ? "Siliniyor…" : "Hesabı Sil"}
-            tehlike
+            ikon="color-palette-outline"
+            baslik="Görünüm"
+            deger={TEMA[mod]}
             son
-            onPress={siliniyor ? undefined : silOnayi}
+            onPress={() => router.navigate("/ayarlar/gorunum")}
           />
         </AyarGrup>
-      )}
-    </ScrollView>
+
+        <AyarGrup baslik="YASAL">
+          <AyarSatir
+            ikon="shield-checkmark-outline"
+            baslik="Gizlilik Politikası"
+            onPress={() => router.navigate("/yasal?belge=gizlilik")}
+          />
+          <AyarSatir
+            ikon="document-text-outline"
+            baslik="Kullanım Koşulları"
+            son
+            onPress={() => router.navigate("/yasal?belge=kosullar")}
+          />
+        </AyarGrup>
+
+        {!DEV_NOAUTH && (
+          <AyarGrup baslik="HESAP">
+            <AyarSatir
+              ikon="key-outline"
+              baslik="Şifre Değiştir"
+              onPress={() => router.navigate("/ayarlar/guvenlik")}
+            />
+            <AyarSatir
+              ikon="log-out-outline"
+              baslik="Çıkış Yap"
+              onPress={() => supabase.auth.signOut()}
+            />
+            <AyarSatir
+              ikon="trash-outline"
+              baslik="Hesabı Sil"
+              tehlike
+              son
+              onPress={katman.durum ? undefined : silOnayi}
+            />
+          </AyarGrup>
+        )}
+      </ScrollView>
+      <IslemKatmani durum={katman.durum} />
+    </View>
   );
 }
 

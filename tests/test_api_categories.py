@@ -33,7 +33,7 @@ def test_listele_bos_ise_seed_calisir(client, monkeypatch):
 
     r = client.get("/v1/categories")
     assert r.status_code == 200
-    assert cagrildi["tipler"] == ["kisisel"]  # yeni kullanıcı: sadece Kişisel
+    assert cagrildi["tipler"] == ["kisisel", "isletme"]  # yeni kullanıcı: Kişisel + 5 temel İşletme
     assert r.json()[0]["name"] == "Market"
 
 

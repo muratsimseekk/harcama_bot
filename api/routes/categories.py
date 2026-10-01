@@ -19,8 +19,8 @@ router = APIRouter(prefix="/v1/categories", tags=["categories"])
 async def listele(user_id: CurrentUser) -> list[KategoriModel]:
     kategoriler = await repo.categories_list(user_id, only_active=False)
     if not kategoriler:
-        # Yeni kullanıcı: yalnız Kişisel bölümü. İşletme/Yatırım'ı kullanıcı ekler.
-        await repo.categories_seed(user_id, ["kisisel"])
+        # Yeni kullanıcı: Kişisel + 5 temel İşletme gideri. Yatırım bölümünü kullanıcı ekler.
+        await repo.categories_seed(user_id, ["kisisel", "isletme"])
         kategoriler = await repo.categories_list(user_id, only_active=False)
     return [KategoriModel.from_cat(c) for c in kategoriler]
 
