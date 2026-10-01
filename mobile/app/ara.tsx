@@ -8,7 +8,10 @@ import { Metin as Text } from "@/components/Metin";
 import { api } from "@/lib/api";
 import { useCategories } from "@/lib/queries";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
-import type { Islem, Yon } from "@/lib/types";
+import type { Islem, Tip, Yon } from "@/lib/types";
+
+// Kişisel önce: kategoriler API'den tür karışık geliyor (işletme kategorileri başa düşüyordu)
+const TIP_SIRA: Record<Tip, number> = { kisisel: 0, isletme: 1, yatirim: 2 };
 
 export default function Ara() {
   const renk = useRenkler();
@@ -56,7 +59,7 @@ export default function Ara() {
         <Text style={[T.label, { color: renk.text }]}>Kategori</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
           <Cip yazi="Hepsi" aktif={kat === null} onPress={() => setKat(null)} />
-          {(kategoriler.data ?? []).map((k) => (
+          {[...(kategoriler.data ?? [])].sort((a, b) => TIP_SIRA[a.tip] - TIP_SIRA[b.tip]).map((k) => (
             <Cip key={k.id} yazi={k.name} aktif={kat === k.name} onPress={() => setKat(k.name)} />
           ))}
         </ScrollView>
