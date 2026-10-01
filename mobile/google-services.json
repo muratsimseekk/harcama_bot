@@ -12,7 +12,12 @@
           "package_name": "com.harcama.mobil"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "411491050602-dnl2akhrunkc3tn9ttb80nptho4pspju.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA-waq0gapu1yxXNud8QR20df_0S_5KUAs"
@@ -20,7 +25,41 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "411491050602-dnl2akhrunkc3tn9ttb80nptho4pspju.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:411491050602:android:d0a51c774a790f72fd5613",
+        "android_client_info": {
+          "package_name": "com.paraizi.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "411491050602-dnl2akhrunkc3tn9ttb80nptho4pspju.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-waq0gapu1yxXNud8QR20df_0S_5KUAs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "411491050602-dnl2akhrunkc3tn9ttb80nptho4pspju.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

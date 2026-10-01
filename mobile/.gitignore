@@ -10,3 +10,7 @@ web-build/
 expo-env.d.ts
 
 tasarim-referans/
+
+# Expo CNG: native klasörler prebuild ile üretilir, repoya girmez
+/android
+/ios

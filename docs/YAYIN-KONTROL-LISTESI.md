@@ -30,10 +30,14 @@
 
 ## 3. Uygulama içi zorunluluklar
 
-- [x] Sadece e-posta/şifre girişi (sosyal giriş kaldırıldı → "Sign in with Apple" gerekmiyor)
+- [x] E-posta/şifre + Google girişi (Supabase OAuth, `lib/sosyalGiris.ts`)
+      - [ ] **Google girişi var → iOS'ta "Sign in with Apple" ZORUNLU** (Guideline 4.8).
+            Butonu kodda var (yalnız iOS); Supabase → Auth → Providers → **Apple'ı aç**
+            (Apple Developer hesabı: Services ID + key gerekir)
+      - [ ] Supabase → Auth → URL Configuration → Redirect URLs: `paraizi://**`
 - [x] Şifremi unuttum → çalışır (`sifre-sifirla` + `sifre-yenile` + PKCE deep link)
       - [ ] **Supabase → Auth → URL Configuration → Redirect URLs**'e ekle:
-            `harcama://sifre-yenile` ve dev için `exp://` / `exp+harcama://*`
+            `paraizi://**` (eski `harcama://` kaldırılabilir)
       - [ ] Supabase → Auth → Email Templates → "Reset Password" şablonunu Türkçeleştir
       - [ ] Gerçek e-posta ile test et (deneme: e-posta gelsin → link → yeni şifre → giriş)
 - [x] Hesap silme → gerçek (`DELETE /v1/me` tüm veri + auth kaydı siler; Ayarlar → Hesabı Sil)
@@ -93,12 +97,12 @@ Günlük "enerji" modeli — elle+AI ortak, gece yarısı sıfırlanır, reklamd
 `docs/DEVAM.md` §8). Yalnız **ödüllü video** reklam — banner/interstitial yok. Kod tarafı
 HAZIR (istek tokeni + SSV doğrulama + kredi mantığı), AdMob hesabı/native modül kuruluma gated.
 
-- [ ] Google AdMob hesabı → Android + iOS için ayrı app ID
-- [ ] AdMob'da ödüllü video ad unit oluştur (Android + iOS ayrı unit ID)
+- [x] Google AdMob hesabı → Android + iOS için ayrı app ID
+- [x] AdMob'da ödüllü video ad unit oluştur (Android + iOS ayrı unit ID)
 - [ ] AdMob → Server-Side Verification callback URL = `https://harcama-api.onrender.com/v1/ads/ssv`
-- [ ] `npx expo install react-native-google-mobile-ads` + `mobile/app.json` plugin
+- [x] `npx expo install react-native-google-mobile-ads` + `mobile/app.json` plugin
       (gerçek app ID'ler) + `expo-tracking-transparency` (iOS ATT prompt)
-- [ ] `EXPO_PUBLIC_ADMOB_REWARDED_ANDROID` / `_IOS` → `eas.json` (preview+production)
+- [x] `EXPO_PUBLIC_ADMOB_REWARDED_ANDROID` / `_IOS` → `eas.json` (preview+production)
 - [ ] AdMob dashboard'da test cihazı reklam ID'si ekle (dev build test sürecinde)
 - [ ] Render env: `GUNLUK_ENERJI` (vars. 3), `AD_KREDI_ADET` (vars. 2 — tavan YOK),
       `ADS_TOKEN_SECRET`, `ADS_SSV_ONLY=true`
@@ -132,7 +136,7 @@ HAZIR (istek tokeni + SSV doğrulama + kredi mantığı), AdMob hesabı/native m
 - [ ] **Google Data Safety** (Play Console): aynı veriler + **"Advertising ID"** +
       "transit'te şifreli: evet" + "kullanıcı silme talebi: evet" (in-app + web form) +
       App Content → Ads → "Uygulama reklam içeriyor: Evet"
-- [ ] **iOS App Tracking Transparency**: `expo-tracking-transparency` kurulu, ilk reklam
+- [x] **iOS App Tracking Transparency**: `expo-tracking-transparency` kurulu, ilk reklam
       gösteriminden önce `requestTrackingPermissionsAsync()` çağrılıyor
 - [ ] İkisi de gizlilik politikasıyla **birebir tutarlı** olmalı (AdMob bölümü dahil)
 
