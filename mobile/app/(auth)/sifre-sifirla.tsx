@@ -1,4 +1,3 @@
-import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
@@ -21,7 +20,9 @@ export default function SifreSifirla() {
   async function gonder() {
     setYukleniyor(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: Linking.createURL("/sifre-yenile"),
+      // Türkçe ara sayfa (api/routes/sayfalar.py): telefonda uygulamayı açar, bilgisayarda
+      // "telefonundan aç" der — doğrudan paraizi:// bilgisayarda boş sayfa gösteriyordu.
+      redirectTo: `${process.env.EXPO_PUBLIC_API_URL}/sifre-yenile`,
     });
     setYukleniyor(false);
     uyari(

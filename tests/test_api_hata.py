@@ -38,3 +38,11 @@ def test_dogrulandi_sayfasi_turkce_html():
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
     assert "E-postan doğrulandı" in r.text
+
+
+def test_sifre_yenile_sayfasi_turkce_html():
+    r = TestClient(app).get("/sifre-yenile")
+    assert r.status_code == 200
+    assert "Şifreni yenile" in r.text
+    assert "paraizi:///sifre-yenile" in r.text
+    assert "__" not in r.text  # tüm yer tutucular dolduruldu

@@ -22,7 +22,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Giris } from "@/components/Giris";
 import { HataSiniri } from "@/components/HataSiniri";
-import { UyariProvider } from "@/components/Uyari";
+import { UyariProvider, useUyari } from "@/components/Uyari";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { izinVeToken, platformAdi } from "@/lib/bildirim";
@@ -63,6 +63,7 @@ function Kapi() {
   const segments = useSegments();
   const router = useRouter();
   const renk = useRenkler();
+  const uyari = useUyari();
   const [onboardGoruldu, setOnboardGoruldu] = useState<boolean | null>(DEV_NOAUTH ? true : null);
   const karsilamaYonlendi = useRef(false);
 
@@ -125,6 +126,14 @@ function Kapi() {
       if (code) {
         const { hata } = await koduOturumaCevir(code);
         if (!hata && kurtarma) router.replace("/(auth)/sifre-yenile");
+        else if (hata && kurtarma) {
+          // PKCE: bağlantı yalnız sıfırlamanın istendiği cihazdaki uygulamada çalışır.
+          router.replace("/(auth)/giris");
+          uyari(
+            "Bağlantı bu cihazda açılamadı",
+            "Şifre sıfırlama bağlantısını, sıfırlamayı istediğin telefonda aç ya da buradan yeniden iste.",
+          );
+        }
       }
     }
     Linking.getInitialURL().then(isle);
