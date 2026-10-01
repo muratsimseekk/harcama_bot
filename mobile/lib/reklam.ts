@@ -36,10 +36,12 @@ try {
   RGMA = null;
 }
 
-// Debug build'de her zaman Google'ın test birimi: kendi gerçek reklamını izlemek/tıklamak
-// AdMob politikası gereği hesabın askıya alınmasına yol açabilir.
+// Debug build'de ve preview APK'da (EXPO_PUBLIC_REKLAM_TEST=1, eas.json) her zaman Google'ın
+// test birimi: kendi gerçek reklamını izlemek/tıklamak AdMob politikası gereği hesabın
+// askıya alınmasına yol açabilir. Gerçek birim yalnız production (mağaza) build'inde.
+const TEST_REKLAM = __DEV__ || process.env.EXPO_PUBLIC_REKLAM_TEST === "1";
 const AD_UNIT_ID =
-  (__DEV__ && RGMA?.TestIds?.REWARDED) ||
+  (TEST_REKLAM && RGMA?.TestIds?.REWARDED) ||
   (Platform.select({
     ios: process.env.EXPO_PUBLIC_ADMOB_REWARDED_IOS,
     android: process.env.EXPO_PUBLIC_ADMOB_REWARDED_ANDROID,

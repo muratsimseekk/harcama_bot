@@ -29,7 +29,8 @@
         "EXPO_PUBLIC_SENTRY_DSN": "https://480c15cbdf202ee988ecf65d62f2ad07@o4512154218528768.ingest.de.sentry.io/4512154223247440",
         "EXPO_PUBLIC_ADMOB_REWARDED_ANDROID": "ca-app-pub-8731282143908044/4173135520",
         "EXPO_PUBLIC_ADMOB_REWARDED_IOS": "ca-app-pub-8731282143908044/8231885759",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "411491050602-dnl2akhrunkc3tn9ttb80nptho4pspju.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "411491050602-dnl2akhrunkc3tn9ttb80nptho4pspju.apps.googleusercontent.com",
+        "EXPO_PUBLIC_REKLAM_TEST": "1"
       },
       "android": {
         "buildType": "apk"
