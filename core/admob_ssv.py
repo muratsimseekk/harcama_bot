@@ -84,7 +84,7 @@ def _public_keys() -> dict[str, str]:
     hit = _key_cache.get("keys")
     if hit and hit[0] > time.time():
         return hit[1]
-    r = httpx.get(settings.ADMOB_SSV_PUBLIC_KEYS_URL, timeout=10.0)
+    r = httpx.get(settings.ADMOB_SSV_PUBLIC_KEYS_URL, timeout=10.0, follow_redirects=True)
     r.raise_for_status()
     veri = r.json()
     keys = {str(k["keyId"]): k["pem"] for k in veri.get("keys", [])}

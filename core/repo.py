@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import secrets
+import threading
 from collections.abc import Callable
 from datetime import date
 from typing import TypeVar
@@ -30,16 +31,21 @@ from core.varsayilan_kategoriler import VARSAYILAN_KATEGORILER
 
 logger = logging.getLogger(__name__)
 
-_client: Client | None = None
+# Thread başına AYRI istemci: supabase-py'nin senkron httpx istemcisi (HTTP/2) thread-safe
+# değil. Çağrılar asyncio.to_thread + gather ile paralel koşunca tek paylaşılan istemcide
+# HTTP/2 akışları karışıyordu (Sentry: h2 "KeyError: <akış no>", "LocalProtocolError:
+# Invalid input StreamInputs.SEND_HEADERS"). Thread havuzu sınırlı → istemci sayısı da.
+_yerel = threading.local()
 
 
 def _db() -> Client:
-    global _client
-    if _client is None:
+    client = getattr(_yerel, "client", None)
+    if client is None:
         if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_KEY:
             raise RuntimeError("SUPABASE_URL / SUPABASE_SERVICE_KEY tanımlı değil")
-        _client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)
-    return _client
+        client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)
+        _yerel.client = client
+    return client
 
 
 _T = TypeVar("_T")

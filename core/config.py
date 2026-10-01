@@ -60,7 +60,7 @@ class Settings:
     # Kasıtlı olarak tavan YOK — kullanıcı istediği kadar reklam izleyip enerji açabilir.
     ADS_SSV_ONLY: bool = os.environ.get("ADS_SSV_ONLY", "true").lower() == "true"
     ADMOB_SSV_PUBLIC_KEYS_URL: str = os.environ.get(
-        "ADMOB_SSV_PUBLIC_KEYS_URL", "https://gstatic.com/admob/reward/verifier-keys.json"
+        "ADMOB_SSV_PUBLIC_KEYS_URL", "https://www.gstatic.com/admob/reward/verifier-keys.json"
     )
     # /v1/ads/request-token imzası — ayrı ayarlanmazsa CRON_SECRET'a düşer (o da yoksa boş,
     # o zaman token doğrulaması başarısız olur; prod'da mutlaka ayarlanmalı).
