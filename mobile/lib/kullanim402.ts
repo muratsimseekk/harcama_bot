@@ -25,41 +25,48 @@ async function reklamIzleVeBekle(
   beklet: (durum: EnerjiSheetDurum) => void,
 ): Promise<boolean> {
   beklet({ tip: "yukleniyor", yazi: "Reklam hazırlanıyor" });
-  try {
-    const once = await api.me().catch(() => null);
-    const baslangicKredi = once?.gun_reklam_kredisi ?? 0;
+  const once = await api.me().catch(() => null);
+  const baslangicKredi = once?.gun_reklam_kredisi ?? 0;
 
-    const sonuc = await reklamGoster();
-    if (sonuc !== "izlendi") {
-      if (sonuc === "hata") uyari("Reklam yüklenemedi", "Birazdan tekrar dene.");
-      return false;
-    }
-    beklet({ tip: "yukleniyor", yazi: "Kaydın işleniyor" });
-    for (let deneme = 0; deneme < 8; deneme++) {
-      const guncel = await api.me().catch(() => null);
-      if (guncel && guncel.gun_reklam_kredisi > baslangicKredi) {
-        beklet({ tip: "basarili", yazi: `+${guncel.reklam_kredi_adet} kayıt hakkı kazandın!` });
-        await new Promise((r) => setTimeout(r, BASARI_GOSTERIM_MS));
-        return true;
-      }
-      await new Promise((r) => setTimeout(r, 2500));
-    }
-    return false;
-  } finally {
+  const sonuc = await reklamGoster();
+  if (sonuc !== "izlendi") {
     beklet(null);
+    if (sonuc === "hata") uyari("Reklam yüklenemedi", "Birazdan tekrar dene.");
+    return false;
   }
+  beklet({ tip: "yukleniyor", yazi: "Kaydın işleniyor" });
+  for (let deneme = 0; deneme < 8; deneme++) {
+    const guncel = await api.me().catch(() => null);
+    if (guncel && guncel.gun_reklam_kredisi > baslangicKredi) {
+      beklet({ tip: "basarili", yazi: `+${guncel.reklam_kredi_adet} kayıt hakkı kazandın!` });
+      await new Promise((r) => setTimeout(r, BASARI_GOSTERIM_MS));
+      // Başarı durumunu burada SIFIRLAMA: sıfırlanırsa panel, kayıt yapılana kadar eski
+      // "Kayıt hakkın bitti 3/3" içeriğine dönüp kullanıcıyı yanıltıyordu. Çağıran taraf
+      // paneli kapattıktan sonra sıfırlar.
+      return true;
+    }
+    await new Promise((r) => setTimeout(r, 2500));
+  }
+  beklet(null);
+  uyari("Kayıt hakkı henüz gelmedi", "Reklam ödülün birkaç dakika içinde hesabına eklenecek.");
+  return false;
 }
 
-/** Reaktif akış (402'den sonra): reklamı izlet, sonra bekleyen kaydı tekrar dene. */
+/** Reaktif akış (402'den sonra): reklamı izlet, hak geldiyse bekleyen kaydı tekrar dene.
+ * Reklam yarıda kapatıldıysa tekrar denenmez (yine 402 alıp paneli boşuna açardı). */
 export async function reklamIzleVeTekrarDene(
   qc: QueryClient,
   kaydetFn: () => void | Promise<void>,
   uyari: UyariGoster,
   beklet: (durum: EnerjiSheetDurum) => void,
 ): Promise<void> {
-  await reklamIzleVeBekle(uyari, beklet);
-  await qc.invalidateQueries({ queryKey: ["me"] });
-  await kaydetFn();
+  try {
+    const kazandi = await reklamIzleVeBekle(uyari, beklet);
+    if (kazandi) await kaydetFn(); // kaydetFn önce paneli kapatır
+  } finally {
+    beklet(null);
+    await qc.invalidateQueries({ queryKey: ["me"] });
+  }
 }
 
 /** Proaktif akış (rozete dokunarak): reklamı izlet, hak sayısını tazele — bekleyen bir kayıt yok. */
@@ -68,6 +75,10 @@ export async function reklamIzleProaktif(
   uyari: UyariGoster,
   beklet: (durum: EnerjiSheetDurum) => void,
 ): Promise<void> {
-  await reklamIzleVeBekle(uyari, beklet);
-  await qc.invalidateQueries({ queryKey: ["me"] });
+  try {
+    await reklamIzleVeBekle(uyari, beklet);
+  } finally {
+    await qc.invalidateQueries({ queryKey: ["me"] });
+    beklet(null);
+  }
 }

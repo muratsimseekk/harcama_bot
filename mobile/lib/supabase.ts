@@ -1,4 +1,5 @@
 import "react-native-url-polyfill/auto";
+import "@/lib/cryptoPolyfill"; // createClient'tan önce: PKCE için SHA-256 + güvenli rastgele
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import { Platform } from "react-native";
