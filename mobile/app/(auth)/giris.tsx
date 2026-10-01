@@ -9,6 +9,7 @@ import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { supabase } from "@/lib/supabase";
 import { R, SP, T, useRenkler } from "@/lib/theme";
+import { hataMesaji } from "@/lib/hata";
 
 export default function Giris() {
   const renk = useRenkler();
@@ -22,7 +23,7 @@ export default function Giris() {
     setYukleniyor(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: sifre });
     setYukleniyor(false);
-    if (error) uyari("Giriş başarısız", error.message);
+    if (error) uyari("Giriş başarısız", hataMesaji(error));
   }
 
   return (

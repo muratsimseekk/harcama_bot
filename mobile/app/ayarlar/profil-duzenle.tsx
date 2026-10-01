@@ -6,6 +6,7 @@ import { useUyari } from "@/components/Uyari";
 import { kullaniciAdi, useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { SP, useRenkler } from "@/lib/theme";
+import { hataMesaji } from "@/lib/hata";
 
 export default function ProfilDuzenle() {
   const renk = useRenkler();
@@ -18,7 +19,7 @@ export default function ProfilDuzenle() {
     setYukleniyor(true);
     const { error } = await supabase.auth.updateUser({ data: { ad: ad.trim() } });
     setYukleniyor(false);
-    uyari(error ? "Hata" : "Kaydedildi", error?.message ?? "Profil güncellendi.");
+    uyari(error ? "Kaydedilemedi" : "Kaydedildi", error ? hataMesaji(error) : "Profil güncellendi.");
   }
 
   return (

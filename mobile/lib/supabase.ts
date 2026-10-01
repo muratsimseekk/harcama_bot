@@ -2,6 +2,7 @@ import "react-native-url-polyfill/auto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import { Platform } from "react-native";
+import { hataMesaji } from "@/lib/hata";
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
 const anon = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -31,7 +32,7 @@ export function koduOturumaCevir(code: string): Promise<{ hata: string | null }>
   if (!p) {
     p = supabase.auth
       .exchangeCodeForSession(code)
-      .then(({ error }) => ({ hata: error?.message ?? null }));
+      .then(({ error }) => ({ hata: error ? hataMesaji(error) : null }));
     takaslar.set(code, p);
   }
   return p;

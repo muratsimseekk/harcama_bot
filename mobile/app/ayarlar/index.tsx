@@ -3,11 +3,12 @@ import { useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { AyarGrup, AyarSatir } from "@/components/base";
 import { useUyari } from "@/components/Uyari";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { useTemaMod } from "@/lib/tema";
 import { SP, useRenkler } from "@/lib/theme";
 import { DEV_NOAUTH } from "@/app/_layout";
+import { hataMesaji } from "@/lib/hata";
 
 const TEMA = { system: "Sistem", light: "Açık", dark: "Koyu" } as const;
 
@@ -28,7 +29,7 @@ export default function Ayarlar() {
       setSiliniyor(false);
       uyari(
         "Silinemedi",
-        e instanceof ApiError ? e.message : "Bağlantıyı kontrol edip tekrar dene.",
+        hataMesaji(e, undefined, { ekran: "hesap-sil" }),
       );
     }
   }

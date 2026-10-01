@@ -8,6 +8,7 @@ import { useKategoriRenk } from "@/lib/kategoriRenk";
 import { useCreateCategory } from "@/lib/queries";
 import { FONT, R, useRenkler } from "@/lib/theme";
 import type { Kategori, Tip } from "@/lib/types";
+import { hataMesaji } from "@/lib/hata";
 
 export function KategoriSecici({
   kategoriler,
@@ -53,7 +54,7 @@ export function KategoriSecici({
           onSec(k.name);
           kapat();
         },
-        onError: (e) => uyari("Eklenemedi", String(e)),
+        onError: (e) => uyari("Eklenemedi", hataMesaji(e)),
       },
     );
   }

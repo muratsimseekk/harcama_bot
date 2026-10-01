@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { SP, T, useRenkler } from "@/lib/theme";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
+import { hataMesaji } from "@/lib/hata";
 
 export default function Guvenlik() {
   const renk = useRenkler();
@@ -22,7 +23,7 @@ export default function Guvenlik() {
     setYukleniyor(true);
     const { error } = await supabase.auth.updateUser({ password: yeni });
     setYukleniyor(false);
-    if (error) return uyari("Hata", error.message);
+    if (error) return uyari("Şifre değiştirilemedi", hataMesaji(error));
     setYeni("");
     setYeni2("");
     uyari("Tamam", "Şifren güncellendi.");

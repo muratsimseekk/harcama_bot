@@ -15,6 +15,7 @@ import { useDeleteTransaction, useMe, usePatchTransaction, useSaveTransactions }
 import { reklamAktif } from "@/lib/reklam";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 import type { Islem } from "@/lib/types";
+import { hataMesaji } from "@/lib/hata";
 
 function bugun(): string {
   const d = new Date();
@@ -69,7 +70,7 @@ export default function IslemForm() {
         setSheetAcik(true);
         return;
       }
-      uyari("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene.");
+      uyari("Kaydedilemedi", hataMesaji(e, undefined, { ekran: "islem-form" }));
     }
   }
 
@@ -101,7 +102,7 @@ export default function IslemForm() {
               sonra: () => router.back(),
             });
           } catch (e) {
-            uyari("Silinemedi", e instanceof Error ? e.message : "Tekrar dene.");
+            uyari("Silinemedi", hataMesaji(e, undefined, { ekran: "islem-form" }));
           }
         },
       },

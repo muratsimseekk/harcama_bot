@@ -9,7 +9,6 @@ import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { Buton } from "@/components/Buton";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
-import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import {
   useHane,
@@ -24,6 +23,7 @@ import {
 import { useMe } from "@/lib/queries";
 import { golge, R, SP, T, useRenkler } from "@/lib/theme";
 import type { HaneRol } from "@/lib/types";
+import { hataMesaji as hataMetni } from "@/lib/hata";
 
 const ROL_ETIKET: Record<HaneRol, string> = {
   owner: "Kurucu",
@@ -33,7 +33,7 @@ const ROL_ETIKET: Record<HaneRol, string> = {
 const ROL_SIRA: HaneRol[] = ["viewer", "editor"];
 
 function hataMesaji(e: unknown): string {
-  return e instanceof ApiError ? e.message : "Bir şeyler ters gitti.";
+  return hataMetni(e, undefined, { ekran: "hane" });
 }
 
 export default function HaneEkrani() {

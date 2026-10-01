@@ -1,6 +1,7 @@
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { koduOturumaCevir, supabase } from "@/lib/supabase";
+import { hataMesaji } from "@/lib/hata";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -17,14 +18,14 @@ export async function sosyalGirisYap(saglayici: SosyalSaglayici): Promise<{ hata
     provider: saglayici,
     options: { redirectTo, skipBrowserRedirect: true },
   });
-  if (error || !data?.url) return { hata: error?.message ?? "Bağlantı oluşturulamadı" };
+  if (error || !data?.url) return { hata: hataMesaji(error ?? new Error("OAuth url yok"), "Google ile giriş başlatılamadı. Lütfen tekrar dene.") };
 
   const sonuc = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (sonuc.type !== "success" || !("url" in sonuc)) return { hata: null }; // kullanıcı iptal etti
 
   const parcalar = Linking.parse(sonuc.url);
   const code = parcalar.queryParams?.code as string | undefined;
-  if (!code) return { hata: "Giriş tamamlanamadı" };
+  if (!code) return { hata: "Giriş tamamlanamadı. Lütfen tekrar dene." };
 
   return koduOturumaCevir(code);
 }

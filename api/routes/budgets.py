@@ -22,7 +22,7 @@ async def butce_listele(user_id: CurrentUser) -> list[ButceModel]:
 @router.put("/budgets", response_model=ButceModel)
 async def butce_ayarla(user_id: CurrentUser, istek: ButceIstek) -> ButceModel:
     if istek.kapsam != "genel" and not istek.kapsam_deger:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "kapsam_deger gerekli")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bütçe için bir kategori ya da tür seçmelisin.")
     deger = None if istek.kapsam == "genel" else istek.kapsam_deger
     b = await repo.budget_upsert(user_id, istek.kapsam, deger, istek.limit_amount)
     return ButceModel.from_b(b)

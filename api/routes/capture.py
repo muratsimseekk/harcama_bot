@@ -68,7 +68,7 @@ async def capture(
     elif text and text.strip():
         metin = text.strip()
     else:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "text veya audio gerekli")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bir şey yaz ya da sesli kayıt yap.")
 
     try:
         kategoriler = await repo.categories_list(user_id)

@@ -9,6 +9,7 @@ import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { supabase } from "@/lib/supabase";
 import { R, SP, T, useRenkler } from "@/lib/theme";
+import { hataMesaji } from "@/lib/hata";
 
 export default function SifreSifirla() {
   const renk = useRenkler();
@@ -24,8 +25,8 @@ export default function SifreSifirla() {
     });
     setYukleniyor(false);
     uyari(
-      error ? "Hata" : "Gönderildi",
-      error ? error.message : "Şifre sıfırlama bağlantısı e-postana gönderildi.",
+      error ? "Gönderilemedi" : "Gönderildi",
+      error ? hataMesaji(error) : "Şifre sıfırlama bağlantısı e-postana gönderildi.",
       [{ yazi: "Tamam", onPress: () => !error && router.back() }],
     );
   }

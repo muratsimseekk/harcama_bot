@@ -8,6 +8,7 @@ import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { supabase } from "@/lib/supabase";
 import { R, SP, T, useRenkler } from "@/lib/theme";
+import { hataMesaji } from "@/lib/hata";
 
 export default function SifreYenile() {
   const renk = useRenkler();
@@ -23,7 +24,7 @@ export default function SifreYenile() {
     setYukleniyor(true);
     const { error } = await supabase.auth.updateUser({ password: sifre });
     setYukleniyor(false);
-    if (error) return uyari("Hata", error.message);
+    if (error) return uyari("Şifre güncellenemedi", hataMesaji(error));
     uyari("Şifren güncellendi", "Yeni şifrenle giriş yapabilirsin.", [
       { yazi: "Tamam", onPress: () => router.replace("/(auth)/giris") },
     ]);

@@ -16,6 +16,7 @@ import {
 } from "@/lib/queries";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
 import { type Kategori, TIP_ETIKET, type Tip } from "@/lib/types";
+import { hataMesaji } from "@/lib/hata";
 
 const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
 
@@ -42,7 +43,7 @@ export default function KategoriYonet() {
           setAd("");
           setKelimeler("");
         },
-        onError: (e) => uyari("Eklenemedi", String(e)),
+        onError: (e) => uyari("Eklenemedi", hataMesaji(e)),
       },
     );
   }

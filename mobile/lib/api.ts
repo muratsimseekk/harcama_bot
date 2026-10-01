@@ -1,3 +1,4 @@
+import { durumMesaji, hataRaporla } from "./hata";
 import { supabase } from "./supabase";
 import type {
   Aday,
@@ -26,14 +27,20 @@ export interface IslemFiltre {
 
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? "";
 
+/**
+ * API hatası. `message` / `kullaniciMesaji` HER ZAMAN kullanıcıya gösterilebilir Türkçe
+ * metindir (bkz lib/hata.ts) — ham "HTTP 500" ya da İngilizce sunucu metni taşımaz.
+ */
 export class ApiError extends Error {
   status: number;
   /** 402 gibi uç noktaların döndürdüğü yapısal gövde (bkz Ai Limit402 tip). */
   detail?: Record<string, unknown>;
+  kullaniciMesaji: string;
   constructor(status: number, message: string, detail?: Record<string, unknown>) {
     super(message);
     this.status = status;
     this.detail = detail;
+    this.kullaniciMesaji = message;
   }
 }
 
@@ -43,26 +50,49 @@ async function authHeader(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function handle<T>(res: Response): Promise<T> {
-  if (res.ok) return (res.status === 204 ? undefined : await res.json()) as T;
-  let mesaj = `HTTP ${res.status}`;
-  let detail: Record<string, unknown> | undefined;
+/** fetch'i sarar: ağ hatası (sunucuya hiç ulaşılamadı) → Türkçe ApiError(0). */
+async function istek(path: string, init: RequestInit): Promise<Response> {
   try {
-    const j = await res.json();
-    if (j.detail && typeof j.detail === "object") {
+    return await fetch(`${BASE}${path}`, init);
+  } catch {
+    throw new ApiError(0, durumMesaji(0), { yol: path });
+  }
+}
+
+async function handle<T>(res: Response, yol: string, method: string): Promise<T> {
+  if (res.ok) return (res.status === 204 ? undefined : await res.json()) as T;
+  let sunucuMesaji: string | undefined;
+  let detail: Record<string, unknown> | undefined;
+  let govde = "";
+  try {
+    govde = await res.text();
+    const j = JSON.parse(govde);
+    if (j.detail && typeof j.detail === "object" && !Array.isArray(j.detail)) {
       detail = j.detail;
-      mesaj = typeof j.detail.mesaj === "string" ? j.detail.mesaj : mesaj;
-    } else {
-      mesaj = j.detail ?? j.detay ?? mesaj;
+      if (typeof j.detail.mesaj === "string") sunucuMesaji = j.detail.mesaj;
+    } else if (typeof j.detail === "string") {
+      sunucuMesaji = j.detail;
     }
   } catch {
-    /* yoksay */
+    /* JSON değil — yoksay */
+  }
+  // 401 (oturum) ve 5xx'te sunucu metnine güvenme — teknik/İngilizce olabilir.
+  const sunucuyaGuven = res.status !== 401 && res.status !== 422 && res.status < 500;
+  const mesaj = (sunucuyaGuven && sunucuMesaji) || durumMesaji(res.status);
+  if (res.status >= 500) {
+    hataRaporla(new Error(`API ${res.status} ${method} ${yol}`), {
+      tur: "api",
+      status: res.status,
+      yol,
+      method,
+      govde: govde.slice(0, 500),
+    });
   }
   throw new ApiError(res.status, mesaj, detail);
 }
 
 async function jsonReq<T>(path: string, method: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await istek(path, {
     method,
     headers: {
       "Content-Type": "application/json",
@@ -70,19 +100,19 @@ async function jsonReq<T>(path: string, method: string, body?: unknown): Promise
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  return handle<T>(res);
+  return handle<T>(res, path, method);
 }
 
 export const api = {
   async captureText(text: string): Promise<CaptureYanit> {
     const form = new FormData();
     form.append("text", text);
-    const res = await fetch(`${BASE}/v1/capture`, {
+    const res = await istek("/v1/capture", {
       method: "POST",
       headers: { ...(await authHeader()) },
       body: form,
     });
-    return handle<CaptureYanit>(res);
+    return handle<CaptureYanit>(res, "/v1/capture", "POST");
   },
 
   async captureAudio(uri: string): Promise<CaptureYanit> {
@@ -93,12 +123,12 @@ export const api = {
       name: "ses.m4a",
       type: "audio/m4a",
     } as unknown as Blob);
-    const res = await fetch(`${BASE}/v1/capture`, {
+    const res = await istek("/v1/capture", {
       method: "POST",
       headers: { ...(await authHeader()) },
       body: form,
     });
-    return handle<CaptureYanit>(res);
+    return handle<CaptureYanit>(res, "/v1/capture", "POST");
   },
 
   saveTransactions(candidates: Aday[]): Promise<Islem[]> {

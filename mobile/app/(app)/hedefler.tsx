@@ -21,6 +21,7 @@ import {
 } from "@/lib/queries";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
 import { TIP_ETIKET, type Tip } from "@/lib/types";
+import { hataMesaji } from "@/lib/hata";
 
 const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
 
@@ -38,7 +39,7 @@ export default function Hedefler() {
 
   const hataGoster = {
     onError: (e: unknown) =>
-      uyari("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene."),
+      uyari("Kaydedilemedi", hataMesaji(e, undefined, { ekran: "hedefler" })),
   };
 
   // Kategori limitleri hem kategori listesine hem bütçe/özet verisine bağlı —

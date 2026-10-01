@@ -27,12 +27,13 @@ import { EnerjiRozeti, EnerjiSheet, type EnerjiSheetDurum } from "@/components/E
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import { reklamIzleProaktif } from "@/lib/kullanim402";
 import { useMe } from "@/lib/queries";
 import { reklamAktif } from "@/lib/reklam";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
 import type { CaptureYanit } from "@/lib/types";
+import { hataMesaji } from "@/lib/hata";
 
 type Durum = "bos" | "hazirlaniyor" | "kayit" | "gonderiliyor";
 const MIN_KAYIT_MS = 700;
@@ -81,7 +82,7 @@ export default function Ekle() {
   }
 
   function hata(e: unknown) {
-    uyari("Hata", e instanceof ApiError ? e.message : "Bir şeyler ters gitti.");
+    uyari("Eklenemedi", hataMesaji(e, undefined, { ekran: "ekle" }));
   }
 
   async function metinGonder() {

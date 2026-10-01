@@ -16,6 +16,7 @@ import { useMe } from "@/lib/queries";
 import { reklamAktif } from "@/lib/reklam";
 import { golge, R, SP, useRenkler } from "@/lib/theme";
 import type { Aday, CaptureYanit } from "@/lib/types";
+import { hataMesaji } from "@/lib/hata";
 
 export default function Confirm() {
   const renk = useRenkler();
@@ -66,7 +67,7 @@ export default function Confirm() {
         setSheetAcik(true);
         return;
       }
-      uyari("Kaydedilemedi", e instanceof Error ? e.message : "Tekrar dene.");
+      uyari("Kaydedilemedi", hataMesaji(e, undefined, { ekran: "confirm" }));
     }
   }
 

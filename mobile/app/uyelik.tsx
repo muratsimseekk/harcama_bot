@@ -20,6 +20,7 @@ import {
   teklifler,
 } from "@/lib/satinalma";
 import { R, SP, T, useRenkler } from "@/lib/theme";
+import { hataMesaji } from "@/lib/hata";
 
 type Hucre = boolean | string;
 type Period = "aylik" | "yillik";
@@ -93,7 +94,7 @@ export default function Uyelik() {
       const sonuc = await satinAl(p);
       await planaGuncelle(sonuc, "Üyeliğin güncellendi.");
     } catch (e) {
-      uyari("Tamamlanamadı", e instanceof Error ? e.message : "Satın alma başarısız oldu.");
+      uyari("Tamamlanamadı", hataMesaji(e, "Satın alma tamamlanamadı. Lütfen tekrar dene.", { ekran: "uyelik" }));
     } finally {
       setIslemde(null);
     }

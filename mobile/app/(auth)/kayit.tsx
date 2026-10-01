@@ -18,6 +18,7 @@ import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { supabase } from "@/lib/supabase";
 import { R, SP, T, useRenkler } from "@/lib/theme";
+import { hataMesaji } from "@/lib/hata";
 
 export default function Kayit() {
   const renk = useRenkler();
@@ -45,7 +46,7 @@ export default function Kayit() {
       options: { data: { ad: ad.trim() }, emailRedirectTo: Linking.createURL("/") },
     });
     setYukleniyor(false);
-    if (error) return uyari("Kayıt başarısız", error.message);
+    if (error) return uyari("Kayıt başarısız", hataMesaji(error));
 
     // Supabase, e-posta zaten kayıtlıysa (enumeration koruması) user döndürür
     // ama identities boş olur ve hiçbir e-posta gitmez.
