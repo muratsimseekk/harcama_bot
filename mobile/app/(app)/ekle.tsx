@@ -14,6 +14,7 @@ import {
   Animated,
   Easing,
   Keyboard,
+  Linking,
   Pressable,
   StyleSheet,
   TextInput,
@@ -26,6 +27,7 @@ import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { api } from "@/lib/api";
+import { cevrimdisi } from "@/lib/baglanti";
 import { reklamIzleProaktif } from "@/lib/kullanim402";
 import { useMe } from "@/lib/queries";
 import { reklamAktif } from "@/lib/reklam";
@@ -101,9 +103,30 @@ export default function Ekle() {
     if (durum !== "bos") return;
     setDurum("hazirlaniyor");
     try {
+      // Ses yalnız sunucuda çözümleniyor — çevrimdışıyken kaydettirip sonra hata vermek yerine baştan söyle.
+      if (await cevrimdisi()) {
+        uyari(
+          "İnternete bağlı değilsin",
+          "Sesli kayıt için internet gerekiyor. Bağlandıktan sonra tekrar dene ya da harcamanı yazarak gir.",
+          undefined,
+          { ikon: "cloud-offline-outline" },
+        );
+        setDurum("bos");
+        return;
+      }
       const izin = await AudioModule.requestRecordingPermissionsAsync();
       if (!izin.granted) {
-        uyari("Mikrofon izni gerekli");
+        // Kalıcı reddedildiyse sistem bir daha sormaz → kullanıcıyı Ayarlar'a yönlendir.
+        uyari(
+          "Mikrofon izni gerekli",
+          izin.canAskAgain
+            ? "Harcamanı sesle eklemek için mikrofon iznine ihtiyacımız var. İstersen yazarak da girebilirsin."
+            : "Mikrofon izni kapalı. Sesle eklemek için Ayarlar'dan Paraİzi'ye mikrofon izni ver ya da harcamanı yazarak gir.",
+          izin.canAskAgain
+            ? undefined
+            : [{ yazi: "Vazgeç", stil: "vazgec" }, { yazi: "Ayarları Aç", onPress: () => Linking.openSettings() }],
+          { ikon: "mic-off-outline" },
+        );
         setDurum("bos");
         return;
       }
