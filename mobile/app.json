@@ -29,6 +29,10 @@
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "blockedPermissions": [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ]
     },
     "plugins": [
@@ -37,7 +41,9 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Harcamalarını sesle eklemek için mikrofon erişimi gerekir."
+          "microphonePermission": "Harcamalarını sesle eklemek için mikrofon erişimi gerekir.",
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
         }
       ],
       "@react-native-community/datetimepicker",

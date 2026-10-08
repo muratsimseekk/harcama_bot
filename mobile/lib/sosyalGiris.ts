@@ -1,9 +1,4 @@
-import {
-  GoogleSignin,
-  isErrorWithCode,
-  isSuccessResponse,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { Platform } from "react-native";
@@ -20,17 +15,25 @@ const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "";
 
 /** Native (telefonun kendi) Google girişi şimdilik yalnız Android'de; iOS istemcisi
  * Apple hesabı açılınca eklenecek — o zamana kadar iOS tarayıcı akışını kullanır. */
-const NATIVE_GOOGLE = Platform.OS === "android" && !!GOOGLE_WEB_CLIENT_ID;
+const EXPO_GO = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const NATIVE_GOOGLE = Platform.OS === "android" && !!GOOGLE_WEB_CLIENT_ID && !EXPO_GO;
 
-if (NATIVE_GOOGLE) {
-  GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
-}
+// Paket import anında native modülü istiyor (TurboModuleRegistry.getEnforcing) → Expo Go'da
+// statik import uygulamayı açılışta çökertir. Yalnız native giriş kullanılacaksa yükle.
+type GoogleSigninModulu = typeof import("@react-native-google-signin/google-signin");
+const gs: GoogleSigninModulu | null = NATIVE_GOOGLE
+  ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("@react-native-google-signin/google-signin")
+  : null;
+
+gs?.GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
 
 /**
  * Google: telefonun kendi hesap seçicisi → idToken → Supabase oturumu. Tarayıcı açılmaz,
  * Google ekranında Supabase adresi (mwuuicg….supabase.co) görünmez.
  */
 async function googleNative(): Promise<{ hata: string | null }> {
+  const { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } = gs!;
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
     // Önceki seçimi unut — her girişte hesap seçici açılsın (başka hesapla girebilmek için).
