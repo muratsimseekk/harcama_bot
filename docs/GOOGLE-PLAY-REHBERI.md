@@ -22,29 +22,31 @@ ile kesintisiz 14 gün kapalı test** zorunlu. Sonra "production erişimi" başv
 - [ ] Kimlik doğrulama (nüfus cüzdanı) — 1-3 gün sürer
 - [ ] Telefon doğrulama + **gerçek bir Android cihazdan "Play Console" uygulamasıyla giriş**
       (Google yeni hesaplarda fiziksel cihaz erişimini doğruluyor)
-- [ ] Geliştirici adı: "Paraİzi" veya kendi adın — mağazada görünür
+- [ ] Geliştirici adı: **nimostudio** · iletişim e-postası: **info@nimostudio.com** · web: **nimostudio.com**
 
 ### 1.2 👤 12 test kullanıcısı bul (şimdiden)
 - [ ] En az **12, tercihen 15-20** kişi (yedekli) — Android telefonu + Gmail hesabı olan
 - [ ] Gmail adreslerini bir listeye topla (Play Console'a e-posta listesi olarak gireceksin)
 - [ ] Onlara söyle: "Davet linkine tıklayıp uygulamayı kuracaksın, **14 gün silme**, ara sıra aç"
 
-### 1.3 👤 Alan adı (domain) — 4 işi birden çözer ⭐ önerilen
-Önerim: `paraizi.com` / `paraizi.app` (~₺400-800/yıl, Cloudflare/Namecheap/Natro).
-Domain olunca:
-1. **Destek e-postası** `destek@paraizi.com` (şu an kodda `iletisim@ornek.com` — red sebebi)
-2. **Supabase SMTP (Resend)** — şu an saatte 2 mail; 12 test kullanıcısı kayıt olurken takılır
-3. **Gizlilik politikası + hesap silme sayfası** kendi adresinde
-4. **AdMob `app-ads.txt`** — mağaza listesindeki web sitesinin kökünde olmalı, yoksa reklam
-   geliri kısıtlanır
-
-- [ ] Domain al → bana adını söyle
-- [ ] (domain alınca) Resend hesabı: https://resend.com → domain ekle → DNS kayıtlarını gir
-      → API key'i bana ver (🤖 Supabase SMTP ayarlarını birlikte yaparız)
-- [ ] E-posta yönlendirme: Cloudflare Email Routing (ücretsiz) → `destek@` → kendi Gmail'in
-
-> Domain istemezsen: GitHub Pages (`muratsimseekk.github.io/paraizi`) + destek için Gmail
-> adresi de olur, ama SMTP ve `app-ads.txt` sorunu açık kalır.
+### 1.3 Alan adı + e-posta — `nimostudio.com` ✅ alındı (Cloudflare DNS, Google Workspace)
+Geliştirici adı: **nimostudio** · Destek/iletişim adresi: **info@nimostudio.com**
+- [ ] 👤 🔴 **MX kayıtları eksik** (2026-10-09 kontrol: domainde hiç MX yok → dışarıdan mail
+      GELMİYOR). Google Admin → Domains → "Activate Gmail" adımını tamamla; Cloudflare kullanıyorsan
+      Google kayıtları otomatik ekleyebilir. Elle: Cloudflare → DNS → MX `@` → `smtp.google.com`
+      öncelik 1. Bitince başka bir adresten `muratsimsek@nimostudio.com`'a mail at, gelsin.
+- [ ] 👤 **info@nimostudio.com** → yeni kullanıcı AÇMA (ayrıca ücretli). Ücretsiz yollar:
+      - **Alias (önerilen, tek kişiysen):** Google Admin → Directory → Users → Murat Şimşek →
+        User information → **Alternate email addresses** → `info` ekle. info@'ya gelen her mail
+        muratsimsek@ kutusuna düşer.
+      - Gmail'de **info@ adına yanıt ver:** Gmail → Ayarlar → Hesaplar → "Postayı şu adresten
+        gönder" → `info@nimostudio.com` ekle → kullanıcıya hep info@'dan cevap gidersin.
+      - (İleride ekip olursa) Google Group `info@` → üyelere dağıtır.
+- [ ] 👤 **SPF/DKIM:** Google Admin → Apps → Gmail → Authenticate email → DKIM oluştur → TXT'yi
+      Cloudflare'e ekle; SPF TXT: `v=spf1 include:_spf.google.com ~all` (mailler spama düşmesin)
+- [ ] 👤🤖 **Supabase SMTP** (saatte 2 mail sınırı kalksın): Resend → domain `nimostudio.com`
+      (gönderim için alt alan `mail.nimostudio.com` önerilir, Google kayıtlarıyla çakışmaz) →
+      DNS kayıtlarını Cloudflare'e gir → API key'i bana ver → gönderen `Paraİzi <noreply@mail.nimostudio.com>`
 
 ---
 
@@ -56,16 +58,22 @@ Domain olunca:
 - 🤖 Ben: `assets/icon.png`, Android adaptive icon (ön plan + arka plan rengi), splash,
   Play için **512×512** ikon üreteceğim, `app.json`'a bağlayacağım
 
-### 2.2 🤖 Yasal sayfalar + hesap silme sayfası
-- [ ] 👤 Bana ver: **ad-soyad, şehir, destek e-postası** (yasal metinlerde veri sorumlusu)
-- [ ] 🤖 Gizlilik politikasına eksikleri ekle: Sentry (hata kaydı), Google ile giriş, AdMob
-- [ ] 🤖 **Hesap silme web sayfası** — Play, hesap açılan her uygulamadan uygulama DIŞINDAN
-      erişilebilen bir silme talep adresi istiyor
-- [ ] 🤖 Yeni **public** repo `paraizi-site` (ana repo `harcama_bot` özel kalsın; Telegram bot
-      kodu var) → GitHub Pages / domain'e bağla → 3 sayfa: gizlilik, koşullar, hesap silme
-      + `app-ads.txt`
-- [ ] 🤖 `mobile/lib/yasal.ts` `YASAL_URL` + `DESTEK_EPOSTA` güncelle
-- [ ] 👤 GitHub → yeni repo → Settings → Pages → aç (adımları o an söylerim)
+### 2.2 Yasal sayfalar + hesap silme sayfası — 🤖 hazır, 👤 yayına alınacak
+✅ Metinler dolduruldu (Murat Şimşek / nimostudio / Şehitkamil-Gaziantep / info@nimostudio.com),
+Sentry + Google ile giriş eklendi. Uygulama içi metin + linkler güncellendi (`lib/yasal.ts`).
+✅ `site/` üretildi (`python scripts/site_olustur.py`): ana sayfa, gizlilik, koşullar,
+hesap silme, `app-ads.txt`. Adresler:
+- `https://nimostudio.com/paraizi/gizlilik` → Play "Gizlilik politikası"
+- `https://nimostudio.com/paraizi/hesap-silme` → Data safety "hesap silme URL'si"
+- `https://nimostudio.com` → mağaza listesi "Web sitesi" (AdMob `app-ads.txt` buradan okunur)
+
+**👤 Yayına alma (Cloudflare Pages, ücretsiz, ~5 dk):**
+- [ ] Terminalde: `! npx wrangler login` (tarayıcıda Cloudflare'e izin ver)
+- [ ] `! npx wrangler pages deploy site --project-name nimostudio` (repo kökünden)
+- [ ] Cloudflare → Workers & Pages → `nimostudio` → Custom domains → `nimostudio.com` ekle
+      (+ `www.nimostudio.com`) — DNS otomatik bağlanır; şu an domain 403 veriyor, bu düzelir
+- [ ] Kontrol: üç sayfa ve `nimostudio.com/app-ads.txt` açılıyor mu (🤖 kontrol ederim)
+- Metin değişirse: `docs/*.md` düzenle → `python scripts/site_olustur.py` → tekrar deploy
 
 ### 2.3 🤖 Sunucu uyumasın (inceleme sırasında API 40 sn uyanırsa red riski)
 `keep-warm.yml` **hiç çalışmıyor**: GitHub zamanlanmış işleri yalnız varsayılan dalda (`main`)
@@ -85,7 +93,7 @@ Domain olunca:
 - [ ] (1.3 sonrası) SMTP Settings → Resend
 
 ### 2.6 👤 Demo hesap (Play "App access" için zorunlu — giriş olmadan uygulama açılmıyor)
-- [ ] Uygulamadan e-posta/şifre ile hesap aç: örn. `demo@paraizi.com` (veya bir Gmail)
+- [ ] Uygulamadan e-posta/şifre ile hesap aç: örn. `demo@nimostudio.com` (alias olarak ekle) veya bir Gmail
 - [ ] İçine 10-15 örnek işlem, 1 bütçe, 1 hedef gir (inceleyen boş ekran görmesin)
 - [ ] E-posta + şifreyi not et
 
@@ -133,7 +141,7 @@ edebilir: **Evet** (uygulama içi + 2.2'deki web sayfası URL'si)
       (abartı yok: "en iyi/1 numara" yok, başka marka adı yok, "banka bağlantısı yoktur" var)
 - [ ] Uygulama ikonu 512×512 (2.1'den) · **Feature graphic 1024×500** (🤖 hazırlayabilirim)
 - [ ] Telefon ekran görüntüleri: en az 2, ideal 4-6 → 🤖 emülatörden demo hesapla alırım
-- [ ] Kategori: **Finans** · İletişim e-postası: destek e-postası · Web sitesi: domain
+- [ ] Kategori: **Finans** · İletişim e-postası: `info@nimostudio.com` · Web sitesi: `https://nimostudio.com`
 - [ ] AdMob → Apps → uygulamayı Play listesine bağla (yayından sonra mümkün olur)
 
 ---
@@ -160,7 +168,7 @@ edebilir: **Evet** (uygulama içi + 2.2'deki web sayfası URL'si)
 ### 4.4 👤 AdMob
 - [ ] AdMob → Apps → Paraİzi (Android) → Ad units → ödüllü birim → **Server-side verification**
       → callback URL: `https://harcama-api.onrender.com/v1/ads/ssv`
-- [ ] (domain varsa) `app-ads.txt` yayında mı kontrol (🤖 2.2'de koyuyorum)
+- [ ] `nimostudio.com/app-ads.txt` yayında mı (2.2) → AdMob → Apps → app-ads.txt durumu "Bulundu"
 
 ---
 

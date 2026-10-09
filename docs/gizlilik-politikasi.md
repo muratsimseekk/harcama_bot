@@ -1,11 +1,9 @@
 # Gizlilik Politikası
 
-**Son güncelleme:** 2026-09-25
+**Son güncelleme:** 2026-10-09
 **Uygulama:** Paraİzi (bütçe ve harcama takip uygulaması)
-**Veri sorumlusu:** [AD SOYAD / firma unvanı], [adres], e-posta: [iletisim@ornek.com]
-
-> Bu metin, uygulamanın gerçek veri akışına göre hazırlanmıştır. Yayınlamadan önce
-> köşeli parantezli alanları doldurun ve bir hukukçuya gözden geçirtin.
+**Geliştirici:** nimostudio
+**Veri sorumlusu:** Murat Şimşek (nimostudio), Şehitkamil / Gaziantep, Türkiye — e-posta: info@nimostudio.com
 
 Bu politika, "Paraİzi" mobil uygulamasını kullandığınızda hangi kişisel verilerinizi,
 neden ve nasıl işlediğimizi; kimlerle paylaştığımızı ve haklarınızı açıklar. Uygulama
@@ -16,7 +14,7 @@ kullanıcılar için — GDPR kapsamında yürütülür.
 
 | Veri | Ne zaman | Amaç |
 |---|---|---|
-| **E-posta adresi** | Hesap oluştururken | Kimlik doğrulama, giriş, şifre sıfırlama, önemli bildirimler |
+| **E-posta adresi** | Hesap oluştururken (e-posta/şifre ile veya Google ile giriş) | Kimlik doğrulama, giriş, şifre sıfırlama, önemli bildirimler |
 | **Ad** (isteğe bağlı girdiğiniz) | Kayıt sırasında / profil düzenlemede | Uygulama içinde sizi ve hane üyelerini tanımlamak |
 | **Şifre** | Kayıt / giriş | Şifreniz bize **açık metin olarak ulaşmaz**; kimlik doğrulama sağlayıcımız (Supabase) tarafından tek yönlü şifrelenerek saklanır |
 | **Harcama ve gelir kayıtları** | Uygulamayı kullandıkça | Tutar, kategori, tarih, açıklama, not — bütçe takibi ve özet/analiz üretmek |
@@ -25,7 +23,7 @@ kullanıcılar için — GDPR kapsamında yürütülür.
 | **Hane bilgisi** | Bir haneye katılır/oluşturursanız | Hane üyeleriyle harcamaları ortak görüntülemek |
 | **Cihaz bildirim jetonu (push token)** | Bildirim izni verirseniz | Bütçe/hedef bildirimleri göndermek |
 | **Reklam kimliği (Advertising ID) ve genel cihaz bilgisi** | Free (reklamlı) katmanda ödüllü reklam izlediğinizde | Google AdMob'un reklam sunması ve ödülü doğrulaması (bkz. Madde 4) |
-| **Teknik/hata kayıtları** | Uygulama çalışırken | Hataları teşhis etmek, kötüye kullanımı önlemek (kısa süreli tutulur) |
+| **Teknik/hata kayıtları** (çökme raporu, hata anındaki cihaz modeli/işletim sistemi/uygulama sürümü) | Uygulama çalışırken | Hataları teşhis etmek, kötüye kullanımı önlemek (kısa süreli tutulur) |
 
 **Toplamadıklarımız:** Konum, kişi listesi, banka/kart bilgisi. Uygulama herhangi bir
 banka veya ödeme sistemine bağlanmaz; işlem kayıtları sizin elle veya sesle
@@ -49,6 +47,8 @@ sağlayıcıları (veri işleyenler) kullanıyoruz:
 | **Groq, Inc.** | Yapay zeka: ses→metin ve işlem çıkarımı | ABD | groq.com/privacy-policy |
 | **Render Inc.** | Uygulama sunucusu (API barındırma) | ABD | render.com/privacy |
 | **Expo (EAS)** | Push bildirim iletimi | ABD | expo.dev/privacy |
+| **Functional Software, Inc. (Sentry)** | Hata/çökme raporlama | AB (Almanya) | sentry.io/privacy |
+| **Google (Google ile Giriş)** | Google hesabınızla giriş yaparsanız kimlik doğrulama (ad, e-posta) | ABD | policies.google.com/privacy |
 | **Google AdMob** | Free katmanda ödüllü reklam gösterimi + ödül doğrulama | ABD | policies.google.com/privacy |
 | **Apple / Google** | Uygulama dağıtımı, satın alma (abonelik) | — | apple.com/legal/privacy · policies.google.com/privacy |
 
@@ -92,10 +92,11 @@ sıfırlanır. **Pro üyelikte hiç reklam gösterilmez, hak sınırsızdır.**
 - Kişisel verilerinizin işlenip işlenmediğini öğrenme,
 - Verilerinize erişme ve bir kopyasını alma,
 - Yanlış/eksik verilerin düzeltilmesi,
-- **Verilerinizin silinmesi** (uygulama içinden "Hesabı Sil" ile kendiniz yapabilirsiniz),
+- **Verilerinizin silinmesi** (uygulama içinden "Ayarlar → Hesabı Sil" ile kendiniz
+  yapabilirsiniz; uygulamaya erişemiyorsanız: nimostudio.com/paraizi/hesap-silme),
 - İşlemeye itiraz etme, rızanızı geri çekme.
 
-Talepleriniz için: **[iletisim@ornek.com]**. En geç 30 gün içinde yanıtlarız.
+Talepleriniz için: **info@nimostudio.com**. En geç 30 gün içinde yanıtlarız.
 
 ## 7. Güvenlik
 
@@ -115,6 +116,6 @@ Güncel sürüm her zaman bu adreste yayınlanır.
 
 ## 10. İletişim
 
-Veri sorumlusu: **[AD SOYAD / firma]**
-E-posta: **[iletisim@ornek.com]**
-Adres: **[adres]**
+Veri sorumlusu: **Murat Şimşek (nimostudio)**
+E-posta: **info@nimostudio.com**
+Adres: **Şehitkamil / Gaziantep, Türkiye**

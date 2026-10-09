@@ -1,9 +1,7 @@
 # Kullanım Koşulları
 
-**Son güncelleme:** 2026-09-25
-**Uygulama:** Harcama
-
-> Yayınlamadan önce köşeli parantezli alanları doldurun ve bir hukukçuya gözden geçirtin.
+**Son güncelleme:** 2026-10-09
+**Uygulama:** Paraİzi · **Geliştirici:** nimostudio
 
 "Paraİzi" uygulamasını ("Uygulama") kullanarak bu koşulları kabul etmiş olursunuz.
 Kabul etmiyorsanız Uygulamayı kullanmayın.
@@ -17,7 +15,7 @@ amaçlıdır; finansal kararlarınızdan siz sorumlusunuz.
 
 ## 2. Hesap
 
-- Kayıt için geçerli bir e-posta adresi ve şifre gerekir.
+- Kayıt için geçerli bir e-posta adresi ve şifre ya da bir Google hesabı gerekir.
 - Hesap bilgilerinizin gizliliğinden ve hesabınızda yapılan işlemlerden siz
   sorumlusunuz.
 - 18 yaşından büyük olmalısınız.
@@ -71,9 +69,9 @@ Siz de hesabınızı silerek her an ayrılabilirsiniz.
 
 ## 9. Uygulanacak hukuk
 
-Bu koşullar Türkiye Cumhuriyeti hukukuna tabidir. Uyuşmazlıklarda [şehir] mahkemeleri
+Bu koşullar Türkiye Cumhuriyeti hukukuna tabidir. Uyuşmazlıklarda Gaziantep mahkemeleri
 ve icra daireleri yetkilidir.
 
 ## 10. İletişim
 
-**[AD SOYAD / firma]** — **[iletisim@ornek.com]**
+**Murat Şimşek (nimostudio)** — Şehitkamil / Gaziantep — **info@nimostudio.com**

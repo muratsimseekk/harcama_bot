@@ -3,21 +3,23 @@
 // Değiştirdiğinde docs/gizlilik-politikasi.md ve docs/kullanim-kosullari.md ile eşitle.
 
 export const YASAL_URL = {
-  gizlilik: "https://muratsimseekk.github.io/harcama/gizlilik-politikasi",
-  kosullar: "https://muratsimseekk.github.io/harcama/kullanim-kosullari",
+  gizlilik: "https://nimostudio.com/paraizi/gizlilik",
+  kosullar: "https://nimostudio.com/paraizi/kosullar",
+  hesapSilme: "https://nimostudio.com/paraizi/hesap-silme",
 };
 
-export const DESTEK_EPOSTA = "iletisim@ornek.com";
+export const DESTEK_EPOSTA = "info@nimostudio.com";
 
 export const GIZLILIK_METNI = `GİZLİLİK POLİTİKASI
-Son güncelleme: 2026-09-25
+Son güncelleme: 2026-10-09
+Geliştirici: nimostudio · Veri sorumlusu: Murat Şimşek, Şehitkamil / Gaziantep
 
 Bu politika, "Paraİzi" uygulamasını kullandığında hangi kişisel verilerini, neden ve nasıl
 işlediğimizi; kimlerle paylaştığımızı ve haklarını açıklar. Uygulama 6698 sayılı KVKK ve —
 AB'deki kullanıcılar için — GDPR kapsamında yürütülür.
 
 1) TOPLADIĞIMIZ VERİLER
-• E-posta adresi — kimlik doğrulama, giriş, şifre sıfırlama.
+• E-posta adresi — kimlik doğrulama, giriş, şifre sıfırlama (e-posta/şifre veya Google ile giriş).
 • Ad (isteğe bağlı) — uygulama içinde seni/hane üyelerini tanımlamak.
 • Şifre — bize açık metin ulaşmaz; kimlik sağlayıcımız (Supabase) tek yönlü şifreleyerek saklar.
 • Harcama/gelir kayıtların — tutar, kategori, tarih, açıklama, not. Bütçe takibi ve özet için.
@@ -27,7 +29,8 @@ AB'deki kullanıcılar için — GDPR kapsamında yürütülür.
 • Cihaz bildirim jetonu — bildirim izni verirsen, bütçe/hedef bildirimleri göndermek için.
 • Reklam kimliği ve genel cihaz bilgisi — Free katmanda ödüllü reklam izlersen, Google
   AdMob'un reklam sunması ve ödülü doğrulaması için.
-• Kısa süreli teknik/hata kayıtları — hata teşhisi ve kötüye kullanımı önlemek için.
+• Kısa süreli teknik/hata kayıtları (çökme raporu, cihaz modeli, işletim sistemi, uygulama
+  sürümü) — hata teşhisi ve kötüye kullanımı önlemek için.
 
 TOPLAMADIKLARIMIZ: Konum, kişi listesi, banka/kart bilgisi. Uygulama hiçbir bankaya veya
 ödeme sistemine bağlanmaz. Verini satmıyoruz.
@@ -43,6 +46,8 @@ Verini üçüncü kişilere satmayız. Uygulamanın çalışması için:
 • Groq, Inc. (ABD) — yapay zeka: ses→metin ve işlem çıkarımı.
 • Render Inc. (ABD) — uygulama sunucusu.
 • Expo/EAS (ABD) — push bildirim iletimi.
+• Functional Software, Inc. / Sentry (AB) — hata/çökme raporlama.
+• Google (ABD) — Google ile giriş ve AdMob reklamları.
 • Apple / Google — uygulama dağıtımı ve abonelik ödemeleri.
 Yurt dışına (ABD) aktarım, hizmetin sağlanması için gereklidir ve kayıt olurken açık
 rızanla gerçekleşir. Yasal zorunluluk hâlinde yetkili mercilerle paylaşabiliriz.
@@ -63,7 +68,8 @@ Ses kayıtları saklanmaz.
 
 6) HAKLARIN (KVKK m.11 / GDPR)
 Verilerinin işlenip işlenmediğini öğrenme, erişme ve kopyasını alma, düzeltme, SİLME
-(uygulama içinden "Hesabı Sil" ile kendin yapabilirsin), işlemeye itiraz, rızanı geri çekme.
+(uygulama içinden "Ayarlar → Hesabı Sil" ile kendin yapabilirsin; uygulamaya
+erişemiyorsan: ${YASAL_URL.hesapSilme}), işlemeye itiraz, rızanı geri çekme.
 Talepler için: ${DESTEK_EPOSTA} — en geç 30 gün içinde yanıtlarız.
 
 7) GÜVENLİK
@@ -78,11 +84,12 @@ Politikayı güncelleyebiliriz; önemli değişiklikleri uygulama içinde bildir
 ${YASAL_URL.gizlilik} adresinde yayınlanır.
 
 10) İLETİŞİM
-Veri sorumlusu ve iletişim: ${DESTEK_EPOSTA}
+Veri sorumlusu: Murat Şimşek (nimostudio), Şehitkamil / Gaziantep, Türkiye
+E-posta: ${DESTEK_EPOSTA}
 `;
 
 export const KOSULLAR_METNI = `KULLANIM KOŞULLARI
-Son güncelleme: 2026-09-25
+Son güncelleme: 2026-10-09
 
 "Paraİzi" uygulamasını kullanarak bu koşulları kabul etmiş olursun.
 
@@ -93,7 +100,7 @@ hizmeti DEĞİLDİR. Sunduğu özetler bilgilendirme amaçlıdır; finansal kara
 sorumlusun.
 
 2) HESAP
-Kayıt için geçerli bir e-posta ve şifre gerekir. Hesap güvenliğinden ve hesabında yapılan
+Kayıt için geçerli bir e-posta ve şifre ya da bir Google hesabı gerekir. Hesap güvenliğinden ve hesabında yapılan
 işlemlerden sen sorumlusun. 18 yaşından büyük olmalısın. Hesabını istediğin zaman
 "Ayarlar → Hesabı Sil" ile silebilirsin.
 
@@ -127,8 +134,9 @@ Koşulları ihlal edersen hesabını askıya alabilir/kapatabiliriz. Sen de hesa
 ayrılabilirsin.
 
 9) UYGULANACAK HUKUK
-Türkiye Cumhuriyeti hukuku uygulanır.
+Türkiye Cumhuriyeti hukuku uygulanır. Uyuşmazlıklarda Gaziantep mahkemeleri ve icra
+daireleri yetkilidir.
 
 10) İLETİŞİM
-${DESTEK_EPOSTA}
+Murat Şimşek (nimostudio) — Şehitkamil / Gaziantep — ${DESTEK_EPOSTA}
 `;
