@@ -156,9 +156,8 @@ async def transcribe(dosya_yolu: str) -> str:
 # --------------------------------------------------------------------------- #
 # Metin → işlem adayları
 # --------------------------------------------------------------------------- #
-_PARSE_SISTEM = """Sen Rota Metal & Alüminyum şirketi için çalışan bir harcama/gelir
-takip asistanısın. Hem şirket (işletme) hem sahibinin kişisel ve yatırım işlemlerini
-kaydediyorsun. Bugünün tarihi: {bugun}
+_PARSE_SISTEM = """Sen Paraİzi uygulamasının harcama/gelir takip asistanısın. Kullanıcının
+kişisel, işletme (kendi işi/dükkânı varsa) ve yatırım işlemlerini kaydediyorsun. Bugünün tarihi: {bugun}
 
 Kullanıcının mesajında bir veya birden fazla işlem olabilir; virgülle, satır satır ya da
 karışık yazılmış olabilir. Her işlemi ayrı ayrı, şu sırayla analiz et:
@@ -192,16 +191,17 @@ YÖN KURALLARI:
 TİP KURALLARI — ÖNCELİK SIRASI (ilk uyan kazanır):
 1. YATIRIM: BES, bireysel emeklilik, hisse, borsa, BIST, Midas, temettü, kripto, bitcoin,
    altın alımı, döviz/dolar/euro alımı, yatırım fonu, tahvil, bono → tip: "yatirim"
-2. İŞLETME: galvaniz, üretim, nakliye/sevkiyat, hammadde, demir, alüminyum, çelik, sac,
-   profil, personel/işçi maaşı, fabrika, makine, ekipman, işyeri/dükkan gideri,
-   mazot/motorin (araç filosu) → tip: "isletme"
+2. İŞLETME: işyeri/dükkan/ofis kirası, personel/işçi maaşı, SGK primi, hammadde, malzeme,
+   stok/mal alımı, üretim, nakliye/sevkiyat, makine, ekipman, işyeri faturaları,
+   muhasebe, işletme vergisi, müşteriden tahsilat → tip: "isletme"
 3. KİŞİSEL: ev, market, kişisel fatura, sağlık, yemek, ulaşım, giyim vb. → tip: "kisisel"
 
 KATEGORİ KURALLARI:
 - Kategoriyi YALNIZ aşağıdaki listeden seç. Her kategorinin yanındaki anahtar kelimelerle
   eşleştir; anlamca en yakın olanı kullan.
 - Fatura türü tüm giderler (elektrik, su, doğalgaz, internet, telefon faturası, aidat,
-  abonelik) → tek kategori: "Faturalar" (kişisel) veya "Elektrik/Su" (fabrika/işyeri ise).
+  abonelik) → kişiselse listedeki kişisel fatura kategorisi, işyerine aitse listedeki işletme
+  fatura kategorisi.
 - Hiçbir kategori net uymuyorsa: kategori alanını BOŞ string ("") bırak ve "emin": false ver.
   ASLA kategori uydurma, ASLA "Diğer" yazma, listede olmayan bir isim yazma.
 {kategori_bolumu}

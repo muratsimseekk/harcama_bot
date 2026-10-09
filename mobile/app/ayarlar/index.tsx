@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Linking, ScrollView, StyleSheet, View } from "react-native";
 import { AyarGrup, AyarSatir } from "@/components/base";
 import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
 import { useUyari } from "@/components/Uyari";
@@ -9,6 +9,7 @@ import { useTemaMod } from "@/lib/tema";
 import { SP, useRenkler } from "@/lib/theme";
 import { DEV_NOAUTH } from "@/app/_layout";
 import { hataMesaji } from "@/lib/hata";
+import { DESTEK_EPOSTA } from "@/lib/yasal";
 
 const TEMA = { system: "Sistem", light: "Açık", dark: "Koyu" } as const;
 
@@ -32,6 +33,12 @@ export default function Ayarlar() {
       uyari("Silinemedi", hataMesaji(e, undefined, { ekran: "hesap-sil" }));
     }
   }
+
+  // Telefonda e-posta uygulaması yoksa openURL reddeder → adresi göster
+  const destegeYaz = () =>
+    Linking.openURL(`mailto:${DESTEK_EPOSTA}?subject=${encodeURIComponent("Paraİzi destek")}`).catch(() =>
+      uyari("Bize yaz", `Soru, öneri ve sorunların için: ${DESTEK_EPOSTA}`),
+    );
 
   const silOnayi = () =>
     uyari(
@@ -62,6 +69,16 @@ export default function Ayarlar() {
             deger={TEMA[mod]}
             son
             onPress={() => router.navigate("/ayarlar/gorunum")}
+          />
+        </AyarGrup>
+
+        <AyarGrup baslik="DESTEK">
+          <AyarSatir
+            ikon="mail-outline"
+            baslik="Bize Yaz"
+            deger={DESTEK_EPOSTA}
+            son
+            onPress={destegeYaz}
           />
         </AyarGrup>
 

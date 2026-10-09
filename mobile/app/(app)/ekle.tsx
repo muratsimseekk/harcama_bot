@@ -37,7 +37,7 @@ import { hataMesaji } from "@/lib/hata";
 
 type Durum = "bos" | "hazirlaniyor" | "kayit" | "gonderiliyor";
 const MIN_KAYIT_MS = 700;
-const ORNEKLER = ["market 250, dün benzin 600", "kahve 90", "maaş geldi 45000", "3 mayıs galvaniz 4500"];
+const ORNEKLER = ["market 250, dün benzin 600", "kahve 90", "maaş geldi 45000", "3 mayıs kira 15000"];
 
 export default function Ekle() {
   const renk = useRenkler();

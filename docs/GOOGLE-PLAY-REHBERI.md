@@ -39,8 +39,7 @@ Geliştirici adı: **nimustudio** · İletişim: **info@nimustudio.com**
 - [x] MX + SPF kayıtları Google tarafından kuruldu, Gmail AÇIK
 - [x] `muratsimsek@nimustudio.com` mail alıyor (test edildi)
 - [x] `info` alias'ı eklendi (Dizin → Kullanıcılar → Murat Şimşek → Alternatif e-posta)
-- [ ] `info@nimustudio.com`'a mail geliyor mu (alias etkinleşmesi 24 saate kadar sürebilir)
-      → İŞ Gmail'inde ara: `to:info@nimustudio.com`
+- [x] `info@nimustudio.com`'a mail geliyor (test edildi)
 - [ ] Gmail → ⚙️ Tüm ayarlar → Hesaplar → "Postaları şu adresten gönder" → `info@nimustudio.com`
       ("Takma ad olarak işle" işaretli) → varsayılan yap + "gönderildiği adresten yanıtla"
 - [ ] **DKIM:** Uygulamalar → Google Workspace → Gmail → E-posta kimlik doğrulama → yeni kayıt
@@ -144,7 +143,7 @@ edebilir: **Evet** (uygulama içi + 2.2'deki web sayfası URL'si)
 
 ### 3.4 👤 Mağaza girişi (Grow → Store presence → Main store listing)
 - [ ] Uygulama adı (≤30): **Paraİzi** (ya da "Paraİzi: Harcama Takibi")
-- [ ] Kısa açıklama (≤80) + Uzun açıklama (≤4000) → 🤖 ben yazarım, sen onaylarsın
+- [x] Kısa/uzun açıklama + App access + içerik derecelendirme cevapları → 🤖 **`docs/MAGAZA-METINLERI.md`** (kopyala-yapıştır)
       (abartı yok: "en iyi/1 numara" yok, başka marka adı yok, "banka bağlantısı yoktur" var)
 - [ ] Uygulama ikonu 512×512 (2.1'den) · **Feature graphic 1024×500** (🤖 hazırlayabilirim)
 - [ ] Telefon ekran görüntüleri: en az 2, ideal 4-6 → 🤖 emülatörden demo hesapla alırım

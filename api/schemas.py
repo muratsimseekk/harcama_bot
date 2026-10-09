@@ -4,13 +4,25 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from core.models import Budget, Candidate, Category, Goal, Transaction
 from core.summary import HedefIlerleme, Ozet
 
 Tip = Literal["kisisel", "isletme", "yatirim"]
 Yon = Literal["gider", "gelir"]
+
+
+def bas_harf_buyuk(metin: str | None) -> str | None:
+    """Açıklamanın ilk harfini Türkçe kurala göre büyütür ("iade" → "İade"); gerisine dokunmaz."""
+    if not metin:
+        return metin
+    metin = metin.strip()
+    # "iPhone", "eBay" gibi marka yazımları bozulmasın
+    if not metin or (len(metin) > 1 and metin[1].isupper()):
+        return metin
+    ilk = {"i": "İ", "ı": "I"}.get(metin[0], metin[0].upper())
+    return ilk + metin[1:]
 
 
 class AdayModel(BaseModel):
@@ -25,6 +37,8 @@ class AdayModel(BaseModel):
     neden: str = ""
     kaynak: str = "mobile_manual"  # capture'dan gelen adaylarda mobile_text/mobile_voice
     inceleme_sebepleri: list[str] = Field(default_factory=list)
+
+    _aciklama_buyuk = field_validator("aciklama")(bas_harf_buyuk)
 
     @classmethod
     def from_candidate(cls, c: Candidate) -> AdayModel:
@@ -83,6 +97,8 @@ class IslemGuncelleIstek(BaseModel):
     tip: Tip | None = None
     direction: Yon | None = None
     tarih: date | None = None
+
+    _aciklama_buyuk = field_validator("aciklama")(bas_harf_buyuk)
 
     def kolonlar(self) -> dict:
         m = {
