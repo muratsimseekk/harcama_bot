@@ -1,5 +1,7 @@
 # App Store + Google Play yayın kontrol listesi
 
+> **Android için güncel, adım adım rehber: `docs/GOOGLE-PLAY-REHBERI.md`** (2026-10-09). Bu dosya iOS + genel liste olarak kalıyor.
+
 > İlk kez yayınlayan için. Sıra önemli. Kod tarafında yapılanlar ✅ ile işaretli.
 
 ## 0. Takvim uyarısı
