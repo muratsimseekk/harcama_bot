@@ -7,7 +7,27 @@
 > `~/.claude/` altındaki hafıza ve plan dosyaları makineye özeldir, taşınmaz — bu dosya
 > onların yerine geçer. Güncel tutulmalı: her önemli adımdan sonra Claude bunu günceller.
 
-Son güncelleme: 2026-09-25 · Dal: `faz-m1-mobil` · Son commit: `1415abb`
+Son güncelleme: 2026-10-09 · Dal: `faz-m1-mobil` · Son commit: `12037d2`
+
+> **2026-09-26 → 10-08 arası yapılanlar (bu dosya o sürede güncellenmemişti):**
+> - **Gelir modeli değişti:** Base + 7 gün deneme KALDIRILDI → **Free (reklamlı, günlük ortak
+>   enerji) + Pro** (`9c1a7fb`, `9ab89d8`). Gerçek AdMob ödüllü reklam + `/v1/ads/claim` + SSV
+>   (`d5bb7c7`, SSV URL düzeltmesi `7a9c0c8`). Preview APK test reklamı gösterir (`595b2e1`).
+> - **Uygulama adı Paraİzi**, paket kimliği **`com.paraizi.app`**, şema `paraizi://` (`fb6e976`).
+>   (`app.json` `name`/`slug` hâlâ "Harcama"/`harcama-mobil` — EAS projesi slug'a bağlı, dokunmadan önce düşün.)
+> - **Google / Apple ile giriş** (`5e9f7c7`); Android'de native Google hesap seçici (`f879a84`).
+>   ⚠️ Mağaza öncesi EAS + Play App Signing SHA-1'leri Google Cloud'a eklenmeli; iOS client bekliyor.
+> - **Sentry canlı** (org `bireysel-zk`, de.sentry.io); Sentry'de bulunan API hataları düzeltildi
+>   (thread başına Supabase istemcisi, `7a9c0c8`). Tüm hata metinleri Türkçe (`bbe010b`).
+> - Auth sağlamlaştırma: PKCE (WebCrypto polyfill) `bd58f82`, yönlendirme döngüsü `26da376`,
+>   karşılama yalnız ilk açılış `f87ed76`, Türkçe şifre-yenile/doğrulandı ara sayfaları +
+>   6 Türkçe e-posta şablonu `docs/eposta-sablonlari/` (`756e089`).
+> - UI düzeltmeleri: analiz grafiği (`26c98e4`), arama ekranı (`c9c73e7`), işletme varsayılan
+>   kategorileri + klavye (`5d4d608`), sesli kayıt çevrimdışı/izin (`13285cc`), Expo Go'da
+>   Google Signin modülü yüklenmez (`12037d2`).
+> - **Açık işler:** Supabase custom SMTP (saatlik 2 mail sınırı — alan adı + Resend kararı
+>   bekliyor) · yayın öncesi Sentry token rotasyonu · Google SHA-1'leri · mağaza hesapları
+>   (`docs/YAYIN-KONTROL-LISTESI.md`). `docs/SIRADAKI-ADIMLAR.md` Base katmanı açısından eskidir.
 
 > **2026-09-25 — 12 commit push edildi (`207bed6..1415abb`), origin artık güncel.**
 > 09-10..09-13 arası yapılan iş push'lanmamış kalmıştı: iOS silme/uyarı donma düzeltmeleri
@@ -62,8 +82,8 @@ Son güncelleme: 2026-09-25 · Dal: `faz-m1-mobil` · Son commit: `1415abb`
 | **Telegram botu** | `main` dalında, Render'da canlı, **DONDURULDU**. Bu projeyle karışmıyor. Asla `main`'e merge etme. |
 | **Bu proje** | `faz-m1-mobil` dalı. Backend (`core/` + `api/`) + mobil (`mobile/`) burada. GitHub'a push edildi. |
 | **Deploy durumu** | API **Render'da canlı**: `https://harcama-api.onrender.com` (`/health` ok). **İlk Android preview APK hazır** (build `0ed0825f`). |
-| **Şu an hangi fazdayız** | **Faz 0** (yayına hazır teknik temel). Kod bitti; hesap/deploy adımları sürüyor. |
-| **Sıradaki somut adım** | APK'yı telefona kur → e-posta/şifre auth + işlem ekleme testi → Sentry (§4 adım 6) + GitHub cron (adım 7). |
+| **Şu an hangi fazdayız** | **Faz 0 / 0.5** — kod lansmana yakın (Free+Pro, AdMob, sosyal giriş, Sentry). Mağaza hesapları + yayın listesi sürüyor. |
+| **Sıradaki somut adım** | Yeni preview APK ile telefonda uçtan uca test (kayıt/Google giriş, reklam, sesli kayıt) → SMTP kararı → GitHub cron + push (§4 adım 7-8) → mağaza hesapları. |
 | **Testler** | Windows: `$env:PYTHONPATH="."; .venv\Scripts\python -m pytest -q` → 70 geçiyor · `cd mobile; npx tsc --noEmit` temiz · `npx expo-doctor` 18/18 |
 
 ---
