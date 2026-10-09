@@ -1,10 +1,10 @@
-"""nimostudio.com statik sitesini üretir (Cloudflare Pages'e yüklenir).
+"""nimustudio.com statik sitesini üretir (GitHub Pages ile yayınlanır).
 
 Kaynak: docs/gizlilik-politikasi.md + docs/kullanim-kosullari.md (tek kaynak — metni
 orada değiştir, sonra bunu çalıştır). Çıktı: site/
 
     python scripts/site_olustur.py
-    npx wrangler pages deploy site --project-name nimostudio
+    (sonra site/ içeriğini public "nimustudio-site" reposuna gönder — GitHub Pages)
 
 Yalnız bu iki dosyanın kullandığı Markdown alt kümesini çevirir: başlık, paragraf,
 liste, tablo, alıntı, **kalın**, [bağlantı](adres).
@@ -19,7 +19,7 @@ DOCS = KOK / "docs"
 SITE = KOK / "site"
 
 ADMOB_PUB = "pub-8731282143908044"
-EPOSTA = "info@nimostudio.com"
+EPOSTA = "info@nimustudio.com"
 
 # docs/ içindeki göreli bağlantılar sitede şu adreslere gider
 BAGLANTI = {
@@ -36,7 +36,7 @@ def satir_ici(metin: str) -> str:
         lambda m: f'<a href="{BAGLANTI.get(m.group(2), m.group(2))}">{m.group(1)}</a>',
         metin,
     )
-    metin = re.sub(r"\b(nimostudio\.com/[\w/-]+)", r'<a href="https://\1">\1</a>', metin)
+    metin = re.sub(r"\b(nimustudio\.com/[\w/-]+)", r'<a href="https://\1">\1</a>', metin)
     return metin
 
 
@@ -125,11 +125,11 @@ def sayfa(baslik: str, govde: str) -> str:
 <html lang="tr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{html.escape(baslik)}</title><style>{STIL}</style></head>
-<body><header><a class="marka" href="/">nimostudio</a>
+<body><header><a class="marka" href="/">nimustudio</a>
 <a href="/paraizi/gizlilik">Gizlilik</a><a href="/paraizi/kosullar">Koşullar</a>
 <a href="/paraizi/hesap-silme">Hesap silme</a></header>
 <main>{govde}
-<footer>© nimostudio · Murat Şimşek · Şehitkamil / Gaziantep · <a href="mailto:{EPOSTA}">{EPOSTA}</a></footer>
+<footer>© nimustudio · Murat Şimşek · Şehitkamil / Gaziantep · <a href="mailto:{EPOSTA}">{EPOSTA}</a></footer>
 </main></body></html>
 """
 
@@ -154,7 +154,7 @@ yasal zorunluluk gereği Google tarafından tutulur. Aboneliğini Google Play �
 ayrıca iptal etmelisin; hesap silmek aboneliği otomatik iptal etmez.</li></ul>
 """
 
-ANA = """<h1>nimostudio</h1>
+ANA = """<h1>nimustudio</h1>
 <p>Bağımsız mobil uygulama stüdyosu.</p>
 <div class="kart"><h2>Paraİzi</h2>
 <p>Harcamalarını yazarak ya da sesle saniyeler içinde kaydet; bütçeni ve hedeflerini takip et.</p>
@@ -173,7 +173,7 @@ def yaz(yol: str, icerik: str):
 def main():
     gizlilik = (DOCS / "gizlilik-politikasi.md").read_text(encoding="utf-8")
     kosullar = (DOCS / "kullanim-kosullari.md").read_text(encoding="utf-8")
-    yaz("index.html", sayfa("nimostudio", ANA))
+    yaz("index.html", sayfa("nimustudio", ANA))
     yaz("paraizi/gizlilik/index.html", sayfa("Paraİzi — Gizlilik Politikası", md_html(gizlilik)))
     yaz("paraizi/kosullar/index.html", sayfa("Paraİzi — Kullanım Koşulları", md_html(kosullar)))
     yaz("paraizi/hesap-silme/index.html", sayfa("Paraİzi — Hesap silme", HESAP_SILME))

@@ -2,8 +2,8 @@
 
 **Son güncelleme:** 2026-10-09
 **Uygulama:** Paraİzi (bütçe ve harcama takip uygulaması)
-**Geliştirici:** nimostudio
-**Veri sorumlusu:** Murat Şimşek (nimostudio), Şehitkamil / Gaziantep, Türkiye — e-posta: info@nimostudio.com
+**Geliştirici:** nimustudio
+**Veri sorumlusu:** Murat Şimşek (nimustudio), Şehitkamil / Gaziantep, Türkiye — e-posta: info@nimustudio.com
 
 Bu politika, "Paraİzi" mobil uygulamasını kullandığınızda hangi kişisel verilerinizi,
 neden ve nasıl işlediğimizi; kimlerle paylaştığımızı ve haklarınızı açıklar. Uygulama
@@ -93,10 +93,10 @@ sıfırlanır. **Pro üyelikte hiç reklam gösterilmez, hak sınırsızdır.**
 - Verilerinize erişme ve bir kopyasını alma,
 - Yanlış/eksik verilerin düzeltilmesi,
 - **Verilerinizin silinmesi** (uygulama içinden "Ayarlar → Hesabı Sil" ile kendiniz
-  yapabilirsiniz; uygulamaya erişemiyorsanız: nimostudio.com/paraizi/hesap-silme),
+  yapabilirsiniz; uygulamaya erişemiyorsanız: nimustudio.com/paraizi/hesap-silme),
 - İşlemeye itiraz etme, rızanızı geri çekme.
 
-Talepleriniz için: **info@nimostudio.com**. En geç 30 gün içinde yanıtlarız.
+Talepleriniz için: **info@nimustudio.com**. En geç 30 gün içinde yanıtlarız.
 
 ## 7. Güvenlik
 
@@ -116,6 +116,6 @@ Güncel sürüm her zaman bu adreste yayınlanır.
 
 ## 10. İletişim
 
-Veri sorumlusu: **Murat Şimşek (nimostudio)**
-E-posta: **info@nimostudio.com**
+Veri sorumlusu: **Murat Şimşek (nimustudio)**
+E-posta: **info@nimustudio.com**
 Adres: **Şehitkamil / Gaziantep, Türkiye**

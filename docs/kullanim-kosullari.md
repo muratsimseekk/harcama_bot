@@ -1,7 +1,7 @@
 # Kullanım Koşulları
 
 **Son güncelleme:** 2026-10-09
-**Uygulama:** Paraİzi · **Geliştirici:** nimostudio
+**Uygulama:** Paraİzi · **Geliştirici:** nimustudio
 
 "Paraİzi" uygulamasını ("Uygulama") kullanarak bu koşulları kabul etmiş olursunuz.
 Kabul etmiyorsanız Uygulamayı kullanmayın.
@@ -74,4 +74,4 @@ ve icra daireleri yetkilidir.
 
 ## 10. İletişim
 
-**Murat Şimşek (nimostudio)** — Şehitkamil / Gaziantep — **info@nimostudio.com**
+**Murat Şimşek (nimustudio)** — Şehitkamil / Gaziantep — **info@nimustudio.com**

@@ -22,31 +22,32 @@ ile kesintisiz 14 gün kapalı test** zorunlu. Sonra "production erişimi" başv
 - [ ] Kimlik doğrulama (nüfus cüzdanı) — 1-3 gün sürer
 - [ ] Telefon doğrulama + **gerçek bir Android cihazdan "Play Console" uygulamasıyla giriş**
       (Google yeni hesaplarda fiziksel cihaz erişimini doğruluyor)
-- [ ] Geliştirici adı: **nimostudio** · iletişim e-postası: **info@nimostudio.com** · web: **nimostudio.com**
+- [ ] Geliştirici adı: **nimustudio** · iletişim e-postası: **info@nimustudio.com** · web: **nimustudio.com**
 
 ### 1.2 👤 12 test kullanıcısı bul (şimdiden)
 - [ ] En az **12, tercihen 15-20** kişi (yedekli) — Android telefonu + Gmail hesabı olan
 - [ ] Gmail adreslerini bir listeye topla (Play Console'a e-posta listesi olarak gireceksin)
 - [ ] Onlara söyle: "Davet linkine tıklayıp uygulamayı kuracaksın, **14 gün silme**, ara sıra aç"
 
-### 1.3 Alan adı + e-posta — `nimostudio.com` ✅ alındı (Cloudflare DNS, Google Workspace)
-Geliştirici adı: **nimostudio** · Destek/iletişim adresi: **info@nimostudio.com**
-- [ ] 👤 🔴 **MX kayıtları eksik** (2026-10-09 kontrol: domainde hiç MX yok → dışarıdan mail
-      GELMİYOR). Google Admin → Domains → "Activate Gmail" adımını tamamla; Cloudflare kullanıyorsan
-      Google kayıtları otomatik ekleyebilir. Elle: Cloudflare → DNS → MX `@` → `smtp.google.com`
-      öncelik 1. Bitince başka bir adresten `muratsimsek@nimostudio.com`'a mail at, gelsin.
-- [ ] 👤 **info@nimostudio.com** → yeni kullanıcı AÇMA (ayrıca ücretli). Ücretsiz yollar:
-      - **Alias (önerilen, tek kişiysen):** Google Admin → Directory → Users → Murat Şimşek →
-        User information → **Alternate email addresses** → `info` ekle. info@'ya gelen her mail
-        muratsimsek@ kutusuna düşer.
-      - Gmail'de **info@ adına yanıt ver:** Gmail → Ayarlar → Hesaplar → "Postayı şu adresten
-        gönder" → `info@nimostudio.com` ekle → kullanıcıya hep info@'dan cevap gidersin.
-      - (İleride ekip olursa) Google Group `info@` → üyelere dağıtır.
-- [ ] 👤 **SPF/DKIM:** Google Admin → Apps → Gmail → Authenticate email → DKIM oluştur → TXT'yi
-      Cloudflare'e ekle; SPF TXT: `v=spf1 include:_spf.google.com ~all` (mailler spama düşmesin)
-- [ ] 👤🤖 **Supabase SMTP** (saatte 2 mail sınırı kalksın): Resend → domain `nimostudio.com`
-      (gönderim için alt alan `mail.nimostudio.com` önerilir, Google kayıtlarıyla çakışmaz) →
-      DNS kayıtlarını Cloudflare'e gir → API key'i bana ver → gönderen `Paraİzi <noreply@mail.nimostudio.com>`
+### 1.3 Alan adı + e-posta — `nimustudio.com` ✅
+Google Workspace kaydında Google üzerinden alındı (2026-10-09, kayıt firması Squarespace
+Domains, ücret Workspace faturasında). DNS'i **admin.google.com → Hesap → Alanlar → Alanları
+yönet** üzerinden yönetilir — Cloudflare KULLANILMIYOR.
+⚠️ `nimostudio.com` (o ile) BAŞKASININ domaini — hiçbir yere yazma.
+
+Geliştirici adı: **nimustudio** · İletişim: **info@nimustudio.com**
+- [x] MX + SPF kayıtları Google tarafından kuruldu, Gmail AÇIK
+- [x] `muratsimsek@nimustudio.com` mail alıyor (test edildi)
+- [x] `info` alias'ı eklendi (Dizin → Kullanıcılar → Murat Şimşek → Alternatif e-posta)
+- [ ] `info@nimustudio.com`'a mail geliyor mu (alias etkinleşmesi 24 saate kadar sürebilir)
+      → İŞ Gmail'inde ara: `to:info@nimustudio.com`
+- [ ] Gmail → ⚙️ Tüm ayarlar → Hesaplar → "Postaları şu adresten gönder" → `info@nimustudio.com`
+      ("Takma ad olarak işle" işaretli) → varsayılan yap + "gönderildiği adresten yanıtla"
+- [ ] **DKIM:** Uygulamalar → Google Workspace → Gmail → E-posta kimlik doğrulama → yeni kayıt
+      oluştur → (Google'dan alınan domainde genelde "DNS'e otomatik ekle" çıkar) → Kimlik doğrulamayı başlat
+- [ ] 👤🤖 **Supabase SMTP** (saatte 2 mail sınırı kalksın): Resend → domain
+      `mail.nimustudio.com` → verdiği DNS kayıtlarını Google Admin → Alanlar → DNS'e gir →
+      API key'i bana ver → gönderen `Paraİzi <noreply@mail.nimustudio.com>`
 
 ---
 
@@ -59,21 +60,27 @@ Geliştirici adı: **nimostudio** · Destek/iletişim adresi: **info@nimostudio.
   Play için **512×512** ikon üreteceğim, `app.json`'a bağlayacağım
 
 ### 2.2 Yasal sayfalar + hesap silme sayfası — 🤖 hazır, 👤 yayına alınacak
-✅ Metinler dolduruldu (Murat Şimşek / nimostudio / Şehitkamil-Gaziantep / info@nimostudio.com),
+✅ Metinler dolduruldu (Murat Şimşek / nimustudio / Şehitkamil-Gaziantep / info@nimustudio.com),
 Sentry + Google ile giriş eklendi. Uygulama içi metin + linkler güncellendi (`lib/yasal.ts`).
 ✅ `site/` üretildi (`python scripts/site_olustur.py`): ana sayfa, gizlilik, koşullar,
 hesap silme, `app-ads.txt`. Adresler:
-- `https://nimostudio.com/paraizi/gizlilik` → Play "Gizlilik politikası"
-- `https://nimostudio.com/paraizi/hesap-silme` → Data safety "hesap silme URL'si"
-- `https://nimostudio.com` → mağaza listesi "Web sitesi" (AdMob `app-ads.txt` buradan okunur)
+- `https://nimustudio.com/paraizi/gizlilik` → Play "Gizlilik politikası"
+- `https://nimustudio.com/paraizi/hesap-silme` → Data safety "hesap silme URL'si"
+- `https://nimustudio.com` → mağaza listesi "Web sitesi" (AdMob `app-ads.txt` buradan okunur)
 
-**👤 Yayına alma (Cloudflare Pages, ücretsiz, ~5 dk):**
-- [ ] Terminalde: `! npx wrangler login` (tarayıcıda Cloudflare'e izin ver)
-- [ ] `! npx wrangler pages deploy site --project-name nimostudio` (repo kökünden)
-- [ ] Cloudflare → Workers & Pages → `nimostudio` → Custom domains → `nimostudio.com` ekle
-      (+ `www.nimostudio.com`) — DNS otomatik bağlanır; şu an domain 403 veriyor, bu düzelir
-- [ ] Kontrol: üç sayfa ve `nimostudio.com/app-ads.txt` açılıyor mu (🤖 kontrol ederim)
-- Metin değişirse: `docs/*.md` düzenle → `python scripts/site_olustur.py` → tekrar deploy
+**👤 Yayına alma (GitHub Pages, ücretsiz):** Ana repo `harcama_bot` özel kalır (Telegram bot
+kodu var); site için ayrı **public** repo açılır.
+- [ ] github.com → New repository → ad `nimustudio-site` → **Public** → Create (boş)
+- [ ] 🤖 `site/` içeriğini o repoya ben gönderirim (+ `CNAME` dosyası `nimustudio.com`)
+- [ ] Repo → Settings → Pages → Branch `main` / root → Save → Custom domain `nimustudio.com`
+- [ ] Google Admin → Hesap → Alanlar → Alanları yönet → nimustudio.com → **DNS'i yönet**
+      (Squarespace paneli açılır) → Squarespace'in park kayıtlarını (A / CNAME www) sil → ekle:
+      - `A` `@` → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
+      - `CNAME` `www` → `<github-kullanici-adin>.github.io`
+      - ⚠️ **MX ve TXT (Google) kayıtlarına DOKUNMA** — mail bozulur
+- [ ] Birkaç saat sonra GitHub Pages → **Enforce HTTPS** işaretle
+- [ ] Kontrol: üç sayfa + `nimustudio.com/app-ads.txt` açılıyor mu (🤖 kontrol ederim)
+- Metin değişirse: `docs/*.md` düzenle → `python scripts/site_olustur.py` → site reposuna tekrar gönder
 
 ### 2.3 🤖 Sunucu uyumasın (inceleme sırasında API 40 sn uyanırsa red riski)
 `keep-warm.yml` **hiç çalışmıyor**: GitHub zamanlanmış işleri yalnız varsayılan dalda (`main`)
@@ -93,7 +100,7 @@ hesap silme, `app-ads.txt`. Adresler:
 - [ ] (1.3 sonrası) SMTP Settings → Resend
 
 ### 2.6 👤 Demo hesap (Play "App access" için zorunlu — giriş olmadan uygulama açılmıyor)
-- [ ] Uygulamadan e-posta/şifre ile hesap aç: örn. `demo@nimostudio.com` (alias olarak ekle) veya bir Gmail
+- [ ] Uygulamadan e-posta/şifre ile hesap aç: örn. `demo@nimustudio.com` (alias olarak ekle) veya bir Gmail
 - [ ] İçine 10-15 örnek işlem, 1 bütçe, 1 hedef gir (inceleyen boş ekran görmesin)
 - [ ] E-posta + şifreyi not et
 
@@ -141,7 +148,7 @@ edebilir: **Evet** (uygulama içi + 2.2'deki web sayfası URL'si)
       (abartı yok: "en iyi/1 numara" yok, başka marka adı yok, "banka bağlantısı yoktur" var)
 - [ ] Uygulama ikonu 512×512 (2.1'den) · **Feature graphic 1024×500** (🤖 hazırlayabilirim)
 - [ ] Telefon ekran görüntüleri: en az 2, ideal 4-6 → 🤖 emülatörden demo hesapla alırım
-- [ ] Kategori: **Finans** · İletişim e-postası: `info@nimostudio.com` · Web sitesi: `https://nimostudio.com`
+- [ ] Kategori: **Finans** · İletişim e-postası: `info@nimustudio.com` · Web sitesi: `https://nimustudio.com`
 - [ ] AdMob → Apps → uygulamayı Play listesine bağla (yayından sonra mümkün olur)
 
 ---
@@ -168,7 +175,7 @@ edebilir: **Evet** (uygulama içi + 2.2'deki web sayfası URL'si)
 ### 4.4 👤 AdMob
 - [ ] AdMob → Apps → Paraİzi (Android) → Ad units → ödüllü birim → **Server-side verification**
       → callback URL: `https://harcama-api.onrender.com/v1/ads/ssv`
-- [ ] `nimostudio.com/app-ads.txt` yayında mı (2.2) → AdMob → Apps → app-ads.txt durumu "Bulundu"
+- [ ] `nimustudio.com/app-ads.txt` yayında mı (2.2) → AdMob → Apps → app-ads.txt durumu "Bulundu"
 
 ---
 

@@ -3,16 +3,16 @@
 // Değiştirdiğinde docs/gizlilik-politikasi.md ve docs/kullanim-kosullari.md ile eşitle.
 
 export const YASAL_URL = {
-  gizlilik: "https://nimostudio.com/paraizi/gizlilik",
-  kosullar: "https://nimostudio.com/paraizi/kosullar",
-  hesapSilme: "https://nimostudio.com/paraizi/hesap-silme",
+  gizlilik: "https://nimustudio.com/paraizi/gizlilik",
+  kosullar: "https://nimustudio.com/paraizi/kosullar",
+  hesapSilme: "https://nimustudio.com/paraizi/hesap-silme",
 };
 
-export const DESTEK_EPOSTA = "info@nimostudio.com";
+export const DESTEK_EPOSTA = "info@nimustudio.com";
 
 export const GIZLILIK_METNI = `GİZLİLİK POLİTİKASI
 Son güncelleme: 2026-10-09
-Geliştirici: nimostudio · Veri sorumlusu: Murat Şimşek, Şehitkamil / Gaziantep
+Geliştirici: nimustudio · Veri sorumlusu: Murat Şimşek, Şehitkamil / Gaziantep
 
 Bu politika, "Paraİzi" uygulamasını kullandığında hangi kişisel verilerini, neden ve nasıl
 işlediğimizi; kimlerle paylaştığımızı ve haklarını açıklar. Uygulama 6698 sayılı KVKK ve —
@@ -84,7 +84,7 @@ Politikayı güncelleyebiliriz; önemli değişiklikleri uygulama içinde bildir
 ${YASAL_URL.gizlilik} adresinde yayınlanır.
 
 10) İLETİŞİM
-Veri sorumlusu: Murat Şimşek (nimostudio), Şehitkamil / Gaziantep, Türkiye
+Veri sorumlusu: Murat Şimşek (nimustudio), Şehitkamil / Gaziantep, Türkiye
 E-posta: ${DESTEK_EPOSTA}
 `;
 
@@ -138,5 +138,5 @@ Türkiye Cumhuriyeti hukuku uygulanır. Uyuşmazlıklarda Gaziantep mahkemeleri 
 daireleri yetkilidir.
 
 10) İLETİŞİM
-Murat Şimşek (nimostudio) — Şehitkamil / Gaziantep — ${DESTEK_EPOSTA}
+Murat Şimşek (nimustudio) — Şehitkamil / Gaziantep — ${DESTEK_EPOSTA}
 `;
