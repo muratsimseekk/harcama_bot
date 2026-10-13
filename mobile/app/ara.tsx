@@ -1,11 +1,13 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { Cip } from "@/components/base";
 import { Buton } from "@/components/Buton";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
 import { api } from "@/lib/api";
+import { tarihEtiket, turkceTutar } from "@/lib/format";
 import { useCategories } from "@/lib/queries";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
 import type { Islem, Tip, Yon } from "@/lib/types";
@@ -13,19 +15,99 @@ import type { Islem, Tip, Yon } from "@/lib/types";
 // Kişisel önce: kategoriler API'den tür karışık geliyor (işletme kategorileri başa düşüyordu)
 const TIP_SIRA: Record<Tip, number> = { kisisel: 0, isletme: 1, yatirim: 2 };
 
+type Aralik = "hepsi" | "buAy" | "gecenAy" | "ozel";
+const ARALIK_ETIKET: Record<Aralik, string> = {
+  hepsi: "Tüm zamanlar",
+  buAy: "Bu ay",
+  gecenAy: "Geçen ay",
+  ozel: "Tarih seç",
+};
+
+function iso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function isoToDate(s: string): Date {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** Seçili aralığın [başlangıç, bitiş] ISO tarihleri; "hepsi" → null. */
+function aralikTarihleri(a: Aralik, bas: string, bit: string): [string, string] | null {
+  const b = new Date();
+  if (a === "buAy") return [iso(new Date(b.getFullYear(), b.getMonth(), 1)), iso(b)];
+  if (a === "gecenAy") {
+    return [iso(new Date(b.getFullYear(), b.getMonth() - 1, 1)), iso(new Date(b.getFullYear(), b.getMonth(), 0))];
+  }
+  if (a === "ozel") return bas <= bit ? [bas, bit] : [bit, bas];
+  return null;
+}
+
+/** Tek tarih alanı: iOS'ta kompakt yerel seçici, Android'de dokununca açılan takvim. */
+function TarihAlani({ etiket, deger, onChange }: { etiket: string; deger: string; onChange: (s: string) => void }) {
+  const renk = useRenkler();
+  const [acik, setAcik] = useState(false);
+  return (
+    <View style={s.tarihAlan}>
+      <Text style={{ color: renk.textMuted, fontSize: 13, fontWeight: "600" }}>{etiket}</Text>
+      {Platform.OS === "ios" ? (
+        <DateTimePicker
+          value={isoToDate(deger)}
+          mode="date"
+          display="compact"
+          locale="tr-TR"
+          maximumDate={new Date()}
+          onChange={(_e, d) => d && onChange(iso(d))}
+        />
+      ) : (
+        <>
+          <Pressable
+            onPress={() => setAcik(true)}
+            style={[s.tarihBtn, { borderColor: renk.border, backgroundColor: renk.card }]}
+          >
+            <Ionicons name="calendar-outline" size={16} color={renk.aksan} />
+            <Text style={{ color: renk.text, fontSize: 14, fontWeight: "600" }}>{tarihEtiket(deger)}</Text>
+          </Pressable>
+          {acik && (
+            <DateTimePicker
+              value={isoToDate(deger)}
+              mode="date"
+              maximumDate={new Date()}
+              onChange={(_e, d) => {
+                setAcik(false);
+                if (d) onChange(iso(d));
+              }}
+            />
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
 export default function Ara() {
   const renk = useRenkler();
   const kategoriler = useCategories();
   const [q, setQ] = useState("");
   const [kat, setKat] = useState<string | null>(null);
   const [yon, setYon] = useState<Yon | null>(null);
+  const [aralik, setAralik] = useState<Aralik>("hepsi");
+  const [bas, setBas] = useState(() => {
+    const b = new Date();
+    return iso(new Date(b.getFullYear(), b.getMonth() - 1, 1));
+  });
+  const [bit, setBit] = useState(() => iso(new Date()));
   const [sonuc, setSonuc] = useState<Islem[] | null>(null);
   const [yukleniyor, setYukleniyor] = useState(false);
 
   async function ara() {
     setYukleniyor(true);
     try {
-      const hepsi = await api.listTransactions({ limit: 400, direction: yon ?? undefined });
+      const tarih = aralikTarihleri(aralik, bas, bit);
+      const hepsi = await api.listTransactions({
+        limit: tarih ? 500 : 400,
+        direction: yon ?? undefined,
+        ...(tarih ? { from: tarih[0], to: tarih[1] } : {}),
+      });
       const s = q.trim().toLocaleLowerCase("tr");
       setSonuc(
         hepsi.filter(
@@ -78,12 +160,29 @@ export default function Ara() {
           ))}
         </View>
 
+        <Text style={[T.label, { color: renk.text, marginTop: SP.md }]}>Tarih</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+          {(Object.keys(ARALIK_ETIKET) as Aralik[]).map((a) => (
+            <Cip key={a} yazi={ARALIK_ETIKET[a]} aktif={aralik === a} onPress={() => setAralik(a)} />
+          ))}
+        </ScrollView>
+        {aralik === "ozel" && (
+          <View style={s.tarihSatir}>
+            <TarihAlani etiket="Başlangıç" deger={bas} onChange={setBas} />
+            <TarihAlani etiket="Bitiş" deger={bit} onChange={setBit} />
+          </View>
+        )}
+
         <Buton yazi="Ara" onPress={ara} yukleniyor={yukleniyor} style={{ marginTop: SP.lg }} />
 
         {sonuc && (
           <View style={{ marginTop: SP.lg }}>
             <Text style={[T.label, { color: renk.textMuted, marginBottom: SP.sm }]}>
               {sonuc.length} sonuç
+              {sonuc.some((t) => t.direction === "gider") &&
+                ` · Harcama ₺${turkceTutar(sonuc.filter((t) => t.direction === "gider").reduce((a, t) => a + t.tutar, 0))}`}
+              {sonuc.some((t) => t.direction === "gelir") &&
+                ` · Gelir ₺${turkceTutar(sonuc.filter((t) => t.direction === "gelir").reduce((a, t) => a + t.tutar, 0))}`}
             </Text>
             {sonuc.map((t) => (
               <IslemSatiri key={t.id} islem={t} />
@@ -110,4 +209,15 @@ const s = StyleSheet.create({
   mint: { flex: 1, borderTopLeftRadius: R.xl, borderTopRightRadius: R.xl },
   icerik: { padding: SP.lg, gap: SP.sm, paddingBottom: 60 },
   radio: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: SP.sm },
+  tarihSatir: { flexDirection: "row", gap: SP.md, marginTop: SP.xs },
+  tarihAlan: { flex: 1, gap: 6, alignItems: "flex-start" },
+  tarihBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: R.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
 });

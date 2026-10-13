@@ -144,7 +144,9 @@ export default function Uyelik() {
         )}
         {!mevcutPro && me.data && (
           <Text style={{ color: renk.textMuted, fontSize: 13, textAlign: "center" }}>
-            Bugün {gunKayit}/{gunlukLimit} kayıt hakkını kullandın.
+            {limiteYakin
+              ? `Bugünkü ${gunlukLimit} kayıt hakkının hepsini kullandın.`
+              : `Bugün ${Math.max(0, gunlukLimit - gunKayit)}/${gunlukLimit} kayıt hakkın kaldı.`}
           </Text>
         )}
         {limiteYakin && reklamAktif() && (

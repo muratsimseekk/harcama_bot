@@ -113,8 +113,9 @@ export default function Kayit() {
               >
                 Kullanım Koşulları
               </Text>
-              'nı okudum, kabul ediyorum. Verilerimin ABD'deki hizmet sağlayıcılara
-              aktarılmasına açık rıza veriyorum.
+              'nı okudum, kabul ediyorum. Hizmetin sunulabilmesi için verilerimin,
+              uygulamanın kullandığı güvenli bulut altyapısında (yurt dışı sunucular) işlenmesine
+              onay veriyorum.
             </Text>
           </Pressable>
           <Buton yazi="Kayıt Ol" onPress={kayitOl} yukleniyor={yukleniyor} pasif={!gecerli} />

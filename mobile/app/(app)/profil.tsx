@@ -67,8 +67,10 @@ export default function Profil() {
         {!DEV_NOAUTH && <PlanRozeti ben={me.data} />}
         <Text style={[s.id, { color: renk.textMuted }]}>
           {me.data
-            ? `${me.data.toplam_kayit} kayıt · bugün ${me.data.gun_kayit}/${
-                me.data.gunluk_limit >= 1_000_000 ? "Sınırsız" : me.data.gunluk_limit
+            ? `${me.data.toplam_kayit} kayıt · ${
+                me.data.gunluk_limit >= 1_000_000
+                  ? "sınırsız kayıt hakkı"
+                  : `bugün ${Math.max(0, me.data.gunluk_limit - me.data.gun_kayit)}/${me.data.gunluk_limit} hak kaldı`
               }`
             : "…"}
         </Text>

@@ -17,8 +17,10 @@ export function EnerjiRozeti({ ben, onPress }: { ben?: Ben; onPress: () => void 
   if (!ben) return null;
 
   const pro = ben.plan === "pro";
-  const oran = pro ? 0 : Math.min(1, ben.gun_kayit / Math.max(1, ben.gunluk_limit));
-  const dolu = !pro && ben.gun_kayit >= ben.gunluk_limit;
+  // Kalan hak gösterilir (3/3 → hiç kullanılmadı, 0/3 → bitti); çubuk da kalanla dolu
+  const kalan = kalanHak(ben);
+  const oran = pro ? 0 : Math.min(1, kalan / Math.max(1, ben.gunluk_limit));
+  const dolu = !pro && kalan === 0;
 
   return (
     <Pressable
@@ -39,7 +41,7 @@ export function EnerjiRozeti({ ben, onPress }: { ben?: Ben; onPress: () => void 
       </View>
       <View style={s.metinSar}>
         <Text style={{ color: renk.text, fontSize: 13, fontWeight: "700" }}>
-          {pro ? "Sınırsız kayıt hakkı" : `Bugün ${ben.gun_kayit}/${ben.gunluk_limit} kayıt hakkı`}
+          {pro ? "Sınırsız kayıt hakkı" : `Bugün ${kalan}/${ben.gunluk_limit} kayıt hakkın kaldı`}
         </Text>
         {!pro && (
           <View style={[s.bar, { backgroundColor: renk.border }]}>
@@ -55,6 +57,11 @@ export function EnerjiRozeti({ ben, onPress }: { ben?: Ben; onPress: () => void 
       <Ionicons name="chevron-forward" size={16} color={renk.textFaint} />
     </Pressable>
   );
+}
+
+/** Bugün kalan kayıt hakkı (eksiye düşmez). */
+export function kalanHak(ben: Ben): number {
+  return Math.max(0, ben.gunluk_limit - ben.gun_kayit);
 }
 
 /** `EnerjiSheet`'in reklam akışındaki geçici durumu — normal görünümün yerini alır. */
@@ -144,7 +151,7 @@ export function EnerjiSheet({
   }, [acik, durum, onKapat]);
 
   const pro = ben?.plan === "pro";
-  const dolu = !!ben && !pro && ben.gun_kayit >= ben.gunluk_limit;
+  const dolu = !!ben && !pro && kalanHak(ben) === 0;
 
   return (
     <Modal visible={acik} transparent animationType="slide" onRequestClose={onKapat} statusBarTranslucent>
@@ -184,8 +191,11 @@ export function EnerjiSheet({
 
                 {!!ben && !pro && (
                   <Text style={[T.body, { color: renk.textMuted, textAlign: "center", lineHeight: 21 }]}>
-                    Bugün {ben.gun_kayit}/{ben.gunluk_limit} kayıt hakkını kullandın. Reklam izleyerek
-                    hemen ek hak kazanabilir ya da Pro'ya geçip sınırı tamamen kaldırabilirsin.
+                    {dolu
+                      ? `Bugünkü ${ben.gunluk_limit} kayıt hakkının hepsini kullandın.`
+                      : `Bugün ${kalanHak(ben)}/${ben.gunluk_limit} kayıt hakkın kaldı.`}{" "}
+                    Reklam izleyerek hemen ek hak kazanabilir ya da Pro'ya geçip sınırı tamamen
+                    kaldırabilirsin.
                   </Text>
                 )}
                 {pro && (
