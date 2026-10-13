@@ -7,7 +7,21 @@
 > `~/.claude/` altındaki hafıza ve plan dosyaları makineye özeldir, taşınmaz — bu dosya
 > onların yerine geçer. Güncel tutulmalı: her önemli adımdan sonra Claude bunu günceller.
 
-Son güncelleme: 2026-10-09 · Dal: `faz-m1-mobil` · Son commit: `12037d2`
+Son güncelleme: 2026-10-13 · Dal: `faz-m1-mobil` · Son commit: `96c3585`
+
+> **2026-10-09 → 10-13 (Google Play hazırlığı) — güncel adım listesi `docs/GOOGLE-PLAY-REHBERI.md`:**
+> - nimustudio.com (Google Workspace) + info@/demo@ alias; yasal site GitHub Pages'te yayında
+>   (repo `nimustudio-paraizi`, `scripts/site_olustur.py`); DKIM var, DMARC yok.
+> - İkon/splash/Play görselleri (`scripts/ikon_olustur.py`), sürüm 1.0.0.
+> - Play Console bireysel hesap açıldı (doğrulama bekleniyor). RevenueCat projesi + `pro`
+>   entitlement + `default` offering + webhook (Render `RC_WEBHOOK_SECRET` ayarlı, 401/200 test
+>   edildi); Android public key `eas.json`'da. UptimeRobot `/health` (HEAD desteği `ca57c3e`).
+> - Supabase: Türkçe e-posta şablonları + SMTP = Workspace (gönderen info@nimustudio.com).
+> - Demo hesap `demo@nimustudio.com` (şifre kullanıcıda; 18 işlem + bütçe + hedef).
+> - Production AAB #2 alındı ama `96c3585` (tarih aralığı filtresi, kalan hak göstergesi, onay
+>   metni) içermiyor → Play'e yüklemeden önce yeni production build.
+> - Açık: push cron `main`'de olmadığı için çalışmıyor (harici cron gerekli), FCM V1 anahtarı EAS'te
+>   mi doğrulanmadı, Sentry token rotasyonu, Play SHA-1, abonelik ürünleri, kapalı test.
 
 > **2026-09-26 → 10-08 arası yapılanlar (bu dosya o sürede güncellenmemişti):**
 > - **Gelir modeli değişti:** Base + 7 gün deneme KALDIRILDI → **Free (reklamlı, günlük ortak
