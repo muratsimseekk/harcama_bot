@@ -83,7 +83,8 @@ app.include_router(reklam.router)
 app.include_router(sayfalar.router)
 
 
-@app.get("/health", tags=["meta"])
+# HEAD: UptimeRobot vb. izleyiciler varsayılan olarak HEAD atar (yalnız GET → 405 → "down")
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["meta"])
 async def health() -> dict:
     eksik = [
         ad for ad, deger in {

@@ -52,11 +52,9 @@ Geliştirici adı: **nimustudio** · İletişim: **info@nimustudio.com**
 
 ## AŞAMA 2 — Kod / içerik hazırlığı (hesap onaylanırken)
 
-### 2.1 👤 Uygulama ikonu — ŞU AN HİÇ YOK
-- [ ] **1024×1024 PNG**, şeffaf olmayan arka plan (logo/tasarım) → bana ver
-      (yoksa 🤖 basit bir geçici ikon hazırlayabilirim — söyle)
-- 🤖 Ben: `assets/icon.png`, Android adaptive icon (ön plan + arka plan rengi), splash,
-  Play için **512×512** ikon üreteceğim, `app.json`'a bağlayacağım
+### 2.1 Uygulama ikonu ✅
+- [x] Logo → `scripts/ikon_olustur.py` → ikon, adaptive ikon, splash, bildirim ikonu,
+      Play 512×512 + feature graphic (`docs/magaza-gorselleri/`). Logo değişirse scripti tekrar çalıştır.
 
 ### 2.2 Yasal sayfalar + hesap silme sayfası — 🤖 hazır, 👤 yayına alınacak
 ✅ Metinler dolduruldu (Murat Şimşek / nimustudio / Şehitkamil-Gaziantep / info@nimustudio.com),
@@ -69,16 +67,18 @@ hesap silme, `app-ads.txt`. Adresler:
 
 **👤 Yayına alma (GitHub Pages, ücretsiz):** Ana repo `harcama_bot` özel kalır (Telegram bot
 kodu var); site için ayrı **public** repo açılır.
-- [ ] github.com → New repository → ad `nimustudio-site` → **Public** → Create (boş)
-- [ ] 🤖 `site/` içeriğini o repoya ben gönderirim (+ `CNAME` dosyası `nimustudio.com`)
-- [ ] Repo → Settings → Pages → Branch `main` / root → Save → Custom domain `nimustudio.com`
-- [ ] Google Admin → Hesap → Alanlar → Alanları yönet → nimustudio.com → **DNS'i yönet**
+✅ **2026-10-13 yayında** — repo `muratsimseekk/nimustudio-paraizi`; üç sayfa, www yönlendirmesi
+ve `app-ads.txt` HTTPS ile 200 dönüyor.
+- [x] github.com → New repository → `nimustudio-paraizi` → **Public**
+- [x] 🤖 `site/` içeriği + `CNAME` (`nimustudio.com`) gönderildi
+- [x] Repo → Settings → Pages → Branch `main` / root → Custom domain `nimustudio.com`
+- [x] Google Admin → Hesap → Alanlar → Alanları yönet → nimustudio.com → **DNS'i yönet**
       (Squarespace paneli açılır) → Squarespace'in park kayıtlarını (A / CNAME www) sil → ekle:
       - `A` `@` → `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
       - `CNAME` `www` → `<github-kullanici-adin>.github.io`
       - ⚠️ **MX ve TXT (Google) kayıtlarına DOKUNMA** — mail bozulur
-- [ ] Birkaç saat sonra GitHub Pages → **Enforce HTTPS** işaretle
-- [ ] Kontrol: üç sayfa + `nimustudio.com/app-ads.txt` açılıyor mu (🤖 kontrol ederim)
+- [ ] GitHub Pages → **Enforce HTTPS** işaretli mi (kutu aktifse işaretle)
+- [x] Kontrol: üç sayfa + `nimustudio.com/app-ads.txt` açılıyor
 - Metin değişirse: `docs/*.md` düzenle → `python scripts/site_olustur.py` → site reposuna tekrar gönder
 
 ### 2.3 🤖 Sunucu uyumasın (inceleme sırasında API 40 sn uyanırsa red riski)
@@ -91,7 +91,7 @@ kodu var); site için ayrı **public** repo açılır.
   sonra çözeriz.
 
 ### 2.4 🤖 Sürüm
-- [ ] `app.json` `version` → `1.0.0`, `supportsTablet` → `false`
+- [x] `app.json` `version` → `1.0.0`, `supportsTablet` → `false`
 
 ### 2.5 👤 Supabase ayarları (dashboard → Authentication)
 - [ ] URL Configuration → Redirect URLs: `paraizi://**` ekle (`harcama://**` silinebilir)
@@ -145,7 +145,7 @@ edebilir: **Evet** (uygulama içi + 2.2'deki web sayfası URL'si)
 - [ ] Uygulama adı (≤30): **Paraİzi** (ya da "Paraİzi: Harcama Takibi")
 - [x] Kısa/uzun açıklama + App access + içerik derecelendirme cevapları → 🤖 **`docs/MAGAZA-METINLERI.md`** (kopyala-yapıştır)
       (abartı yok: "en iyi/1 numara" yok, başka marka adı yok, "banka bağlantısı yoktur" var)
-- [ ] Uygulama ikonu 512×512 (2.1'den) · **Feature graphic 1024×500** (🤖 hazırlayabilirim)
+- [x] Uygulama ikonu 512×512 + **Feature graphic 1024×500** → `docs/magaza-gorselleri/`
 - [ ] Telefon ekran görüntüleri: en az 2, ideal 4-6 → 🤖 emülatörden demo hesapla alırım
 - [ ] Kategori: **Finans** · İletişim e-postası: `info@nimustudio.com` · Web sitesi: `https://nimustudio.com`
 - [ ] AdMob → Apps → uygulamayı Play listesine bağla (yayından sonra mümkün olur)
