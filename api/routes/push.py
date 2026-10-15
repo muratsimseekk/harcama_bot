@@ -128,7 +128,10 @@ async def _gunluk_ozet(uid: str, tokens: list[str], b: date) -> int:
 
 
 async def _haftalik_ozet(uid: str, tokens: list[str], b: date) -> int:
-    bas, bit = hafta_araligi(b - timedelta(days=7))
+    # Pazar akşamı çalışır → biten haftanın (Pazartesi–bugün) özeti. Başka gün çalıştırılırsa
+    # bir önceki tam haftayı özetler.
+    hafta_gunu = b if b.weekday() == 6 else b - timedelta(days=7)
+    bas, bit = hafta_araligi(hafta_gunu)
     anahtar = f"haftalik:{bas.isoformat()}"
     if await repo.bildirim_gonderildi_mi(uid, anahtar):
         return 0
@@ -137,8 +140,8 @@ async def _haftalik_ozet(uid: str, tokens: list[str], b: date) -> int:
         return 0
     toplam = sum(t.tutar for t in giderler)
     ok, _, olu = await push.expo_push_gonder(
-        tokens, "Geçen hafta özeti",
-        f"{len(giderler)} işlem · {turkce_tutar(toplam)} ₺. Bu hafta bütçeni gözden geçir.",
+        tokens, "Bu haftanın özeti",
+        f"{len(giderler)} işlem · {turkce_tutar(toplam)} ₺. Yeni haftada bütçeni gözden geçir.",
         {"tur": "haftalik"},
     )
     await _olu_temizle(olu)
