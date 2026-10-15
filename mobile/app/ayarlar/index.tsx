@@ -67,8 +67,13 @@ export default function Ayarlar() {
             ikon="color-palette-outline"
             baslik="Görünüm"
             deger={TEMA[mod]}
-            son
             onPress={() => router.navigate("/ayarlar/gorunum")}
+          />
+          <AyarSatir
+            ikon="sparkles-outline"
+            baslik="Uygulama Tanıtımı"
+            son
+            onPress={() => router.navigate("/tanitim")}
           />
         </AyarGrup>
 

@@ -182,6 +182,7 @@ function Kapi() {
       <Stack.Screen name="confirm" options={{ ...baslik, title: "Onayla" }} />
       <Stack.Screen name="islem-form" />
       <Stack.Screen name="bildirimler" />
+      <Stack.Screen name="tanitim" options={{ animation: "slide_from_bottom" }} />
       {/* Başlıklı normal ekran: "modal" Android'de tam ekran açılıp arama kutusu durum
           çubuğunun altına giriyordu ve geri düğmesi yoktu. */}
       <Stack.Screen name="ara" options={{ ...baslik, title: "Ara" }} />
