@@ -19,6 +19,8 @@ DOCS = KOK / "docs"
 SITE = KOK / "site"
 
 ADMOB_PUB = "pub-8731282143908044"
+# Google site sahipliği doğrulaması (Play Console / Search Console) — silme
+GOOGLE_DOGRULAMA = "googlebd218e241143d0c5.html"
 EPOSTA = "info@nimustudio.com"
 
 # docs/ içindeki göreli bağlantılar sitede şu adreslere gider
@@ -177,6 +179,7 @@ def main():
     yaz("paraizi/gizlilik/index.html", sayfa("Paraİzi — Gizlilik Politikası", md_html(gizlilik)))
     yaz("paraizi/kosullar/index.html", sayfa("Paraİzi — Kullanım Koşulları", md_html(kosullar)))
     yaz("paraizi/hesap-silme/index.html", sayfa("Paraİzi — Hesap silme", HESAP_SILME))
+    yaz(GOOGLE_DOGRULAMA, f"google-site-verification: {GOOGLE_DOGRULAMA}")
     yaz("app-ads.txt", f"google.com, {ADMOB_PUB}, DIRECT, f08c47fec0942fa0\n")
     print("site/ üretildi:", sorted(str(p.relative_to(SITE)) for p in SITE.rglob("*") if p.is_file()))
 
