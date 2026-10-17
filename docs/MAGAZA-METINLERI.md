@@ -40,13 +40,14 @@ YAZ YA DA SÖYLE, GERİSİ HALLOLSUN
 
 BÜTÇE VE HEDEFLER
 • Aylık toplam harcama sınırı ve kategori bazlı bütçeler koy
-• Sınıra yaklaşınca bildirim al
+• Sınıra yaklaşınca uyarı al
 • Birikim hedeflerini takip et
 
 ANALİZ VE ÖZETLER
 • Haftalık, aylık ve yıllık grafikler
 • Kategori dağılımı ve en çok harcadığın alanlar
-• Geçmiş işlemlerinde arama ve filtreleme
+• Geçmiş işlemlerinde arama; tarih aralığı, kategori ve türe göre filtreleme
+• Her akşam günlük, her pazar haftalık özet bildirimi
 
 KİŞİSEL, İŞLETME VE YATIRIM AYRI
 Kendi işin varsa işletme giderlerini kişisel harcamalarından ayrı tut. Yatırım hareketlerini de ayrı bir başlıkta izle. Kategorileri dilediğin gibi düzenle.
