@@ -147,6 +147,16 @@ Hesabın ve tüm kayıtların hemen silinir.</p></div>
 <strong>hesabına kayıtlı e-posta adresinden</strong> "Paraİzi hesap silme talebi" konulu bir
 e-posta gönder. Kimliğini doğruladıktan sonra en geç <strong>30 gün</strong> içinde hesabını
 ve tüm verilerini sileriz ve seni bilgilendiririz.</p></div>
+<div class="kart"><h2>3. Hesabını silmeden belirli verileri silmek</h2>
+<p><strong>Tek tek kayıtlar:</strong> Ana sayfa ya da Ara ekranında kayda dokun →
+<strong>Sil</strong>. Kayıt anında listelerden, özetlerden ve analizlerden kalkar. Sunucudaki
+kopyasının da kalıcı olarak silinmesini istersen aşağıdaki e-posta yöntemini kullan.</p>
+<p><strong>Kategoriler:</strong> Profil → Kategoriler. <strong>Bütçeler ve hedefler:</strong>
+Hedefler sekmesi. Buradan düzenleyip silebilirsin.</p>
+<p><strong>Diğer veriler</strong> (ör. belirli bir tarih aralığındaki tüm kayıtlar): hesabına kayıtlı
+e-posta adresinden <a href="mailto:{EPOSTA}?subject=Paraİzi%20veri%20silme%20talebi">{EPOSTA}</a>
+adresine "Paraİzi veri silme talebi" konulu e-posta gönder; hangi verilerin silinmesini istediğini
+yaz. En geç <strong>30 gün</strong> içinde sileriz ve seni bilgilendiririz.</p></div>
 <h2>Neler silinir, neler kalır?</h2>
 <ul><li><strong>Silinir:</strong> e-posta, ad, tüm harcama/gelir kayıtları, kategoriler, bütçeler,
 hedefler, bildirim jetonları, hane üyeliği. Yedeklerden de en geç 30 gün içinde silinir.</li>
