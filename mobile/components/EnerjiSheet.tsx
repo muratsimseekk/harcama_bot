@@ -66,15 +66,14 @@ export function kalanHak(ben: Ben): number {
 }
 
 /**
- * Kalan hakkın kullanıcıya gösterilen metni. Payda her zaman günlük taban (3) —
- * reklamla kazanılan hak paydayı büyütmez ("0/4, 0/5" görünmesin). Reklamla taban
- * aşılırsa (ör. 3 hak varken izlendi) yalnız sayı gösterilir.
+ * Kalan hakkın kullanıcıya gösterilen metni. Payda her zaman günlük taban (3) ve
+ * gösterilen sayı 3'ü geçmez — reklamla kazanılan hak "0/4, 0/11" ya da "4/3" gibi
+ * görünmesin (kararlaştırıldı 2026-10-20).
  */
 export function hakMetni(ben: Ben): string {
   const kalan = kalanHak(ben);
   if (kalan === 0) return "Kayıt hakkın bitti";
-  if (kalan > ben.gunluk_enerji) return `Bugün ${kalan} kayıt hakkın kaldı`;
-  return `Bugün ${kalan}/${ben.gunluk_enerji} kayıt hakkın kaldı`;
+  return `Bugün ${Math.min(kalan, ben.gunluk_enerji)}/${ben.gunluk_enerji} kayıt hakkın kaldı`;
 }
 
 /** `EnerjiSheet`'in reklam akışındaki geçici durumu — normal görünümün yerini alır. */
@@ -143,6 +142,8 @@ export function EnerjiSheet({
   durum,
   onReklamIzle,
   onProGec,
+  gerekenReklam = 1,
+  bekleyenKayit,
 }: {
   acik: boolean;
   onKapat: () => void;
@@ -151,6 +152,9 @@ export function EnerjiSheet({
   durum?: EnerjiSheetDurum;
   onReklamIzle: () => void;
   onProGec: () => void;
+  /** Bekleyen kayıtları kaydetmek için art arda izlenecek reklam sayısı (402 akışı). */
+  gerekenReklam?: number;
+  bekleyenKayit?: number;
 }) {
   const renk = useRenkler();
 
@@ -204,9 +208,12 @@ export function EnerjiSheet({
 
                 {!!ben && !pro && (
                   <Text style={[T.body, { color: renk.textMuted, textAlign: "center", lineHeight: 21 }]}>
-                    {dolu ? "Bugünkü kayıt hakkının hepsini kullandın." : `${hakMetni(ben)}.`}{" "}
-                    Reklam izleyerek hemen ek hak kazanabilir ya da Pro'ya geçip sınırı tamamen
-                    kaldırabilirsin.
+                    {gerekenReklam > 1 && bekleyenKayit
+                      ? `${bekleyenKayit} kaydını eklemek için ${gerekenReklam} reklam izlemen gerekiyor. ` +
+                        `Reklamlar art arda oynatılır, bitince kayıtların otomatik kaydedilir. ` +
+                        `İstersen Pro'ya geçip sınırı tamamen kaldırabilirsin.`
+                      : `${dolu ? "Bugünkü kayıt hakkının hepsini kullandın." : `${hakMetni(ben)}.`} ` +
+                        `Reklam izleyerek hemen ek hak kazanabilir ya da Pro'ya geçip sınırı tamamen kaldırabilirsin.`}
                   </Text>
                 )}
                 {pro && (
@@ -228,7 +235,9 @@ export function EnerjiSheet({
                       >
                         <Ionicons name="play-circle" size={19} color={renk.aksanUstu} />
                         <Text style={{ color: renk.aksanUstu, fontSize: 15.5, fontWeight: "800" }}>
-                          Reklam İzle (+{ben?.reklam_kredi_adet ?? 1} limit)
+                          {gerekenReklam > 1
+                            ? `${gerekenReklam} Reklam İzle ve Kaydet`
+                            : `Reklam İzle (+${ben?.reklam_kredi_adet ?? 1} limit)`}
                         </Text>
                       </Pressable>
                     )}

@@ -23,8 +23,12 @@ const BASARI_GOSTERIM_MS = 4000;
 async function reklamIzleVeBekle(
   uyari: UyariGoster,
   beklet: (durum: EnerjiSheetDurum) => void,
+  sira?: { no: number; toplam: number },
 ): Promise<boolean> {
-  beklet({ tip: "yukleniyor", yazi: "Reklam hazırlanıyor" });
+  // Art arda birden çok reklamda ara "kazandın" ekranı gösterilmez — tek akış gibi görünür.
+  const coklu = !!sira && sira.toplam > 1;
+  const etiket = coklu ? ` (${sira!.no}/${sira!.toplam})` : "";
+  beklet({ tip: "yukleniyor", yazi: `Reklam hazırlanıyor${etiket}` });
   const once = await api.me().catch(() => null);
   const baslangicKredi = once?.gun_reklam_kredisi ?? 0;
 
@@ -38,6 +42,7 @@ async function reklamIzleVeBekle(
   for (let deneme = 0; deneme < 8; deneme++) {
     const guncel = await api.me().catch(() => null);
     if (guncel && guncel.gun_reklam_kredisi > baslangicKredi) {
+      if (coklu) return true;
       beklet({ tip: "basarili", yazi: `+${guncel.reklam_kredi_adet} kayıt hakkı kazandın!` });
       await new Promise((r) => setTimeout(r, BASARI_GOSTERIM_MS));
       // Başarı durumunu burada SIFIRLAMA: sıfırlanırsa panel, kayıt yapılana kadar eski
@@ -52,17 +57,42 @@ async function reklamIzleVeBekle(
   return false;
 }
 
-/** Reaktif akış (402'den sonra): reklamı izlet, hak geldiyse bekleyen kaydı tekrar dene.
- * Reklam yarıda kapatıldıysa tekrar denenmez (yine 402 alıp paneli boşuna açardı). */
+/**
+ * Bekleyen kayıtlar için gereken reklam sayısı (402 gövdesinden). Ör. 1 hak kalmışken
+ * 3 kayıt → 2 hak eksik → reklam başına 1 hakla 2 reklam.
+ */
+export function gerekenReklam(detay: Record<string, unknown> | undefined, kayitSayisi: number): number {
+  const limit = Number(detay?.gunluk_limit ?? 0);
+  const kullanilan = Number(detay?.gun_kayit ?? 0);
+  const kredi = Math.max(1, Number(detay?.reklam_kredi ?? 1));
+  const eksik = kullanilan + kayitSayisi - limit;
+  return Math.max(1, Math.ceil(eksik / kredi));
+}
+
+/** Reaktif akış (402'den sonra): gereken sayıda reklamı art arda izlet, hepsi geldiyse
+ * bekleyen kaydı tekrar dene. Reklam yarıda kapatıldıysa tekrar denenmez (yine 402 alıp
+ * paneli boşuna açardı); o ana kadar kazanılan haklar hesapta kalır. */
 export async function reklamIzleVeTekrarDene(
   qc: QueryClient,
   kaydetFn: () => void | Promise<void>,
   uyari: UyariGoster,
   beklet: (durum: EnerjiSheetDurum) => void,
+  adet = 1,
 ): Promise<void> {
   try {
-    const kazandi = await reklamIzleVeBekle(uyari, beklet);
-    if (kazandi) await kaydetFn(); // kaydetFn önce paneli kapatır
+    for (let no = 1; no <= adet; no++) {
+      const kazandi = await reklamIzleVeBekle(uyari, beklet, { no, toplam: adet });
+      if (!kazandi) {
+        if (no > 1) {
+          uyari(
+            "Kayıtların henüz eklenmedi",
+            `${no - 1} reklamın hakkı hesabına eklendi. Kalan reklamı izleyince kayıtların kaydedilecek.`,
+          );
+        }
+        return;
+      }
+    }
+    await kaydetFn(); // kaydetFn önce paneli kapatır
   } finally {
     beklet(null);
     await qc.invalidateQueries({ queryKey: ["me"] });

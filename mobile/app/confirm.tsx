@@ -11,7 +11,7 @@ import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
 import { useUyari } from "@/components/Uyari";
 import { api, ApiError } from "@/lib/api";
 import { turkceTutar } from "@/lib/format";
-import { reklamIzleVeTekrarDene } from "@/lib/kullanim402";
+import { gerekenReklam, reklamIzleVeTekrarDene } from "@/lib/kullanim402";
 import { useMe } from "@/lib/queries";
 import { reklamAktif } from "@/lib/reklam";
 import { golge, R, SP, useRenkler } from "@/lib/theme";
@@ -32,6 +32,7 @@ export default function Confirm() {
   const me = useMe();
   const [sheetAcik, setSheetAcik] = useState(false);
   const [sheetDurum, setSheetDurum] = useState<EnerjiSheetDurum>(null);
+  const [reklamAdet, setReklamAdet] = useState(1);
 
   const toplam = adaylar.reduce((t, a) => t + (a.direction === "gelir" ? a.tutar : -a.tutar), 0);
 
@@ -64,6 +65,7 @@ export default function Confirm() {
     } catch (e) {
       if (e instanceof ApiError && e.status === 402) {
         await qc.invalidateQueries({ queryKey: ["me"] });
+        setReklamAdet(gerekenReklam(e.detail, adaylar.length));
         setSheetAcik(true);
         return;
       }
@@ -80,6 +82,7 @@ export default function Confirm() {
       },
       uyari,
       setSheetDurum,
+      reklamAdet,
     );
   }
 
@@ -160,6 +163,8 @@ export default function Confirm() {
         reklamGosterilebilir={reklamAktif()}
         durum={sheetDurum}
         onReklamIzle={reklamIzle}
+        gerekenReklam={reklamAdet}
+        bekleyenKayit={adaylar.length}
         onProGec={() => {
           setSheetAcik(false);
           router.push("/uyelik");
