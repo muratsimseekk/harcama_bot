@@ -1,9 +1,12 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Application from "expo-application";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DEV_NOAUTH } from "@/app/_layout";
 import { Metin as Text } from "@/components/Metin";
+import { hakMetni } from "@/components/EnerjiSheet";
 import { useUyari } from "@/components/Uyari";
 import { PlanRozeti } from "@/components/PlanRozeti";
 import { kullaniciAdi, useAuth } from "@/lib/auth";
@@ -69,9 +72,7 @@ export default function Profil() {
           <Text style={[s.id, { color: renk.textMuted }]}>
             {me.data
               ? `${me.data.toplam_kayit} kayıt · ${
-                  me.data.gunluk_limit >= 1_000_000
-                    ? "sınırsız kayıt hakkı"
-                    : `bugün ${Math.max(0, me.data.gunluk_limit - me.data.gun_kayit)}/${me.data.gunluk_limit} hak kaldı`
+                  me.data.gunluk_limit >= 1_000_000 ? "sınırsız kayıt hakkı" : hakMetni(me.data).toLocaleLowerCase("tr")
                 }`
               : "…"}
           </Text>
@@ -92,6 +93,12 @@ export default function Profil() {
             </Pressable>
           ))}
         </View>
+
+        {/* Hangi build'in yüklü olduğunu test sırasında tek bakışta görmek için */}
+        <Text style={[s.surum, { color: renk.textFaint }]}>
+          Sürüm {Constants.expoConfig?.version ?? "?"}
+          {Application.nativeBuildVersion ? ` (${Application.nativeBuildVersion})` : ""}
+        </Text>
       </ScrollView>
     </View>
   );
@@ -120,4 +127,5 @@ const s = StyleSheet.create({
   satir: { flexDirection: "row", alignItems: "center", gap: SP.md, padding: SP.md, borderRadius: R.md },
   ikonKutu: { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   satirAd: { flex: 1, fontSize: 16, fontWeight: "600" },
+  surum: { textAlign: "center", fontSize: 12, marginTop: SP.sm },
 });

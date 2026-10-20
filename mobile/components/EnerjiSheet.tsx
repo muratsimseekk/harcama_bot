@@ -17,9 +17,9 @@ export function EnerjiRozeti({ ben, onPress }: { ben?: Ben; onPress: () => void 
   if (!ben) return null;
 
   const pro = ben.plan === "pro";
-  // Kalan hak gösterilir (3/3 → hiç kullanılmadı, 0/3 → bitti); çubuk da kalanla dolu
+  // Kalan hak günlük tabana göre gösterilir (3/3 → 1/3 → bitti); çubuk da kalanla dolu
   const kalan = kalanHak(ben);
-  const oran = pro ? 0 : Math.min(1, kalan / Math.max(1, ben.gunluk_limit));
+  const oran = pro ? 0 : Math.min(1, kalan / Math.max(1, ben.gunluk_enerji));
   const dolu = !pro && kalan === 0;
 
   return (
@@ -40,18 +40,19 @@ export function EnerjiRozeti({ ben, onPress }: { ben?: Ben; onPress: () => void 
         />
       </View>
       <View style={s.metinSar}>
-        <Text style={{ color: renk.text, fontSize: 13, fontWeight: "700" }}>
-          {pro ? "Sınırsız kayıt hakkı" : `Bugün ${kalan}/${ben.gunluk_limit} kayıt hakkın kaldı`}
+        <Text style={{ color: dolu ? renk.danger : renk.text, fontSize: 13, fontWeight: "700" }}>
+          {pro ? "Sınırsız kayıt hakkı" : hakMetni(ben)}
         </Text>
-        {!pro && (
-          <View style={[s.bar, { backgroundColor: renk.border }]}>
-            <View
-              style={[
-                s.barDolu,
-                { backgroundColor: dolu ? renk.danger : renk.aksan, width: `${oran * 100}%` },
-              ]}
-            />
-          </View>
+        {dolu ? (
+          <Text style={{ color: renk.textMuted, fontSize: 12, fontWeight: "600" }}>
+            Reklam izle, hak kazan
+          </Text>
+        ) : (
+          !pro && (
+            <View style={[s.bar, { backgroundColor: renk.border }]}>
+              <View style={[s.barDolu, { backgroundColor: renk.aksan, width: `${oran * 100}%` }]} />
+            </View>
+          )
         )}
       </View>
       <Ionicons name="chevron-forward" size={16} color={renk.textFaint} />
@@ -62,6 +63,18 @@ export function EnerjiRozeti({ ben, onPress }: { ben?: Ben; onPress: () => void 
 /** Bugün kalan kayıt hakkı (eksiye düşmez). */
 export function kalanHak(ben: Ben): number {
   return Math.max(0, ben.gunluk_limit - ben.gun_kayit);
+}
+
+/**
+ * Kalan hakkın kullanıcıya gösterilen metni. Payda her zaman günlük taban (3) —
+ * reklamla kazanılan hak paydayı büyütmez ("0/4, 0/5" görünmesin). Reklamla taban
+ * aşılırsa (ör. 3 hak varken izlendi) yalnız sayı gösterilir.
+ */
+export function hakMetni(ben: Ben): string {
+  const kalan = kalanHak(ben);
+  if (kalan === 0) return "Kayıt hakkın bitti";
+  if (kalan > ben.gunluk_enerji) return `Bugün ${kalan} kayıt hakkın kaldı`;
+  return `Bugün ${kalan}/${ben.gunluk_enerji} kayıt hakkın kaldı`;
 }
 
 /** `EnerjiSheet`'in reklam akışındaki geçici durumu — normal görünümün yerini alır. */
@@ -191,9 +204,7 @@ export function EnerjiSheet({
 
                 {!!ben && !pro && (
                   <Text style={[T.body, { color: renk.textMuted, textAlign: "center", lineHeight: 21 }]}>
-                    {dolu
-                      ? `Bugünkü ${ben.gunluk_limit} kayıt hakkının hepsini kullandın.`
-                      : `Bugün ${kalanHak(ben)}/${ben.gunluk_limit} kayıt hakkın kaldı.`}{" "}
+                    {dolu ? "Bugünkü kayıt hakkının hepsini kullandın." : `${hakMetni(ben)}.`}{" "}
                     Reklam izleyerek hemen ek hak kazanabilir ya da Pro'ya geçip sınırı tamamen
                     kaldırabilirsin.
                   </Text>

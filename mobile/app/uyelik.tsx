@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { Metin as Text } from "@/components/Metin";
+import { hakMetni } from "@/components/EnerjiSheet";
 import { useUyari } from "@/components/Uyari";
 import { PlanRozeti } from "@/components/PlanRozeti";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
@@ -145,8 +146,8 @@ export default function Uyelik() {
         {!mevcutPro && me.data && (
           <Text style={{ color: renk.textMuted, fontSize: 13, textAlign: "center" }}>
             {limiteYakin
-              ? `Bugünkü ${gunlukLimit} kayıt hakkının hepsini kullandın.`
-              : `Bugün ${Math.max(0, gunlukLimit - gunKayit)}/${gunlukLimit} kayıt hakkın kaldı.`}
+              ? "Bugünkü kayıt hakkının hepsini kullandın."
+              : `${hakMetni(me.data)}.`}
           </Text>
         )}
         {limiteYakin && reklamAktif() && (
