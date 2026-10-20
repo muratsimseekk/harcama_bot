@@ -7,7 +7,7 @@
 > `~/.claude/` altındaki hafıza ve plan dosyaları makineye özeldir, taşınmaz — bu dosya
 > onların yerine geçer. Güncel tutulmalı: her önemli adımdan sonra Claude bunu günceller.
 
-Son güncelleme: 2026-10-20 · Dal: `faz-m1-mobil` · Son commit: `8e94a0d`
+Son güncelleme: 2026-10-20 · Dal: `faz-m1-mobil` · Son commit: `0acadd6`
 
 > **2026-10-20 (telefon testi):**
 > - Google girişi `DEVELOPER_ERROR`: Firebase'e SHA-1 eklemek GCP'de Android OAuth client AÇMIYOR →
@@ -16,6 +16,11 @@ Son güncelleme: 2026-10-20 · Dal: `faz-m1-mobil` · Son commit: `8e94a0d`
 > - Sesli kayıt production'da "sunucuya ulaşılamadı": `EXPO_PUBLIC_USE_RN_FETCH=1` yalnız yerel
 >   `.env`'deydi → `eas.json`'a eklendi (`a8bfdf5`). Profil ekranı kaydırılabilir.
 > - Ödüllü reklam +1 hak (`8e94a0d`, Render'da canlı). Production build 4 (`6aec6bb3`) alındı.
+> - 10-20/21: Pro satın alma senkronu `/v1/rc/sync` (Render `RC_SECRET_API_KEY`), sayaç 3'ü geçmez,
+>   art arda reklam, reklam ön-yükleme + 1 sn başarı, buton üstü dönen daireler, açılışta güncelleme
+>   penceresi (`/v1/surum`, Render `ANDROID_SON_SURUM` = yeni build no; 0 = kapalı), profilde sürüm
+>   satırı. **Production build 7** (`9d11427a`; 5-6 iptal edildi, numaraları yandı). Yeni sürüm
+>   Play'de yayına girince `ANDROID_SON_SURUM`'u o build'e çek.
 
 > **2026-10-15 → 10-18:**
 > - Bütçe uyarısı artık uygulama içi pencere (%80/%100, ay başına bir kez) (`a1faa8e`).
