@@ -7,7 +7,15 @@
 > `~/.claude/` altındaki hafıza ve plan dosyaları makineye özeldir, taşınmaz — bu dosya
 > onların yerine geçer. Güncel tutulmalı: her önemli adımdan sonra Claude bunu günceller.
 
-Son güncelleme: 2026-10-20 · Dal: `faz-m1-mobil` · Son commit: `e4fe189`
+Son güncelleme: 2026-10-20 · Dal: `faz-m1-mobil` · Son commit: `8e94a0d`
+
+> **2026-10-20 (telefon testi):**
+> - Google girişi `DEVELOPER_ERROR`: Firebase'e SHA-1 eklemek GCP'de Android OAuth client AÇMIYOR →
+>   GCP `harcama-takip-9ce6b` → Credentials'ta elle açıldı: "Paraizi Android (Play)" (SHA 11:8E…CD:51)
+>   + "(EAS)" (SHA B1:43…6D:45). Giriş çalışıyor.
+> - Sesli kayıt production'da "sunucuya ulaşılamadı": `EXPO_PUBLIC_USE_RN_FETCH=1` yalnız yerel
+>   `.env`'deydi → `eas.json`'a eklendi (`a8bfdf5`). Profil ekranı kaydırılabilir.
+> - Ödüllü reklam +1 hak (`8e94a0d`, Render'da canlı). Production build 4 (`6aec6bb3`) alındı.
 
 > **2026-10-15 → 10-18:**
 > - Bütçe uyarısı artık uygulama içi pencere (%80/%100, ay başına bir kez) (`a1faa8e`).
