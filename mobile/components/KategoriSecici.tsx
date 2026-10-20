@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { kategoriIkon } from "@/lib/kategoriIkon";
@@ -47,6 +47,7 @@ export function KategoriSecici({
       kapat();
       return;
     }
+    if (olustur.isPending) return; // çift dokunuş
     olustur.mutate(
       { name: t, tip },
       {
@@ -73,9 +74,14 @@ export function KategoriSecici({
         {eksik !== "" && (
           <Pressable
             onPress={() => kaydet(eksik)}
+            disabled={olustur.isPending}
             style={[s.cip, { borderStyle: "dashed", borderColor: renk.aksan }]}
           >
-            <Ionicons name="add" size={13} color={renk.aksan} />
+            {olustur.isPending && olustur.variables?.name === eksik.trim() ? (
+              <ActivityIndicator size={13} color={renk.aksan} />
+            ) : (
+              <Ionicons name="add" size={13} color={renk.aksan} />
+            )}
             <Text style={{ color: renk.aksan, fontSize: 14, fontWeight: "600" }}>{eksik}</Text>
           </Pressable>
         )}
@@ -136,7 +142,11 @@ export function KategoriSecici({
             disabled={olustur.isPending || !yeniAd.trim()}
             style={[s.yeniBtn, { backgroundColor: renk.aksan, opacity: yeniAd.trim() ? 1 : 0.5 }]}
           >
-            <Ionicons name="checkmark" size={18} color={renk.aksanUstu} />
+            {olustur.isPending ? (
+              <ActivityIndicator size="small" color={renk.aksanUstu} />
+            ) : (
+              <Ionicons name="checkmark" size={18} color={renk.aksanUstu} />
+            )}
           </Pressable>
           <Pressable onPress={kapat} style={[s.yeniBtn, { borderWidth: 1, borderColor: renk.border }]}>
             <Ionicons name="close" size={18} color={renk.textMuted} />

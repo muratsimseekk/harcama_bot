@@ -213,10 +213,15 @@ export default function Uyelik() {
       </Kart>
 
       {satinalmaAktif() && (
-        <Pressable onPress={geriYukleBas} disabled={!!islemde} style={{ alignSelf: "center" }}>
+        <Pressable
+          onPress={geriYukleBas}
+          disabled={!!islemde}
+          style={{ alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 6 }}
+        >
           <Text style={{ color: renk.aksan, fontSize: 13, fontWeight: "700" }}>
             Satın Alımları Geri Yükle
           </Text>
+          {islemde === "restore" && <ActivityIndicator size={13} color={renk.aksan} />}
         </Pressable>
       )}
 

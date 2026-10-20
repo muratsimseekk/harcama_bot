@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Alan } from "@/components/Alan";
 import { Kart } from "@/components/base";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
@@ -240,9 +240,11 @@ function Hanede({
                 { yazi: "Yenile", onPress: () => kodM.mutate(undefined) },
               ])
             }
-            style={{ marginTop: SP.sm }}
+            disabled={kodM.isPending}
+            style={{ marginTop: SP.sm, flexDirection: "row", alignItems: "center", gap: 6 }}
           >
             <Text style={{ color: renk.aksan, fontSize: 13, fontWeight: "600" }}>Kodu yenile</Text>
+            {kodM.isPending && <ActivityIndicator size={13} color={renk.aksan} />}
           </Pressable>
         )}
       </Kart>
@@ -268,9 +270,14 @@ function Hanede({
                     const sonraki = ROL_SIRA[(ROL_SIRA.indexOf(u.rol as HaneRol) + 1) % ROL_SIRA.length];
                     rolM.mutate({ uid: u.user_id, rol: sonraki });
                   }}
+                  disabled={rolM.isPending}
                   hitSlop={8}
                 >
-                  <Ionicons name="swap-horizontal" size={18} color={renk.textMuted} />
+                  {rolM.isPending && rolM.variables?.uid === u.user_id ? (
+                    <ActivityIndicator size={18} color={renk.textMuted} />
+                  ) : (
+                    <Ionicons name="swap-horizontal" size={18} color={renk.textMuted} />
+                  )}
                 </Pressable>
                 <Pressable
                   onPress={() =>
@@ -279,9 +286,14 @@ function Hanede({
                       { yazi: "Çıkar", stil: "tehlike", onPress: () => cikarM.mutate(u.user_id) },
                     ])
                   }
+                  disabled={cikarM.isPending}
                   hitSlop={8}
                 >
-                  <Ionicons name="close-circle-outline" size={19} color={renk.danger} />
+                  {cikarM.isPending && cikarM.variables === u.user_id ? (
+                    <ActivityIndicator size={19} color={renk.danger} />
+                  ) : (
+                    <Ionicons name="close-circle-outline" size={19} color={renk.danger} />
+                  )}
                 </Pressable>
               </View>
             )}
@@ -291,9 +303,9 @@ function Hanede({
 
       <View style={{ marginTop: SP.md }}>
         {hane.owner ? (
-          <Buton yazi="Haneyi Sil" varyant="hayalet" onPress={sil} />
+          <Buton yazi="Haneyi Sil" varyant="hayalet" onPress={sil} yukleniyor={silM.isPending} />
         ) : (
-          <Buton yazi="Haneden Ayrıl" varyant="hayalet" onPress={ayril} />
+          <Buton yazi="Haneden Ayrıl" varyant="hayalet" onPress={ayril} yukleniyor={cikarM.isPending} />
         )}
       </View>
     </>

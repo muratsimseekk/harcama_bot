@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Modal, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { HedefHalkasi } from "@/components/HedefHalkasi";
@@ -41,6 +41,9 @@ export default function Hedefler() {
     onError: (e: unknown) =>
       uyari("Kaydedilemedi", hataMesaji(e, undefined, { ekran: "hedefler" })),
   };
+  // Tutar penceresi işlem bitene kadar açık kalır (Kaydet'te dönen daire) — hata
+  // uyarısı burada gösterildiği için promise reddedilmez.
+  const bekle = (p: Promise<unknown>) => p.then(() => {}, hataGoster.onError);
 
   // Kategori limitleri hem kategori listesine hem bütçe/özet verisine bağlı —
   // üçü de gelmeden satırlar "Limit yok" gösterip yanıltıyordu.
@@ -57,13 +60,15 @@ export default function Hedefler() {
   const katHarcama = (ad: string) =>
     (g?.kategori_kirilim ?? []).filter((x) => x.kategori === ad).reduce((s, x) => s + x.tutar, 0);
 
-  function tutarSor(baslik: string, mevcut: number | undefined, kaydet: (n: number) => void) {
+  function tutarSor(baslik: string, mevcut: number | undefined, kaydet: (n: number) => Promise<void>) {
     // Her platformda kendi dialog'umuz: Alert.prompt Android'de hiç çalışmıyor,
     // iOS'ta da native görünüyor — uygulama temasının dışında kalıyordu.
     setDialog({ baslik, deger: mevcut ? String(mevcut) : "", kaydet });
   }
 
-  const [dialog, setDialog] = useState<{ baslik: string; deger: string; kaydet: (n: number) => void } | null>(null);
+  const [dialog, setDialog] = useState<{ baslik: string; deger: string; kaydet: (n: number) => Promise<void> } | null>(null);
+  const [kaydediliyor, setKaydediliyor] = useState(false);
+  const dialogKapat = () => !kaydediliyor && setDialog(null);
   const [katTip, setKatTip] = useState<Tip>("kisisel");
 
   return (
@@ -85,7 +90,7 @@ export default function Hedefler() {
               {yatirim && yatirim.hedef > 0 ? ` · kalan ${turkceTutar(yatirim.kalan)} ₺` : ""}
             </Text>
             <Pressable
-              onPress={() => tutarSor("Yatırım hedefi", yatirim?.hedef, (n) => setGoal.mutate(n, hataGoster))}
+              onPress={() => tutarSor("Yatırım hedefi", yatirim?.hedef, (n) => bekle(setGoal.mutateAsync(n)))}
               style={[s.miniBtn, { backgroundColor: renk.aksanSoft }]}
             >
               <Text style={{ color: renk.text, fontSize: 12.5, fontWeight: "700" }}>
@@ -103,7 +108,7 @@ export default function Hedefler() {
           <Pressable
             onPress={() =>
               tutarSor("Aylık harcama sınırı", genel?.limit_amount, (n) =>
-                setBudget.mutate({ kapsam: "genel", limit_amount: n }, hataGoster),
+                bekle(setBudget.mutateAsync({ kapsam: "genel", limit_amount: n })),
               )
             }
           >
@@ -172,7 +177,7 @@ export default function Hedefler() {
               key={k.id}
               onPress={() =>
                 tutarSor(`${k.name} — aylık limit`, b?.limit_amount, (n) =>
-                  setBudget.mutate({ kapsam: "kategori", kapsam_deger: k.name, limit_amount: n }, hataGoster),
+                  bekle(setBudget.mutateAsync({ kapsam: "kategori", kapsam_deger: k.name, limit_amount: n })),
                 )
               }
               style={[s.katSatir, { backgroundColor: renk.card }]}
@@ -216,8 +221,16 @@ export default function Hedefler() {
                 )}
               </View>
               {b && (
-                <Pressable onPress={() => delBudget.mutate(b.id, hataGoster)} hitSlop={10}>
-                  <Ionicons name="close-circle" size={20} color={renk.textFaint} />
+                <Pressable
+                  onPress={() => delBudget.mutate(b.id, hataGoster)}
+                  disabled={delBudget.isPending}
+                  hitSlop={10}
+                >
+                  {delBudget.isPending && delBudget.variables === b.id ? (
+                    <ActivityIndicator size={20} color={renk.textFaint} />
+                  ) : (
+                    <Ionicons name="close-circle" size={20} color={renk.textFaint} />
+                  )}
                 </Pressable>
               )}
             </Pressable>
@@ -225,8 +238,8 @@ export default function Hedefler() {
         })}
       </View>
 
-      <Modal visible={!!dialog} transparent animationType="fade" onRequestClose={() => setDialog(null)}>
-        <Pressable style={s.dialogArka} onPress={() => setDialog(null)}>
+      <Modal visible={!!dialog} transparent animationType="fade" onRequestClose={dialogKapat}>
+        <Pressable style={s.dialogArka} onPress={dialogKapat}>
           <Pressable style={[s.dialog, { backgroundColor: renk.card }]} onPress={() => {}}>
             <Text style={[T.heading, { color: renk.text }]}>{dialog?.baslik}</Text>
             <TextInput
@@ -239,18 +252,27 @@ export default function Hedefler() {
               placeholderTextColor={renk.textFaint}
             />
             <View style={{ flexDirection: "row", gap: SP.sm }}>
-              <Pressable style={[s.dialogBtn, { borderColor: renk.border }]} onPress={() => setDialog(null)}>
+              <Pressable style={[s.dialogBtn, { borderColor: renk.border }]} onPress={dialogKapat}>
                 <Text style={{ color: renk.textMuted, fontWeight: "700" }}>Vazgeç</Text>
               </Pressable>
               <Pressable
                 style={[s.dialogBtn, { backgroundColor: renk.aksan }]}
-                onPress={() => {
+                disabled={kaydediliyor}
+                onPress={async () => {
                   const n = Number((dialog?.deger ?? "").replace(",", "."));
-                  if (n > 0) dialog?.kaydet(n);
+                  if (n > 0 && dialog) {
+                    setKaydediliyor(true);
+                    await dialog.kaydet(n);
+                    setKaydediliyor(false);
+                  }
                   setDialog(null);
                 }}
               >
-                <Text style={{ color: renk.aksanUstu, fontWeight: "700" }}>Kaydet</Text>
+                {kaydediliyor ? (
+                  <ActivityIndicator size="small" color={renk.aksanUstu} />
+                ) : (
+                  <Text style={{ color: renk.aksanUstu, fontWeight: "700" }}>Kaydet</Text>
+                )}
               </Pressable>
             </View>
           </Pressable>

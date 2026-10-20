@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { Sekmeli } from "@/components/base";
 import { Buton } from "@/components/Buton";
 import { Metin as Text } from "@/components/Metin";
@@ -84,7 +84,11 @@ export default function KategoriYonet() {
                 disabled={bolumEkle.isPending}
                 style={[s.bolumEkle, { borderColor: renk.border }]}
               >
-                <Ionicons name="add-circle-outline" size={17} color={renk.aksan} />
+                {bolumEkle.isPending && bolumEkle.variables === t ? (
+                  <ActivityIndicator size={17} color={renk.aksan} />
+                ) : (
+                  <Ionicons name="add-circle-outline" size={17} color={renk.aksan} />
+                )}
                 <Text style={{ color: renk.aksan, fontSize: 13.5, fontWeight: "700" }}>
                   {TIP_ETIKET[t]} kategorilerini ekle
                 </Text>
@@ -135,9 +139,15 @@ function Satir({ kat }: { kat: Kategori }) {
         )}
         <Pressable
           onPress={() => patch.mutate({ id: kat.id, body: { is_active: !kat.is_active } })}
+          disabled={patch.isPending}
           hitSlop={8}
         >
-          <Ionicons name={kat.is_active ? "eye-outline" : "eye-off-outline"} size={19} color={renk.textMuted} />
+          {/* Ad / görünürlük / anahtar kelime kaydı sürerken bu satırda dönen daire */}
+          {patch.isPending ? (
+            <ActivityIndicator size={19} color={renk.textMuted} />
+          ) : (
+            <Ionicons name={kat.is_active ? "eye-outline" : "eye-off-outline"} size={19} color={renk.textMuted} />
+          )}
         </Pressable>
         <Pressable
           onPress={() =>
@@ -146,9 +156,14 @@ function Satir({ kat }: { kat: Kategori }) {
               { yazi: "Sil", stil: "tehlike", onPress: () => sil.mutate(kat.id) },
             ])
           }
+          disabled={sil.isPending}
           hitSlop={8}
         >
-          <Ionicons name="trash-outline" size={18} color={renk.danger} />
+          {sil.isPending ? (
+            <ActivityIndicator size={18} color={renk.danger} />
+          ) : (
+            <Ionicons name="trash-outline" size={18} color={renk.danger} />
+          )}
         </Pressable>
       </View>
 
