@@ -1,10 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { EnerjiSheet, type EnerjiSheetDurum } from "@/components/EnerjiSheet";
+import { EnerjiSheet, type EnerjiSheetDurum, kalanHak } from "@/components/EnerjiSheet";
 import { IslemFormu } from "@/components/IslemFormu";
 import { Metin as Text } from "@/components/Metin";
 import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
@@ -13,7 +13,7 @@ import { api, ApiError } from "@/lib/api";
 import { turkceTutar } from "@/lib/format";
 import { gerekenReklam, reklamIzleVeTekrarDene } from "@/lib/kullanim402";
 import { useMe } from "@/lib/queries";
-import { reklamAktif } from "@/lib/reklam";
+import { reklamAktif, reklamOnYukle } from "@/lib/reklam";
 import { golge, R, SP, useRenkler } from "@/lib/theme";
 import type { Aday, CaptureYanit } from "@/lib/types";
 import { hataMesaji } from "@/lib/hata";
@@ -33,6 +33,11 @@ export default function Confirm() {
   const [sheetAcik, setSheetAcik] = useState(false);
   const [sheetDurum, setSheetDurum] = useState<EnerjiSheetDurum>(null);
   const [reklamAdet, setReklamAdet] = useState(1);
+  // Hak bu kayıtlara yetmeyecekse reklamı şimdiden yükle — 402 gelince beklemeden açılsın.
+  const hakYetmez = !!me.data && me.data.plan !== "pro" && kalanHak(me.data) < adaylar.length;
+  useEffect(() => {
+    if (hakYetmez) reklamOnYukle();
+  }, [hakYetmez]);
 
   const toplam = adaylar.reduce((t, a) => t + (a.direction === "gelir" ? a.tutar : -a.tutar), 0);
 

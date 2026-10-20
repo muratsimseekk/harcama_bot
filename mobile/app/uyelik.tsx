@@ -122,13 +122,14 @@ export default function Uyelik() {
   async function reklamIzle() {
     setReklamIslemde(true);
     try {
-      const sonuc = await reklamGoster();
+      const { sonuc, onaylandi } = await reklamGoster();
       if (sonuc === "hata") {
         uyari("Reklam yüklenemedi", "Birazdan tekrar dene.");
         return;
       }
       if (sonuc === "izlendi") {
-        await new Promise((r) => setTimeout(r, 2000));
+        // Sunucu onayladıysa beklemeye gerek yok; onaylamadıysa SSV yedeğine kısa süre tanı.
+        if (!onaylandi) await new Promise((r) => setTimeout(r, 2000));
         await qc.invalidateQueries({ queryKey: ["me"] });
         uyari("Teşekkürler", "Kayıt hakkın eklendi.");
       }

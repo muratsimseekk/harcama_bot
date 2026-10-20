@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Metin as Text } from "@/components/Metin";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { golge, R, SP, T, useRenkler } from "@/lib/theme";
+import { reklamOnYukle } from "@/lib/reklam";
 import type { Ben } from "@/lib/types";
 
 /**
@@ -14,6 +15,11 @@ import type { Ben } from "@/lib/types";
  */
 export function EnerjiRozeti({ ben, onPress }: { ben?: Ben; onPress: () => void }) {
   const renk = useRenkler();
+  const azaldi = !!ben && ben.plan !== "pro" && kalanHak(ben) <= 1;
+  // Hak bitmek üzere → reklamı şimdiden yükle, "Reklam İzle"de beklemesin.
+  useEffect(() => {
+    if (azaldi) reklamOnYukle();
+  }, [azaldi]);
   if (!ben) return null;
 
   const pro = ben.plan === "pro";
@@ -157,6 +163,10 @@ export function EnerjiSheet({
   bekleyenKayit?: number;
 }) {
   const renk = useRenkler();
+
+  useEffect(() => {
+    if (acik && ben?.plan !== "pro") reklamOnYukle();
+  }, [acik, ben?.plan]);
 
   useEffect(() => {
     if (!acik) return;

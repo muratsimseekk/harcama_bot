@@ -7,6 +7,8 @@
  * veya ad unit ID yoksa `reklamAktif()` false döner, `reklamGoster()` sessizce "hata" verir
  * — arayan taraf (confirm.tsx/islem-form.tsx) "Reklam İzle" butonunu hiç göstermez.
  *
+ * Hız: reklam önceden yüklenir (`reklamOnYukle`) ve hak, claim cevabıyla anında onaylanır.
+ *
  * Kredi backend'de iki yoldan yazılabilir: AdMob Server-Side Verification (SSV) callback'i
  * (en güvenilir ama gecikebilir/test reklamlarında hiç gelmez) VE bu dosyanın kendisi —
  * native SDK'nın EARNED_REWARD event'i tetiklenince `/v1/ads/claim`'i çağırıp krediyi hemen
@@ -54,55 +56,106 @@ export function reklamAktif(): boolean {
 
 export type ReklamSonuc = "izlendi" | "iptal" | "hata";
 
+/** `onaylandi`: sunucu hakkı eklediğini doğruladı (`/v1/ads/claim` 200) — arayan taraf
+ * `/v1/me`'yi yoklamadan hemen "kazandın" diyebilir. false ise SSV yedeğini beklemeli. */
+export type ReklamCevap = { sonuc: ReklamSonuc; onaylandi: boolean };
+
+// Önceden yüklenmiş reklam. Token (SSV customData) sunucuda 10 dk geçerli — 8 dk'dan eski
+// hazır reklam atılıp yenisi yüklenir.
+type Hazir = { reklam: RGMAModule; token: string; yuklendi: Promise<boolean> };
+let hazir: Promise<Hazir> | null = null;
+let hazirZaman = 0;
+const TAZE_MS = 8 * 60_000;
+
+async function olustur(): Promise<Hazir> {
+  // Apple zorunlu tutuyor: SDK kendiliğinden prompt açmaz, ilk reklamdan önce iste
+  // (kullanıcı daha önce cevapladıysa no-op — tekrar prompt çıkmaz).
+  if (Platform.OS === "ios") {
+    await requestTrackingPermissionsAsync().catch(() => {});
+  }
+  const { token } = await api.adsRequestToken();
+  const { RewardedAd, RewardedAdEventType, AdEventType } = RGMA;
+  const reklam = RewardedAd.createForAdRequest(AD_UNIT_ID, {
+    serverSideVerificationOptions: { customData: token },
+  });
+  const yuklendi = new Promise<boolean>((resolve) => {
+    const k1 = reklam.addAdEventListener(RewardedAdEventType.LOADED, () => {
+      k1();
+      k2();
+      resolve(true);
+    });
+    const k2 = reklam.addAdEventListener(AdEventType.ERROR, () => {
+      k1();
+      k2();
+      resolve(false);
+    });
+  });
+  reklam.load();
+  return { reklam, token, yuklendi };
+}
+
 /**
- * Ödüllü reklam yükler + gösterir. Kullanıcı sonuna kadar izlerse "izlendi" döner —
- * bu, krediyi GARANTİ ETMEZ (SSV backend'de birkaç saniye içinde işler). Arayan taraf
- * "izlendi" sonrası kısa bir gecikmeyle `/v1/me`'yi yeniden çekmeli.
+ * Reklamı arka planda önceden yükler — "Reklam İzle"ye basınca beklemeden açılsın.
+ * Hak bitmek üzereyken ve hak paneli açılınca çağrılır; hazır taze reklam varsa no-op.
  */
-export async function reklamGoster(): Promise<ReklamSonuc> {
-  if (!reklamAktif()) return "hata";
+export function reklamOnYukle(): void {
+  if (!reklamAktif()) return;
+  if (hazir && Date.now() - hazirZaman < TAZE_MS) return;
+  const yeni = olustur();
+  hazir = yeni;
+  hazirZaman = Date.now();
+  // Yüklenemediyse (ağ, fill yok vb.) bırak ki bir sonraki çağrı yeniden denesin.
+  const birak = () => {
+    if (hazir === yeni) hazir = null;
+  };
+  yeni.then((h) => h.yuklendi.then((ok) => !ok && birak())).catch(birak);
+}
+
+/**
+ * Ödüllü reklamı gösterir (hazır varsa anında, yoksa yükleyip). Kullanıcı sonuna kadar
+ * izlerse EARNED_REWARD anında `/v1/ads/claim` istenir; reklam kapanınca o cevap
+ * beklenir (çoğu zaman çoktan gelmiştir). Kapanınca sıradaki reklam önceden yüklenir
+ * (birden çok reklam art arda izlenecekse ikincisi beklemeden açılsın).
+ */
+export async function reklamGoster(): Promise<ReklamCevap> {
+  if (!reklamAktif()) return { sonuc: "hata", onaylandi: false };
   try {
-    // Apple zorunlu tutuyor: SDK kendiliğinden prompt açmaz, ilk reklamdan önce iste
-    // (kullanıcı daha önce cevapladıysa no-op — tekrar prompt çıkmaz).
-    if (Platform.OS === "ios") {
-      await requestTrackingPermissionsAsync().catch(() => {});
-    }
-    const { token } = await api.adsRequestToken();
-    const { RewardedAd, RewardedAdEventType, AdEventType } = RGMA;
+    // Önceden yükleme sürüyorsa yenisini başlatma, onu bekle.
+    const bekleyen = hazir && Date.now() - hazirZaman < TAZE_MS ? hazir : null;
+    hazir = null;
+    const h = (bekleyen && (await bekleyen.catch(() => null))) || (await olustur());
+    if (!(await h.yuklendi)) return { sonuc: "hata", onaylandi: false };
+    const { reklam, token } = h;
+    const { RewardedAdEventType, AdEventType } = RGMA;
 
-    return await new Promise<ReklamSonuc>((resolve) => {
-      const reklam = RewardedAd.createForAdRequest(AD_UNIT_ID, {
-        serverSideVerificationOptions: { customData: token },
+    return await new Promise<ReklamCevap>((resolve) => {
+      let talep: Promise<boolean> | null = null;
+      const kaldir1 = reklam.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
+        // SSV'yi beklemeden krediyi hemen iste — başarısız olursa (ağ/token süresi vs.)
+        // SSV aynı token'la yedek olarak dener (idempotent).
+        talep = api
+          .adsClaim(token)
+          .then(() => true)
+          .catch(() => false);
       });
-
-      let kazanildi = false;
-      const kaldir1 = reklam.addAdEventListener(
-        RewardedAdEventType.EARNED_REWARD,
-        () => {
-          kazanildi = true;
-          // SSV'yi beklemeden krediyi hemen iste — sessizce başarısız olursa (ağ/token
-          // süresi vs.) SSV zaten aynı token'la yedek olarak dener.
-          api.adsClaim(token).catch(() => {});
-        },
-      );
-      const kaldir2 = reklam.addAdEventListener(RewardedAdEventType.LOADED, () => reklam.show());
-      const kaldir3 = reklam.addAdEventListener(AdEventType.CLOSED, () => {
+      const bitir = () => {
         kaldir1();
         kaldir2();
         kaldir3();
-        resolve(kazanildi ? "izlendi" : "iptal");
+        reklamOnYukle();
+      };
+      const kaldir2 = reklam.addAdEventListener(AdEventType.CLOSED, () => {
+        bitir();
+        if (!talep) return resolve({ sonuc: "iptal", onaylandi: false });
+        talep.then((onaylandi) => resolve({ sonuc: "izlendi", onaylandi }));
       });
-      const kaldir4 = reklam.addAdEventListener(AdEventType.ERROR, () => {
-        kaldir1();
-        kaldir2();
-        kaldir3();
-        kaldir4();
-        resolve("hata");
+      const kaldir3 = reklam.addAdEventListener(AdEventType.ERROR, () => {
+        bitir();
+        resolve({ sonuc: "hata", onaylandi: false });
       });
-
-      reklam.load();
+      reklam.show();
     });
   } catch {
-    return "hata";
+    return { sonuc: "hata", onaylandi: false };
   }
 }
