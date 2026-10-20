@@ -7,7 +7,19 @@
 > `~/.claude/` altındaki hafıza ve plan dosyaları makineye özeldir, taşınmaz — bu dosya
 > onların yerine geçer. Güncel tutulmalı: her önemli adımdan sonra Claude bunu günceller.
 
-Son güncelleme: 2026-10-13 · Dal: `faz-m1-mobil` · Son commit: `96c3585`
+Son güncelleme: 2026-10-20 · Dal: `faz-m1-mobil` · Son commit: `e4fe189`
+
+> **2026-10-15 → 10-18:**
+> - Bütçe uyarısı artık uygulama içi pencere (%80/%100, ay başına bir kez) (`a1faa8e`).
+> - Günlük/haftalık özet bildirimleri: en çok harcanan kategori, aylık bütçe durumu, geçen
+>   haftayla karşılaştırma; haftalık özet Pazar akşamı (`50ef1b0`).
+> - Yeni logo (konuşma balonu + para) + ikonlar; animasyonlu 4 sahneli karşılama, Ayarlar →
+>   Uygulama Tanıtımı (`0f93598`).
+> - Site: Google sahiplik doğrulama dosyası (`cbae32d`), hesabı silmeden veri silme bölümü (`0dd11ff`).
+> - Mağaza metni yeni özelliklere göre güncellendi (`e4fe189`).
+> - Supabase SMTP = Workspace (info@nimustudio.com) çalışıyor (10-17); demo hesap süresiz Pro +
+>   örnek veri (10-18). Sentry salt-okuma token yenilendi (eski token'ların silindiği teyit edilecek).
+> - ⚠️ Son production AAB bu commit'lerin hiçbirini içermiyor → Play'e yüklemeden önce yeni build.
 
 > **2026-10-09 → 10-13 (Google Play hazırlığı) — güncel adım listesi `docs/GOOGLE-PLAY-REHBERI.md`:**
 > - nimustudio.com (Google Workspace) + info@/demo@ alias; yasal site GitHub Pages'te yayında
