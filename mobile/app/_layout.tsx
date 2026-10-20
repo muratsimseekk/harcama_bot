@@ -21,6 +21,7 @@ import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Giris } from "@/components/Giris";
+import { GuncellemePenceresi } from "@/components/GuncellemePenceresi";
 import { HataSiniri } from "@/components/HataSiniri";
 import { UyariProvider, useUyari } from "@/components/Uyari";
 import { api } from "@/lib/api";
@@ -254,6 +255,7 @@ function RootLayout() {
                   <View style={{ flex: 1 }}>
                     <Kapi />
                   </View>
+                  <GuncellemePenceresi />
                 </UyariProvider>
               </AuthProvider>
             </QueryClientProvider>

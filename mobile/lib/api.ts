@@ -160,6 +160,10 @@ export const api = {
   me(): Promise<Ben> {
     return jsonReq<Ben>("/v1/me", "GET");
   },
+  /** Mağazadaki en son build numaraları — güncelleme penceresi için (giriş gerekmez). */
+  surum(): Promise<{ android: number; ios: number }> {
+    return jsonReq("/v1/surum", "GET");
+  },
   /** Satın alma sonrası: sunucu RevenueCat'e sorup planı hemen günceller (webhook beklemeden). */
   rcSync(): Promise<{ plan: "free" | "pro"; senkron: boolean }> {
     return jsonReq("/v1/rc/sync", "POST");

@@ -87,6 +87,12 @@ class Settings:
     # sorar; webhook gecikse/gelmese de Pro anında yansır. Boşsa sync no-op.
     RC_SECRET_API_KEY: str = os.environ.get("RC_SECRET_API_KEY", "")
 
+    # --- Güncelleme penceresi (/v1/surum) ---
+    # Mağazadaki en son build numarası (EAS appBuildVersion). Uygulamadaki build bundan
+    # küçükse açılışta "Yeni güncelleme var" gösterilir. 0 = kapalı.
+    ANDROID_SON_SURUM: int = _int("ANDROID_SON_SURUM", 0)
+    IOS_SON_SURUM: int = _int("IOS_SON_SURUM", 0)
+
     # --- Hata izleme ---
     SENTRY_DSN: str = os.environ.get("SENTRY_DSN", "")
 

@@ -66,3 +66,4 @@ def test_rc_hatasi_sessiz(client, monkeypatch):
 
     monkeypatch.setattr(rota, "_rc_abone_oku", patla)
     assert c.post("/v1/rc/sync").json() == {"plan": "free", "senkron": False}
+
