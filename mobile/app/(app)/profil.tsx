@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DEV_NOAUTH } from "@/app/_layout";
 import { Metin as Text } from "@/components/Metin";
@@ -57,46 +57,50 @@ export default function Profil() {
         </View>
       </SafeAreaView>
 
-      <View style={s.avatarSar}>
-        <View style={[s.avatar, { backgroundColor: renk.aksanSoft }]}>
-          <Ionicons name="person" size={44} color={renk.aksan} />
+      <ScrollView contentContainerStyle={s.icerik} showsVerticalScrollIndicator={false}>
+        <View style={s.avatarSar}>
+          <View style={[s.avatar, { backgroundColor: renk.aksanSoft }]}>
+            <Ionicons name="person" size={44} color={renk.aksan} />
+          </View>
+          <Text style={[s.isim, { color: renk.text }]}>
+            {DEV_NOAUTH ? "Yönetici" : kullaniciAdi(session) || "Kullanıcı"}
+          </Text>
+          {!DEV_NOAUTH && <PlanRozeti ben={me.data} />}
+          <Text style={[s.id, { color: renk.textMuted }]}>
+            {me.data
+              ? `${me.data.toplam_kayit} kayıt · ${
+                  me.data.gunluk_limit >= 1_000_000
+                    ? "sınırsız kayıt hakkı"
+                    : `bugün ${Math.max(0, me.data.gunluk_limit - me.data.gun_kayit)}/${me.data.gunluk_limit} hak kaldı`
+                }`
+              : "…"}
+          </Text>
         </View>
-        <Text style={[s.isim, { color: renk.text }]}>
-          {DEV_NOAUTH ? "Yönetici" : kullaniciAdi(session) || "Kullanıcı"}
-        </Text>
-        {!DEV_NOAUTH && <PlanRozeti ben={me.data} />}
-        <Text style={[s.id, { color: renk.textMuted }]}>
-          {me.data
-            ? `${me.data.toplam_kayit} kayıt · ${
-                me.data.gunluk_limit >= 1_000_000
-                  ? "sınırsız kayıt hakkı"
-                  : `bugün ${Math.max(0, me.data.gunluk_limit - me.data.gun_kayit)}/${me.data.gunluk_limit} hak kaldı`
-              }`
-            : "…"}
-        </Text>
-      </View>
 
-      <View style={s.liste}>
-        {satirlar.map((r) => (
-          <Pressable
-            key={r.ad}
-            onPress={r.onPress ?? (() => r.git && router.navigate(r.git as never))}
-            style={({ pressed }) => [s.satir, { backgroundColor: renk.card }, golge(1), pressed && { opacity: 0.6 }]}
-          >
-            <View style={[s.ikonKutu, { backgroundColor: r.tehlike ? renk.dangerSoft : renk.aksanSoft }]}>
-              <Ionicons name={r.ikon} size={20} color={r.tehlike ? renk.danger : renk.aksan} />
-            </View>
-            <Text style={[s.satirAd, { color: r.tehlike ? renk.danger : renk.text }]}>{r.ad}</Text>
-            <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />
-          </Pressable>
-        ))}
-      </View>
+        <View style={s.liste}>
+          {satirlar.map((r) => (
+            <Pressable
+              key={r.ad}
+              onPress={r.onPress ?? (() => r.git && router.navigate(r.git as never))}
+              style={({ pressed }) => [s.satir, { backgroundColor: renk.card }, golge(1), pressed && { opacity: 0.6 }]}
+            >
+              <View style={[s.ikonKutu, { backgroundColor: r.tehlike ? renk.dangerSoft : renk.aksanSoft }]}>
+                <Ionicons name={r.ikon} size={20} color={r.tehlike ? renk.danger : renk.aksan} />
+              </View>
+              <Text style={[s.satirAd, { color: r.tehlike ? renk.danger : renk.text }]}>{r.ad}</Text>
+              <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />
+            </Pressable>
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
 const s = StyleSheet.create({
   kok: { flex: 1 },
+  // Küçük ekranlarda son satırlar (Ayarlar, Çıkış) alt menünün altında kalmasın.
+  icerik: { paddingBottom: SP.xxl * 2 },
   ust: { paddingHorizontal: SP.lg },
   baslikSatir: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: SP.sm },
   zil: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },

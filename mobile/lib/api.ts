@@ -54,7 +54,10 @@ async function authHeader(): Promise<Record<string, string>> {
 async function istek(path: string, init: RequestInit): Promise<Response> {
   try {
     return await fetch(`${BASE}${path}`, init);
-  } catch {
+  } catch (e) {
+    // Dosya yüklemesi (ses) ağ hatası çoğu zaman gerçek bağlantı sorunu değil, istemci
+    // tarafı bir kırılmadır (bkz eas.json EXPO_PUBLIC_USE_RN_FETCH) — Sentry'de görelim.
+    if (init.body instanceof FormData) hataRaporla(e, { tur: "api_ag", yol: path });
     throw new ApiError(0, durumMesaji(0), { yol: path });
   }
 }
