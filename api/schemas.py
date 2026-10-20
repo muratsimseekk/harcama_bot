@@ -124,7 +124,7 @@ class BenModel(BaseModel):
     gunluk_enerji: int              # Free katmanının sabit günlük tabanı (reklamsız, karşılaştırma tablosu)
     gun_kayit: int                  # bugün eklenen kayıt (elle+AI)
     gun_reklam_kredisi: int = 0     # bugün reklam izleyerek kazanılan ek kayıt hakkı
-    reklam_kredi_adet: int = 2      # bir reklam izleyince kazanılacak kayıt hakkı (settings.AD_KREDI_ADET)
+    reklam_kredi_adet: int = 1      # bir reklam izleyince kazanılacak kayıt hakkı (settings.AD_KREDI_ADET)
     limit: int                      # geriye dönük alias (= gunluk_limit)
     toplam_kayit: int = 0
     hane_rol: str | None = None     # hanedeyse rolü, değilse null

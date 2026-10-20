@@ -217,7 +217,7 @@ export function EnerjiSheet({
                       >
                         <Ionicons name="play-circle" size={19} color={renk.aksanUstu} />
                         <Text style={{ color: renk.aksanUstu, fontSize: 15.5, fontWeight: "800" }}>
-                          Reklam İzle (+{ben?.reklam_kredi_adet ?? 2} limit)
+                          Reklam İzle (+{ben?.reklam_kredi_adet ?? 1} limit)
                         </Text>
                       </Pressable>
                     )}

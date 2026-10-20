@@ -458,7 +458,7 @@ yalnız Pro satın alınabilir).
 | Katman | Kapsam |
 |---|---|
 | **Deneme (trial)** | Yeni kullanıcı, 7 gün otomatik. **Free özellikleri + sınırsız kayıt.** Hane KİLİTLİ (Pro'ya geçiş sebebi). Kodda: `_coz()` trial → `etkin='free'`, `gunluk_limit=sınırsız`. |
-| **Free** | Günlük **3 kayıt hakkı** (`GUNLUK_ENERJI`), **elle + AI ortak** — hangi yoldan eklenirse eklensin her kayıt 1 hak harcar. Hak gece yarısı (Europe/Istanbul) sıfırlanır. Hak biterse ödüllü reklamla +2 hak (`AD_KREDI_ADET`) — **tavansız**, istediği kadar izleyebilir. Hane YOK. |
+| **Free** | Günlük **3 kayıt hakkı** (`GUNLUK_ENERJI`), **elle + AI ortak** — hangi yoldan eklenirse eklensin her kayıt 1 hak harcar. Hak gece yarısı (Europe/Istanbul) sıfırlanır. Hak biterse ödüllü reklamla +1 hak (`AD_KREDI_ADET`, 10-20'de 2→1) — **tavansız**, istediği kadar izleyebilir. Hane YOK. |
 | **Pro** | Sınırsız kayıt · **hane paylaşımı** · reklamsız · (ileride: fiş okuma, YZ öngörüleri, export, kişi-bazı hane kırılımı — bkz `docs/HANE-PRO.md`) |
 
 ### Fiyatlar (Türkiye — öncelik) — Pro fiyatı değişmedi (2026-09-09'da karar verildi)
@@ -472,7 +472,7 @@ Mobil referans fiyatlar `mobile/lib/satinalma.ts` `STATIK_FIYAT` (mağaza teklif
 
 Ekonomi: Groq ~$0.001/AI kaydı (teorik, ölçülmedi — `core/llm.py` artık token kullanımını
 loglar; elle kayıtların LLM maliyeti zaten sıfır). Rewarded reklam TR eCPM tipik
-~₺0,50-2,50/gösterim → 1 reklam = 2 kayıt hakkı geniş marjla karşılanır, tavan olmaması
+~₺0,50-2,50/gösterim → 1 reklam = 1 kayıt hakkı geniş marjla karşılanır, tavan olmaması
 ekonomik risk değil (günlük 3 taban zaten çok düşük, reklamla açılan haklar da büyük
 kısmı elle giriş için kullanılacak — LLM maliyeti yok). Deneme bitip ödeme yoksa kullanıcı
 Free limitleriyle devam eder (kilitlenmez), Pro'ya davet edilir.

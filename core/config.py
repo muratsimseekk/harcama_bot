@@ -56,7 +56,7 @@ class Settings:
     TRIAL_GUN: int = _int("TRIAL_GUN", 7)  # referans; trigger'da sabit 7
 
     # --- Reklam (AdMob ödüllü video) → enerji kredisi ---
-    AD_KREDI_ADET: int = _int("AD_KREDI_ADET", 2)  # 1 izlenen reklam = +N kayıt hakkı
+    AD_KREDI_ADET: int = _int("AD_KREDI_ADET", 1)  # 1 izlenen reklam = +N kayıt hakkı
     # Kasıtlı olarak tavan YOK — kullanıcı istediği kadar reklam izleyip enerji açabilir.
     ADS_SSV_ONLY: bool = os.environ.get("ADS_SSV_ONLY", "true").lower() == "true"
     ADMOB_SSV_PUBLIC_KEYS_URL: str = os.environ.get(
