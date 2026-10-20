@@ -160,6 +160,10 @@ export const api = {
   me(): Promise<Ben> {
     return jsonReq<Ben>("/v1/me", "GET");
   },
+  /** Satın alma sonrası: sunucu RevenueCat'e sorup planı hemen günceller (webhook beklemeden). */
+  rcSync(): Promise<{ plan: "free" | "pro"; senkron: boolean }> {
+    return jsonReq("/v1/rc/sync", "POST");
+  },
   hesapSil(): Promise<{ silindi: boolean }> {
     return jsonReq("/v1/me", "DELETE");
   },

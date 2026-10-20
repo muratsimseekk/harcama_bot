@@ -36,6 +36,7 @@ const RC_KEY =
 const ENT_PRO = "pro";
 
 let yapilandirildi = false;
+let aktifKullanici: string | null = null;
 
 export type EtkinPlan = "pro" | null;
 
@@ -58,14 +59,23 @@ export function satinalmaAktif(): boolean {
   return !!RNP && !!RC_KEY;
 }
 
-/** Uygulama açılışında bir kez çağrılır. Expo Go / anahtarsız ortamda no-op. */
-export function baslat(userId: string): void {
-  if (!RNP || !RC_KEY || yapilandirildi) return;
+/**
+ * Oturum açan kullanıcıyla çağrılır. İlk seferde yapılandırır; aynı uygulama oturumunda
+ * başka hesaba geçilirse RC'yi o kullanıcıya geçirir (logIn) — yoksa satın alma önceki
+ * hesaba yazılır. Expo Go / anahtarsız ortamda no-op.
+ */
+export async function baslat(userId: string): Promise<void> {
+  if (!RNP || !RC_KEY || aktifKullanici === userId) return;
   try {
-    RNP.configure({ apiKey: RC_KEY, appUserID: userId });
-    yapilandirildi = true;
+    if (!yapilandirildi) {
+      RNP.configure({ apiKey: RC_KEY, appUserID: userId });
+      yapilandirildi = true;
+    } else {
+      await RNP.logIn(userId);
+    }
+    aktifKullanici = userId;
   } catch {
-    yapilandirildi = false;
+    /* sessiz — bir sonraki oturum değişiminde tekrar denenir */
   }
 }
 
@@ -114,6 +124,9 @@ export async function mevcutPlan(): Promise<EtkinPlan> {
   }
 }
 
+// RC PURCHASES_ERROR_CODE.PRODUCT_ALREADY_PURCHASED_ERROR
+const ZATEN_ALINMIS = "6";
+
 /** Satın alma. Kullanıcı iptalinde null döner; gerçek hatalar fırlatılır. */
 export async function satinAl(paket: Paket): Promise<EtkinPlan> {
   if (!RNP) return null;
@@ -124,6 +137,11 @@ export async function satinAl(paket: Paket): Promise<EtkinPlan> {
   } catch (e) {
     if (e && typeof e === "object" && (e as { userCancelled?: boolean }).userCancelled) {
       return null;
+    }
+    // Mağaza "zaten abonesin" diyorsa hata değil: aboneliği bu hesaba bağla (geri yükle).
+    if (e && typeof e === "object" && (e as { code?: unknown }).code === ZATEN_ALINMIS) {
+      const plan = await geriYukle();
+      if (plan) return plan;
     }
     throw e;
   }

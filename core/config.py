@@ -83,6 +83,9 @@ class Settings:
     # RC product id → plan eşlemesi (virgülle: "pro_aylik:pro,pro_yillik:pro"). Free satın
     # alınamaz (reklamla kazanılır), bu yüzden burada yalnız pro ürünleri var.
     RC_URUN_PLAN: str = os.environ.get("RC_URUN_PLAN", "pro_aylik:pro,pro_yillik:pro")
+    # RevenueCat gizli API anahtarı (sk_…) — /v1/rc/sync satın almadan hemen sonra RC'ye
+    # sorar; webhook gecikse/gelmese de Pro anında yansır. Boşsa sync no-op.
+    RC_SECRET_API_KEY: str = os.environ.get("RC_SECRET_API_KEY", "")
 
     # --- Hata izleme ---
     SENTRY_DSN: str = os.environ.get("SENTRY_DSN", "")

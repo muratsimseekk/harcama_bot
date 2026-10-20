@@ -1,15 +1,20 @@
-"""/v1/rc/webhook — RevenueCat abonelik olayları → profiles.plan senkronu.
+"""/v1/rc/webhook + /v1/rc/sync — RevenueCat abonelik durumu → profiles.plan senkronu.
 
 Ödeme akışı: mobil (react-native-purchases) → Apple/Google → RevenueCat →
 bu webhook → profiles.plan + plan_bitis güncellenir. Uygulama /v1/me'den okur.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import UTC, datetime
+from urllib.parse import quote
 
+import httpx
 from fastapi import APIRouter, Header, HTTPException, Request, status
 
+from api import usage
+from api.deps import CurrentUser
 from core import repo
 from core.config import settings
 
@@ -71,3 +76,48 @@ async def webhook(istek: Request, authorization: str = Header(default="")) -> di
 
     # CANCELLATION / BILLING_ISSUE / vb. → süre dolana kadar aktif kalır, dokunma.
     return {"ok": True}
+
+
+def _rc_abone_oku(user_id: str) -> dict:
+    r = httpx.get(
+        f"https://api.revenuecat.com/v1/subscribers/{quote(user_id, safe='')}",
+        headers={"Authorization": f"Bearer {settings.RC_SECRET_API_KEY}"},
+        timeout=10,
+    )
+    r.raise_for_status()
+    return r.json().get("subscriber", {})
+
+
+def _pro_bitis(abone: dict) -> tuple[bool, str | None]:
+    """RC abonesinde `pro` entitlement'ı aktif mi; aktifse bitiş (ISO, ömür boyu → None)."""
+    ent = (abone.get("entitlements") or {}).get("pro")
+    if not ent:
+        return False, None
+    bitis = ent.get("expires_date")
+    if bitis is None:
+        return True, None
+    bitis_dt = datetime.fromisoformat(bitis.replace("Z", "+00:00"))
+    # Ödeme sorununda RC'nin tanıdığı ek süre (grace period) de aktif sayılır.
+    ek = ent.get("grace_period_expires_date")
+    if ek:
+        bitis_dt = max(bitis_dt, datetime.fromisoformat(ek.replace("Z", "+00:00")))
+    return bitis_dt > datetime.now(UTC), bitis_dt.isoformat()
+
+
+@router.post("/sync")
+async def sync(user_id: CurrentUser) -> dict:
+    """Satın alma / geri yükleme sonrası uygulama çağırır: RC'ye doğrudan sorar, Pro
+    aktifse profili hemen günceller. Yalnız yükseltir — süre bitişini webhook ve
+    plan_bitis kontrolü (api/usage.py) zaten yönetiyor."""
+    if not settings.RC_SECRET_API_KEY:
+        return {"plan": await usage.plan(user_id), "senkron": False}
+    try:
+        abone = await asyncio.to_thread(_rc_abone_oku, user_id)
+    except Exception as e:
+        logger.warning("rc sync: RC okunamadı (%s): %s", user_id, e)
+        return {"plan": await usage.plan(user_id), "senkron": False}
+    aktif, bitis = _pro_bitis(abone)
+    if aktif:
+        await repo.profil_plan_guncelle(user_id, "pro", bitis)
+        logger.info("rc sync: %s → pro, bitiş=%s", user_id, bitis)
+    return {"plan": await usage.plan(user_id), "senkron": True}

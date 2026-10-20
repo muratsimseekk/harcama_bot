@@ -26,7 +26,7 @@ import { UyariProvider, useUyari } from "@/components/Uyari";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { izinVeToken, platformAdi } from "@/lib/bildirim";
-import { baslat as rcBaslat } from "@/lib/satinalma";
+import { mevcutPlan, baslat as rcBaslat } from "@/lib/satinalma";
 import { koduOturumaCevir, supabase } from "@/lib/supabase";
 import { TemaProvider, useEtkinSema } from "@/lib/tema";
 import { useRenkler } from "@/lib/theme";
@@ -156,10 +156,23 @@ function Kapi() {
     })();
   }, [session]);
 
-  // RevenueCat'i kullanıcı kimliğiyle başlat (dev build'de aktif, Expo Go'da no-op)
+  // RevenueCat'i kullanıcı kimliğiyle başlat (dev build'de aktif, Expo Go'da no-op).
+  // Mağazada aktif Pro var ama sunucu henüz bilmiyorsa (webhook gecikti) senkronla.
   useEffect(() => {
     const uid = session?.user?.id;
-    if (uid) rcBaslat(uid);
+    if (!uid) return;
+    (async () => {
+      await rcBaslat(uid);
+      if ((await mevcutPlan()) !== "pro") return;
+      try {
+        const ben = await api.me();
+        if (ben.plan === "pro") return;
+        await api.rcSync();
+        await queryClient.invalidateQueries();
+      } catch {
+        /* sessiz — bir sonraki açılışta tekrar denenir */
+      }
+    })();
   }, [session?.user?.id]);
 
   if (!DEV_NOAUTH && (yukleniyor || onboardGoruldu === null)) return <Giris />;

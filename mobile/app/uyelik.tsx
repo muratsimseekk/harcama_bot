@@ -9,6 +9,7 @@ import { hakMetni } from "@/components/EnerjiSheet";
 import { useUyari } from "@/components/Uyari";
 import { PlanRozeti } from "@/components/PlanRozeti";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
+import { api } from "@/lib/api";
 import { useMe } from "@/lib/queries";
 import { reklamAktif, reklamGoster } from "@/lib/reklam";
 import {
@@ -70,10 +71,15 @@ export default function Uyelik() {
   );
 
   async function planaGuncelle(sonuc: EtkinPlan, mesaj: string) {
-    if (sonuc) {
-      await me.refetch();
-      uyari("Tamam", mesaj);
-      router.back();
+    if (!sonuc) return;
+    // Sunucu planı webhook'u beklemeden RevenueCat'ten çeksin; ekran Pro'ya dönsün.
+    await api.rcSync().catch(() => {});
+    await qc.invalidateQueries();
+    const guncel = await me.refetch();
+    if (guncel.data?.plan === "pro") {
+      uyari("Pro üyesin 🎉", mesaj);
+    } else {
+      uyari("İşleniyor", "Ödemen alındı, üyeliğin birkaç dakika içinde etkinleşecek.");
     }
   }
 
