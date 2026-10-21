@@ -2,7 +2,7 @@
 
 Logo değişince yalnız bunu çalıştır (düz renk zemin + üstünde motif olan kare PNG):
 
-    .venv/Scripts/python.exe scripts/ikon_olustur.py "C:/yol/logo.png"
+    .venv/Scripts/python.exe scripts/ikon_olustur.py docs/magaza-gorselleri/kaynak-logo.png
 
 Motif, zemin renginden farkına göre ayıklanır, ortalanır ve düz zemine yeniden basılır
 (üretilmiş görsellerdeki zemin dokusu/kayması gider).
@@ -93,9 +93,13 @@ def ozellik_grafigi(motif: Image.Image, zemin) -> Image.Image:
     g.alpha_composite(m, (70, (h - 360) // 2))
     d = ImageDraw.Draw(g)
     krem = (250, 247, 240)
-    d.text((430, 150), "Paraİzi", font=font(96, True), fill=krem)
-    d.text((434, 280), "Yaz ya da söyle, harcaman kaydolsun.", font=font(30, False), fill=krem)
-    d.text((434, 325), "Bütçe, hedef ve analiz tek yerde.", font=font(30, False), fill=krem)
+    # Uygulamanın kendi fontları (mağaza ekran görüntüleriyle aynı dil)
+    nm = KOK / "mobile/node_modules/@expo-google-fonts"
+    baslik = ImageFont.truetype(str(nm / "newsreader/700Bold/Newsreader_700Bold.ttf"), 104)
+    alt = ImageFont.truetype(str(nm / "inter/500Medium/Inter_500Medium.ttf"), 30)
+    d.text((430, 130), "Paraİzi", font=baslik, fill=krem)
+    d.text((434, 285), "Söyle, yapay zeka kaydetsin.", font=alt, fill=krem)
+    d.text((434, 330), "Sesli harcama takibi ve bütçe.", font=alt, fill=krem)
     return g.convert("RGB")
 
 
