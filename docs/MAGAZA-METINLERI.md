@@ -24,47 +24,56 @@
 
 ## Ana mağaza girişi (Grow → Store presence → Main store listing) · dil: Türkçe
 
-**Uygulama adı** (≤30): `Paraİzi: Harcama Takibi` (23 karakter)
+**Uygulama adı** (≤30): `Paraİzi: Sesli Harcama Takibi` (29 karakter)
+— Play'de aramada en ağır basan alan ad. "harcama takibi" ana arama terimi; "sesli" rakiplerden
+ayıran özellik ve az rekabetli. "AI" Türkçe aramada az aranıyor ("yapay zeka" aranıyor), o
+yüzden kısa ve tam açıklamaya kondu. (2026-10-21)
 
 **Kısa açıklama** (≤80):
 ```
-Harcamanı yaz ya da söyle, yapay zeka kaydetsin. Bütçe ve analiz tek yerde.
+Harcamanı söyle, yapay zeka kaydetsin. Bütçe ve gider takibi tek uygulamada.
 ```
 
-**Uzun açıklama** (≤4000):
+**Tam açıklama** (≤4000, 2188 karakter) — ilk 2 cümle "devamını oku"dan önce görünür:
 ```
-Paraİzi, harcamalarını ve gelirlerini saniyeler içinde kaydetmen ve paranın nereye gittiğini net olarak görmen için tasarlanmış bir kişisel bütçe uygulamasıdır.
+Harcamanı söyle, Paraİzi kaydetsin. "Market 850, dün benzin 1200, kahve 95" demen yeterli: yapay zeka tutarı, kategoriyi ve tarihi kendisi bulur, sen tek dokunuşla onaylarsın. Harcama takibi hiç bu kadar hızlı olmamıştı.
 
-YAZ YA DA SÖYLE, GERİSİ HALLOLSUN
-"Market 250, dün benzin 600" yaz ya da sesli söyle. Paraİzi tutarı, kategoriyi ve tarihi kendisi çıkarır; sen sadece kontrol edip onaylarsın. Tek mesajda birden fazla işlem girebilirsin. İstersen klasik formla elle de ekleyebilirsin.
+Paraİzi; bütçe planlama, gider takibi ve gelir-gider analizini tek bir sade uygulamada toplayan kişisel finans asistanıdır. Tablo doldurmak, form açmak, her fişi tek tek girmek yok.
 
-BÜTÇE VE HEDEFLER
-• Aylık toplam harcama sınırı ve kategori bazlı bütçeler koy
-• Sınıra yaklaşınca uyarı al
-• Birikim hedeflerini takip et
+Sesli ve yazılı kayıt
+• Sesli söyle ya da yaz; yapay zeka harcamanı saniyeler içinde kayda dönüştürür
+• Tek cümlede birden fazla harcama: market, benzin ve kahveyi aynı anda kaydet
+• "Dün", "3 Mayıs" gibi tarihleri anlar; gelirleri de aynı kolaylıkla ekle
+• Kaydetmeden önce her şeyi gör, istediğini düzelt
+• İstersen klasik formla elle de ekleyebilirsin
 
-ANALİZ VE ÖZETLER
-• Haftalık, aylık ve yıllık grafikler
-• Kategori dağılımı ve en çok harcadığın alanlar
-• Geçmiş işlemlerinde arama; tarih aralığı, kategori ve türe göre filtreleme
-• Her akşam günlük, her pazar haftalık özet bildirimi
+Bütçe ve limitler
+• Aylık harcama sınırı ve kategori bazlı bütçe koy
+• Sınıra yaklaşınca ve aşınca uyarı al
+• Aylık yatırım hedefini belirle, ilerlemeni izle
 
-KİŞİSEL, İŞLETME VE YATIRIM AYRI
-Kendi işin varsa işletme giderlerini kişisel harcamalarından ayrı tut. Yatırım hareketlerini de ayrı bir başlıkta izle. Kategorileri dilediğin gibi düzenle.
+Analiz ve özetler
+• Günlük, haftalık, aylık ve yıllık gelir-gider grafikleri
+• Kategori dağılımı: paran en çok nereye gidiyor, tek bakışta gör
+• Her akşam günlük, her pazar haftalık harcama özeti bildirimi
+• Geçmiş işlemlerinde arama; tarih aralığı, kategori ve türe göre filtre
 
-HANE / AİLE PAYLAŞIMI (Pro)
-Eşin ya da ailenle ortak bir hane oluştur, harcamaları birlikte takip edin.
+Kişisel, işletme ve yatırım ayrı
+Kendi işin varsa işletme giderlerini ve masraflarını kişisel harcamalarından ayrı tut. Yatırım hareketlerini ayrı bir başlıkta izle. Kategorileri dilediğin gibi düzenle.
 
-ÜCRETSİZ VE PRO
-• Ücretsiz: Her gün belirli sayıda kayıt hakkı. Hakkın bitince isteğe bağlı kısa bir ödüllü video izleyerek ek hak kazanabilirsin.
-• Pro: Sınırsız kayıt, reklamsız kullanım ve hane paylaşımı. Aylık veya yıllık abonelik; Google Play hesabından istediğin zaman iptal edebilirsin.
+Aile bütçesi (Pro)
+Eşin ya da ailenle ortak bir hane oluştur; ev giderlerini ve aile bütçesini birlikte takip edin.
 
-GİZLİLİK
-• Paraİzi hiçbir bankaya veya kartına bağlanmaz; kayıtlar yalnızca senin girdiğin bilgilerdir.
-• Sesli kayıtların yalnızca metne çevrilmek için işlenir ve saklanmaz.
-• Verilerini satmayız. Hesabını ve tüm verilerini uygulama içinden tek dokunuşla silebilirsin.
+Ücretsiz ve Pro
+• Ücretsiz: Her gün kayıt hakkı. Hakkın bitince isteğe bağlı kısa bir ödüllü video izleyerek ek hak kazanırsın.
+• Pro: Sınırsız kayıt, reklamsız kullanım ve aile paylaşımı. Aylık ya da yıllık abonelik; Google Play hesabından istediğin zaman iptal edebilirsin.
 
-Paraİzi bir bankacılık veya yatırım danışmanlığı hizmeti değildir; sunduğu özetler bilgilendirme amaçlıdır.
+Gizlilik önce gelir
+• Bankana ya da kartına bağlanmaz; kart veya hesap bilgisi istemez
+• Sesli kayıtların yalnızca metne çevrilmek için işlenir, saklanmaz
+• Verilerini satmayız. Hesabını ve tüm verilerini uygulama içinden silebilirsin
+
+Paraİzi bir bankacılık ya da yatırım danışmanlığı hizmeti değildir; sunduğu özetler bilgilendirme amaçlıdır.
 
 Soru ve önerilerin için: info@nimustudio.com
 ```
