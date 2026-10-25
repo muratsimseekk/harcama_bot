@@ -14,6 +14,14 @@ services:
     startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     autoDeploy: true
+    # Yalnız API'yi etkileyen değişiklikler deploy tetiklesin — mobil/doküman/site
+    # push'ları servisi gereksiz yere yeniden başlatmasın (her deploy kısa kesinti).
+    buildFilter:
+      paths:
+        - api/**
+        - core/**
+        - requirements.txt
+        - render.yaml
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.9"
