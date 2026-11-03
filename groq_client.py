@@ -30,16 +30,20 @@ async def ses_to_metin(dosya_yolu: str) -> str:
         return ""
 
 
-async def metni_parse_et(metin: str) -> list[dict]:
+async def metni_parse_et(metin: str, referans_tarih: datetime | None = None) -> list[dict]:
     """
     Harcama/yatırım metnini parse eder.
     tip: 'kisisel', 'isletme' veya 'yatirim'
 
+    referans_tarih: "bugün" kabul edilecek tarih (geçmiş mesajları aktarırken
+    mesajın gönderildiği gün). Verilmezse şimdiki zaman.
+
     Dönüş: harcama dict listesi (metin kayıt içermiyorsa boş liste).
     Groq API'ye ulaşılamazsa exception fırlatır (çağıran ayırt edebilsin diye).
     """
-    bugun = datetime.now().strftime("%d.%m.%Y")
-    bugun_yil = datetime.now().year
+    referans = referans_tarih or datetime.now()
+    bugun = referans.strftime("%d.%m.%Y")
+    bugun_yil = referans.year
 
     sistem_promptu = f"""Sen Rota Metal & Alüminyum şirketinin harcama takip asistanısın.
 Bugünün tarihi: {bugun}
@@ -118,6 +122,6 @@ Eğer metin hiç kayıt içermiyorsa boş liste döndür: {{"kayitlar": []}}"""
         if not isinstance(h, dict) or "tutar" not in h:
             continue
         if not h.get("tarih"):
-            h["tarih"] = datetime.now().strftime("%d.%m.%Y")
+            h["tarih"] = bugun
         temiz.append(h)
     return temiz
