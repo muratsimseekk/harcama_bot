@@ -7,7 +7,7 @@ import tempfile
 import threading
 import time
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import tornado.web
 
@@ -45,6 +45,25 @@ RAPOR_KELIMELERI = [
 
 def _rapor_sorusu_mu(metin: str) -> bool:
     return any(k in metin.lower() for k in RAPOR_KELIMELERI)
+
+
+TR_SAAT_DILIMI = timezone(timedelta(hours=3))  # Türkiye 2016'dan beri sabit UTC+3
+
+
+def _iletilen_mesaj_tarihi(message) -> datetime | None:
+    """Mesaj kullanıcının eski bir mesajından iletildiyse (Forward) orijinal
+    gönderilme zamanını Türkiye saatiyle döndürür; iletilmemişse None.
+    Bot kapalıyken atılmış mesajlar bu sayede sonradan doğru güne kaydedilir."""
+    origin = message.forward_origin
+    if origin is None:
+        return None
+    return origin.date.astimezone(TR_SAAT_DILIMI).replace(tzinfo=None)
+
+
+def _bot_mesajindan_mi_iletildi(message) -> bool:
+    origin = message.forward_origin
+    kaynak = getattr(origin, "sender_user", None)
+    return bool(kaynak and kaynak.is_bot)
 
 
 # Telegram webhook isteklerini doğrulamak için gizli anahtar (token'dan türetilir, ek env gerekmez)
@@ -106,8 +125,27 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "'Geçen ay faturalar toplamı'\n"
         "'Nisan dükkan nakliye harcamaları'\n"
         "'Bu yıl toplam yatırım raporu'\n\n"
-        "🎙️ Sesli mesaj da gönderebilirsiniz!",
+        "🎙️ Sesli mesaj da gönderebilirsiniz!\n\n"
+        "📨 Eski mesajları kaydetmek için onları bu sohbete iletin (Forward) — "
+        "orijinal tarihleriyle kaydedilir.\n"
+        "🔗 /tablo — kayıtların tutulduğu tablonun linki",
         parse_mode="Markdown"
+    )
+
+
+async def tablo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Kayıtların yazıldığı Google Sheets tablosunun linkini gönderir."""
+    kullanici_id = update.message.from_user.id
+    if IZIN_VERILEN_KULLANICI != 0 and kullanici_id != IZIN_VERILEN_KULLANICI:
+        await update.message.reply_text("⛔ Bu botu kullanma yetkiniz yok.")
+        return
+    sheets_id = os.environ.get("GOOGLE_SHEETS_ID")
+    if not sheets_id:
+        await update.message.reply_text("❌ GOOGLE_SHEETS_ID tanımlı değil.")
+        return
+    await update.message.reply_text(
+        f"📊 Kayıtlar bu tabloda (her ay ayrı sayfa, toplamlar '📊 Özet' sayfasında):\n"
+        f"https://docs.google.com/spreadsheets/d/{sheets_id}"
     )
 
 
@@ -116,7 +154,10 @@ async def sesli_mesaj_isle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if IZIN_VERILEN_KULLANICI != 0 and kullanici_id != IZIN_VERILEN_KULLANICI:
         await update.message.reply_text("⛔ Bu botu kullanma yetkiniz yok.")
         return
+    if _bot_mesajindan_mi_iletildi(update.message):
+        return
 
+    referans = _iletilen_mesaj_tarihi(update.message)
     await update.message.reply_text("🎙️ Ses mesajı alındı, işleniyor...")
 
     try:
@@ -132,12 +173,9 @@ async def sesli_mesaj_isle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Ses anlaşılamadı, tekrar deneyin.")
             return
 
-        await update.message.reply_text(f"📝 Anlaşılan: *{metin}*", parse_mode="Markdown")
+        await update.message.reply_text(f"📝 Anlaşılan: {metin}")
 
-        if _rapor_sorusu_mu(metin):
-            await _rapor_isle(update, metin)
-        else:
-            await _harcamalari_isle(update, metin)
+        await _mesaji_yonlendir(update, metin, referans)
 
     except Exception as e:
         logger.error(f"Ses işleme hatası: {e}", exc_info=True)
@@ -150,14 +188,24 @@ async def yazili_mesaj_isle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⛔ Bu botu kullanma yetkiniz yok.")
         return
 
+    if _bot_mesajindan_mi_iletildi(update.message):
+        return
+
     metin = update.message.text
     if metin.startswith("/"):
         return
 
-    if _rapor_sorusu_mu(metin):
-        await _rapor_isle(update, metin)
+    await _mesaji_yonlendir(update, metin, _iletilen_mesaj_tarihi(update.message))
+
+
+async def _mesaji_yonlendir(update: Update, metin: str, referans: datetime | None):
+    if not _rapor_sorusu_mu(metin):
+        await _harcamalari_isle(update, metin, referans)
+    elif referans:
+        # İletilen eski bir rapor sorusu: geçmişi aktarırken rapor üretme
+        await update.message.reply_text("⏭️ Eski rapor sorusu, atlandı.")
     else:
-        await _harcamalari_isle(update, metin)
+        await _rapor_isle(update, metin)
 
 
 async def _rapor_isle(update: Update, soru: str):
@@ -178,11 +226,15 @@ async def _rapor_isle(update: Update, soru: str):
         await update.message.reply_text("❌ Rapor oluşturulurken hata oluştu.")
 
 
-async def _harcamalari_isle(update: Update, metin: str):
+async def _harcamalari_isle(update: Update, metin: str, referans: datetime | None = None):
+    """referans: iletilen eski mesajın gönderilme zamanı; yoksa şu an (Türkiye saati)."""
+    # Render sunucusu UTC'de çalışır; tarih/saat Türkiye saatine göre hesaplanmalı.
+    simdi = referans or datetime.now(TR_SAAT_DILIMI).replace(tzinfo=None)
     try:
-        await update.message.reply_text("🤖 Harcamalar analiz ediliyor...")
+        if referans is None:
+            await update.message.reply_text("🤖 Harcamalar analiz ediliyor...")
         try:
-            harcama_listesi = await metni_parse_et(metin)
+            harcama_listesi = await metni_parse_et(metin, referans_tarih=simdi)
         except Exception as e:
             logger.error(f"Groq parse erişilemedi: {e}", exc_info=True)
             await update.message.reply_text(
@@ -208,8 +260,8 @@ async def _harcamalari_isle(update: Update, metin: str):
         ozet_satirlar = []
 
         for harcama in harcama_listesi:
-            bugun_str = datetime.now().strftime("%d.%m.%Y")
-            harcama["saat"] = datetime.now().strftime("%H:%M") if harcama.get("tarih") == bugun_str else "—"
+            bugun_str = simdi.strftime("%d.%m.%Y")
+            harcama["saat"] = simdi.strftime("%H:%M") if harcama.get("tarih") == bugun_str else "—"
 
             tip = harcama.get("tip", "kisisel")
             tip_emoji = "🏭" if tip == "isletme" else ("💹" if tip == "yatirim" else "👤")
@@ -250,6 +302,9 @@ async def _harcamalari_isle(update: Update, metin: str):
             mesaj = f"✅ {basarili}/{toplam_adet} harcama kaydedildi!\n\n{ozet_metni}"
             if basarisiz > 0:
                 mesaj += f"\n\n⚠️ {basarisiz} harcama kaydedilemedi: {hatalar[0]}"
+
+        if referans:
+            mesaj = f"📨 Eski mesaj ({referans:%d.%m.%Y %H:%M})\n" + mesaj
 
         # parse_mode yok: açıklamadaki '_' veya '*' Telegram Markdown'ını bozup
         # kayıt yapılmış olsa bile "Bir hata oluştu" mesajına düşürüyordu.
@@ -292,6 +347,7 @@ def main():
 
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("tablo", tablo))
     app.add_handler(MessageHandler(filters.VOICE, sesli_mesaj_isle))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, yazili_mesaj_isle))
 
