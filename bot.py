@@ -4,9 +4,6 @@ import asyncio
 import hashlib
 import logging
 import tempfile
-import threading
-import time
-import urllib.request
 from datetime import datetime, timedelta, timezone
 
 import tornado.web
@@ -32,8 +29,8 @@ logger = logging.getLogger(__name__)
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 IZIN_VERILEN_KULLANICI = int(os.environ.get("IZIN_VERILEN_KULLANICI_ID", "0"))
 PORT = int(os.environ.get("PORT", 10000))
-# Render URL'si — RENDER_URL elle girilmemişse Render'ın otomatik verdiği RENDER_EXTERNAL_URL kullanılır.
-# İkisi de yoksa self-ping çalışmaz ve ücretsiz plan 15 dk sonra servisi uyutur (bot cevap vermez).
+# Render URL'si (webhook adresi için) — RENDER_URL elle girilmemişse Render'ın otomatik
+# verdiği RENDER_EXTERNAL_URL kullanılır. İkisi de yoksa polling'e düşülür (yerel geliştirme).
 RENDER_URL = os.environ.get("RENDER_URL") or os.environ.get("RENDER_EXTERNAL_URL", "")
 
 RAPOR_KELIMELERI = [
@@ -74,7 +71,9 @@ WEBHOOK_SECRET = hashlib.sha256((TELEGRAM_TOKEN or "").encode()).hexdigest()[:32
 # --- HTTP Sunucusu (webhook + sağlık kontrolü) ---
 class HealthHandler(tornado.web.RequestHandler):
     def get(self):
-        self.write("OK")
+        # Tarayıcıdan açıldığında servisi uyandırır ("uyandırma linki")
+        self.set_header("Content-Type", "text/plain; charset=utf-8")
+        self.write("✅ harcama_bot uyanık — Telegram'dan harcama girebilirsiniz.")
 
     def head(self):
         pass
@@ -93,23 +92,6 @@ class TelegramWebhookHandler(tornado.web.RequestHandler):
             return
         update = Update.de_json(json.loads(self.request.body), self.app.bot)
         await self.app.update_queue.put(update)
-
-
-def self_ping_thread():
-    """Her 10 dakikada bir kendi adresine istek atar — gecikmeyi azaltmak için.
-    Webhook sayesinde zorunlu değil: servis uyusa da ilk mesaj onu uyandırır."""
-    time.sleep(30)  # Bot tamamen başlayana kadar bekle
-    if not RENDER_URL:
-        logger.warning("⚠️ RENDER_URL / RENDER_EXTERNAL_URL yok — self-ping kapalı, servis uyuyabilir")
-        return
-    logger.info(f"Self-ping hedefi: {RENDER_URL}")
-    while True:
-        try:
-            urllib.request.urlopen(RENDER_URL, timeout=10)
-            logger.info("✅ Self-ping başarılı")
-        except Exception as e:
-            logger.warning(f"Self-ping başarısız: {e}")
-        time.sleep(600)  # 10 dakikada bir
 
 
 # --- Telegram Handlers ---
@@ -359,8 +341,9 @@ def main():
         app.run_polling(drop_pending_updates=True)
         return
 
-    # Self-ping (opsiyonel, sadece ilk mesajdaki uyanma gecikmesini azaltır)
-    threading.Thread(target=self_ping_thread, daemon=True).start()
+    # Uyanık tutma (self-ping) yok: Render ücretsiz saatleri harcama_api ile paylaşılıyor.
+    # Servis 15 dk boşta kalınca uyur; Telegram'ın webhook isteği veya ana sayfa
+    # linkine girmek onu uyandırır.
     asyncio.run(webhook_ile_calistir(app))
 
 
