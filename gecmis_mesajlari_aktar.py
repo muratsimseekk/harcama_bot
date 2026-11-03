@@ -1,8 +1,10 @@
 """
 Bot çalışmazken Telegram'a atılmış harcama mesajlarını sonradan Sheets'e aktarır.
 
-Bot API geçmiş mesajları okuyamadığı için kaynak, Telegram Desktop'ın sohbet
-dışa aktarımıdır (Export chat history → format: JSON, "Voice messages" işaretli).
+Bot API geçmiş mesajları okuyamadığı için kaynak, Telegram Desktop'ın dışa
+aktarımıdır (format: JSON, "Voice messages" işaretli). İki yol da olur:
+  - Sohbet menüsü → Export chat history
+  - Ayarlar → Gelişmiş → Export Telegram data → yalnızca "Bot chats"
 
 İki adım:
   1) Önizleme — mesajları okur, Groq ile ayrıştırır, CSV'ye yazar (Sheets'e dokunmaz):
@@ -62,9 +64,28 @@ def _metni_birlestir(text) -> str:
     return "".join(p if isinstance(p, str) else p.get("text", "") for p in text)
 
 
-def _kullanici_mesajlari(export_klasoru: str, baslangic: datetime, bitis: datetime | None):
+def _bot_sohbetini_bul(veri: dict, sohbet_adi: str | None) -> dict:
+    """Tek sohbet export'u (Export chat history) ya da tüm hesap export'u
+    (Ayarlar → Gelişmiş → Export Telegram data) olabilir."""
+    if "messages" in veri:
+        return veri
+
+    sohbetler = [s for s in veri.get("chats", {}).get("list", []) if s.get("type") == "bot_chat"]
+    if sohbet_adi:
+        sohbetler = [s for s in sohbetler if sohbet_adi.lower() in (s.get("name") or "").lower()]
+    if len(sohbetler) == 1:
+        return sohbetler[0]
+
+    adlar = ", ".join(repr(s.get("name")) for s in sohbetler) or "yok"
+    sys.exit(f"Bot sohbeti seçilemedi (bulunan bot sohbetleri: {adlar}). "
+             f"--sohbet ile bot'un adını verin.")
+
+
+def _kullanici_mesajlari(export_klasoru: str, baslangic: datetime, bitis: datetime | None,
+                         sohbet_adi: str | None = None):
     with open(os.path.join(export_klasoru, "result.json"), encoding="utf-8") as f:
-        veri = json.load(f)
+        veri = _bot_sohbetini_bul(json.load(f), sohbet_adi)
+    logger.info(f"Sohbet: {veri.get('name')} ({len(veri.get('messages', []))} mesaj)")
 
     # Bot ile özel sohbette sohbet id'si bot'un id'sidir; onun mesajlarını atla.
     bot_from_id = f"user{veri.get('id')}"
@@ -88,7 +109,7 @@ async def onizle(args):
 
     satirlar = []
     atlanan = []
-    for m, zaman in _kullanici_mesajlari(args.export_klasoru, baslangic, bitis):
+    for m, zaman in _kullanici_mesajlari(args.export_klasoru, baslangic, bitis, args.sohbet):
         if m.get("media_type") == "voice_message":
             dosya = os.path.join(args.export_klasoru, m.get("file", ""))
             if not os.path.isfile(dosya):
@@ -192,6 +213,7 @@ def main():
     o.add_argument("export_klasoru", help="Telegram Desktop export klasörü (result.json'un olduğu yer)")
     o.add_argument("--baslangic", required=True, help="İlk gün, GG.AA.YYYY (dahil)")
     o.add_argument("--bitis", help="Son gün, GG.AA.YYYY (dahil). Verilmezse bugüne kadar.")
+    o.add_argument("--sohbet", help="Tüm hesap export'unda birden çok bot varsa bot'un adı (ör. harcama)")
 
     y = alt.add_parser("yaz", help="Onaylanmış CSV'yi Sheets'e yazar")
     y.add_argument("csv_dosyasi")
