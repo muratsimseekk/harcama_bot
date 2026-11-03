@@ -136,11 +136,17 @@ def _sayfa_olustur(sheets, sayfa_adi: str):
     sheets.batchUpdate(spreadsheetId=SHEETS_ID, body=format_body).execute()
 
 
-async def harcamayi_kaydet(harcama: dict) -> bool:
+async def harcamayi_kaydet(harcama: dict) -> str | None:
     """
     Tek bir kaydı ilgili ay sayfasına kaydeder.
     tip: 'kisisel', 'isletme' veya 'yatirim'
+
+    Dönüş: başarılıysa None, değilse kullanıcıya gösterilecek hata nedeni.
     """
+    if not SHEETS_ID or not CREDENTIALS_JSON:
+        logger.error("GOOGLE_SHEETS_ID veya GOOGLE_CREDENTIALS_JSON tanımlı değil")
+        return "Google Sheets ayarları (GOOGLE_SHEETS_ID / GOOGLE_CREDENTIALS_JSON) eksik"
+
     try:
         sheets = _sheets_baglantisi()
         harcama_dt = _tarih_parse(harcama["tarih"])
@@ -174,11 +180,18 @@ async def harcamayi_kaydet(harcama: dict) -> bool:
         ).execute()
 
         _ozet_guncelle(sheets, harcama_dt, float(harcama["tutar"]), tip_raw)
-        return True
+        return None
 
+    except HttpError as e:
+        logger.error(f"Sheets kayıt hatası: {e}", exc_info=True)
+        if e.resp.status == 403:
+            return "Google Sheets erişim izni yok (tablo servis hesabıyla 'Düzenleyici' olarak paylaşılmış mı?)"
+        if e.resp.status == 404:
+            return "Google Sheets tablosu bulunamadı (GOOGLE_SHEETS_ID doğru mu?)"
+        return f"Google Sheets hatası ({e.resp.status})"
     except Exception as e:
         logger.error(f"Sheets kayıt hatası: {e}", exc_info=True)
-        return False
+        return f"{type(e).__name__}: {e}"[:200]
 
 
 def _ozet_guncelle(sheets, harcama_dt: datetime, tutar: float, tip: str):

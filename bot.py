@@ -1,11 +1,15 @@
 import os
+import json
+import asyncio
+import hashlib
 import logging
 import tempfile
 import threading
 import time
 import urllib.request
-from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
+
+import tornado.web
 
 try:
     from dotenv import load_dotenv  # yerel geliştirme için opsiyonel
@@ -28,7 +32,9 @@ logger = logging.getLogger(__name__)
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 IZIN_VERILEN_KULLANICI = int(os.environ.get("IZIN_VERILEN_KULLANICI_ID", "0"))
 PORT = int(os.environ.get("PORT", 10000))
-RENDER_URL = os.environ.get("RENDER_URL", "")  # Render URL'si — env variable olarak eklenecek
+# Render URL'si — RENDER_URL elle girilmemişse Render'ın otomatik verdiği RENDER_EXTERNAL_URL kullanılır.
+# İkisi de yoksa self-ping çalışmaz ve ücretsiz plan 15 dk sonra servisi uyutur (bot cevap vermez).
+RENDER_URL = os.environ.get("RENDER_URL") or os.environ.get("RENDER_EXTERNAL_URL", "")
 
 RAPOR_KELIMELERI = [
     "rapor", "analiz", "özet", "ozet", "ne kadar", "kaç lira", "kac lira",
@@ -41,37 +47,47 @@ def _rapor_sorusu_mu(metin: str) -> bool:
     return any(k in metin.lower() for k in RAPOR_KELIMELERI)
 
 
-# --- Keepalive HTTP Sunucusu ---
-class HealthHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-Type", "text/plain")
-        self.end_headers()
-        self.wfile.write(b"OK")
+# Telegram webhook isteklerini doğrulamak için gizli anahtar (token'dan türetilir, ek env gerekmez)
+WEBHOOK_PATH = "/telegram"
+WEBHOOK_SECRET = hashlib.sha256((TELEGRAM_TOKEN or "").encode()).hexdigest()[:32]
 
-    def do_HEAD(self):
-        self.send_response(200)
-        self.send_header("Content-Type", "text/plain")
-        self.end_headers()
 
-    def log_message(self, format, *args):
+# --- HTTP Sunucusu (webhook + sağlık kontrolü) ---
+class HealthHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.write("OK")
+
+    def head(self):
         pass
 
 
-def keepalive_thread():
-    sunucu = HTTPServer(("0.0.0.0", PORT), HealthHandler)
-    logger.info(f"✅ HTTP sunucusu port {PORT}'de başlatıldı")
-    sunucu.serve_forever()
+class TelegramWebhookHandler(tornado.web.RequestHandler):
+    """Telegram her mesajı buraya POST eder. Render servisi uyuyor olsa bile
+    bu istek onu uyandırır; Telegram yanıt alamazsa mesajı tekrar dener."""
+
+    def initialize(self, app: Application):
+        self.app = app
+
+    async def post(self):
+        if self.request.headers.get("X-Telegram-Bot-Api-Secret-Token") != WEBHOOK_SECRET:
+            self.set_status(403)
+            return
+        update = Update.de_json(json.loads(self.request.body), self.app.bot)
+        await self.app.update_queue.put(update)
 
 
 def self_ping_thread():
-    """Her 10 dakikada bir kendi adresine istek atar — Render uyutmasın diye."""
+    """Her 10 dakikada bir kendi adresine istek atar — gecikmeyi azaltmak için.
+    Webhook sayesinde zorunlu değil: servis uyusa da ilk mesaj onu uyandırır."""
     time.sleep(30)  # Bot tamamen başlayana kadar bekle
+    if not RENDER_URL:
+        logger.warning("⚠️ RENDER_URL / RENDER_EXTERNAL_URL yok — self-ping kapalı, servis uyuyabilir")
+        return
+    logger.info(f"Self-ping hedefi: {RENDER_URL}")
     while True:
         try:
-            if RENDER_URL:
-                urllib.request.urlopen(RENDER_URL, timeout=10)
-                logger.info("✅ Self-ping başarılı")
+            urllib.request.urlopen(RENDER_URL, timeout=10)
+            logger.info("✅ Self-ping başarılı")
         except Exception as e:
             logger.warning(f"Self-ping başarısız: {e}")
         time.sleep(600)  # 10 dakikada bir
@@ -170,7 +186,8 @@ async def _harcamalari_isle(update: Update, metin: str):
         except Exception as e:
             logger.error(f"Groq parse erişilemedi: {e}", exc_info=True)
             await update.message.reply_text(
-                "⚠️ Yapay zeka servisine şu an ulaşılamıyor. Lütfen birazdan tekrar deneyin."
+                "⚠️ Yapay zeka servisine şu an ulaşılamıyor. Lütfen birazdan tekrar deneyin.\n\n"
+                f"Neden: {type(e).__name__}: {str(e)[:200]}"
             )
             return
 
@@ -187,6 +204,7 @@ async def _harcamalari_isle(update: Update, metin: str):
         toplam_adet = len(harcama_listesi)
         basarili = 0
         basarisiz = 0
+        hatalar = []
         ozet_satirlar = []
 
         for harcama in harcama_listesi:
@@ -200,11 +218,19 @@ async def _harcamalari_isle(update: Update, metin: str):
                 f"{harcama['tutar']} ₺ | {harcama['kategori']}"
             )
 
-            sonuc = await harcamayi_kaydet(harcama)
-            if sonuc:
+            hata = await harcamayi_kaydet(harcama)
+            if hata is None:
                 basarili += 1
             else:
                 basarisiz += 1
+                hatalar.append(hata)
+
+        if basarili == 0:
+            # Hiçbiri kaydedilemedi — "Kaydedildi" deme, gerçek nedeni göster.
+            await update.message.reply_text(
+                f"❌ Kaydedilemedi!\n\nNeden: {hatalar[0]}"
+            )
+            return
 
         if toplam_adet == 1:
             h = harcama_listesi[0]
@@ -221,36 +247,65 @@ async def _harcamalari_isle(update: Update, metin: str):
             )
         else:
             ozet_metni = "\n".join(ozet_satirlar)
-            mesaj = f"✅ *{basarili}/{toplam_adet} harcama kaydedildi!*\n\n{ozet_metni}"
+            mesaj = f"✅ {basarili}/{toplam_adet} harcama kaydedildi!\n\n{ozet_metni}"
             if basarisiz > 0:
-                mesaj += f"\n\n⚠️ {basarisiz} harcama kaydedilemedi."
+                mesaj += f"\n\n⚠️ {basarisiz} harcama kaydedilemedi: {hatalar[0]}"
 
-        await update.message.reply_text(mesaj, parse_mode="Markdown")
+        # parse_mode yok: açıklamadaki '_' veya '*' Telegram Markdown'ını bozup
+        # kayıt yapılmış olsa bile "Bir hata oluştu" mesajına düşürüyordu.
+        await update.message.reply_text(mesaj)
 
     except Exception as e:
         logger.error(f"Harcama işleme hatası: {e}", exc_info=True)
         await update.message.reply_text("❌ Bir hata oluştu.")
 
 
+async def webhook_ile_calistir(app: Application):
+    webhook_url = RENDER_URL.rstrip("/") + WEBHOOK_PATH
+    sunucu = tornado.web.Application([
+        (r"/", HealthHandler),
+        (WEBHOOK_PATH, TelegramWebhookHandler, {"app": app}),
+    ])
+
+    async with app:
+        # drop_pending_updates=False: servisi uyandıran mesaj silinmesin
+        await app.bot.set_webhook(
+            url=webhook_url,
+            secret_token=WEBHOOK_SECRET,
+            drop_pending_updates=False,
+            allowed_updates=Update.ALL_TYPES,
+        )
+        await app.start()
+        sunucu.listen(PORT, address="0.0.0.0")
+        logger.info(f"✅ Webhook aktif: {webhook_url} (port {PORT})")
+        try:
+            await asyncio.Event().wait()
+        finally:
+            await app.stop()
+
+
 def main():
-    # 1. HTTP sunucusunu başlat (Render port kontrolü için)
-    t1 = threading.Thread(target=keepalive_thread, daemon=True)
-    t1.start()
+    eksikler = [ad for ad in ("TELEGRAM_TOKEN", "GROQ_API_KEY", "GOOGLE_SHEETS_ID", "GOOGLE_CREDENTIALS_JSON")
+                if not os.environ.get(ad)]
+    if eksikler:
+        logger.error(f"❌ Eksik ortam değişkenleri: {', '.join(eksikler)}")
 
-    # 2. Self-ping thread'i başlat (uyumayı engeller)
-    t2 = threading.Thread(target=self_ping_thread, daemon=True)
-    t2.start()
-
-    time.sleep(1)
-
-    # 3. Telegram bot'u başlat
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.VOICE, sesli_mesaj_isle))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, yazili_mesaj_isle))
 
     logger.info("🤖 harcama_takip_rota_bot başlatılıyor...")
-    app.run_polling(drop_pending_updates=True)
+
+    if not RENDER_URL:
+        # Yerel geliştirme: dışarıdan erişilebilir adres yok, polling kullan
+        logger.warning("RENDER_URL / RENDER_EXTERNAL_URL yok — polling modunda çalışılıyor")
+        app.run_polling(drop_pending_updates=True)
+        return
+
+    # Self-ping (opsiyonel, sadece ilk mesajdaki uyanma gecikmesini azaltır)
+    threading.Thread(target=self_ping_thread, daemon=True).start()
+    asyncio.run(webhook_ile_calistir(app))
 
 
 if __name__ == "__main__":
