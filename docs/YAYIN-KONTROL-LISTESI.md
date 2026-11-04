@@ -66,11 +66,11 @@ Tam plan: `~/.claude/plans/gentle-fluttering-unicorn.md` (Faz 2-4). Base kaldır
 onun yerine Free (reklamlı, ücretsiz) geldi; Free'nin RC'de ürünü/entitlement'ı yok,
 ödüllü reklamla kazanılır (bkz `~/.claude/plans/swirling-discovering-jellyfish.md`).
 
-**2 abonelik ürünü (tek grup), fiyatlar (güncel 2026-09-09):**
+**2 abonelik ürünü (tek grup), fiyatlar (TR 2026-11-04'te güncellendi; USD baz 2026-09-09'dan, değişmedi):**
 | ID | TR | USD baz | entitlement |
 |---|---|---|---|
-| `pro_aylik`   | ₺99,99  | $6.99  | pro |
-| `pro_yillik`  | ₺799,99 | $59.99 | pro |
+| `pro_aylik`   | ₺49,99  | $6.99  | pro |
+| `pro_yillik`  | ₺399,99 | $59.99 | pro |
 
 Kod tarafı HAZIR: `react-native-purchases` kurulu, `mobile/lib/satinalma.ts` gerçek
 implementasyon (anahtar yoksa graceful), `mobile/app/uyelik.tsx` paywall (aylık/yıllık,

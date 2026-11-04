@@ -12,7 +12,7 @@ import { useUyari } from "@/components/Uyari";
 import { api, ApiError } from "@/lib/api";
 import { turkceTutar } from "@/lib/format";
 import { gerekenReklam, reklamIzleVeTekrarDene } from "@/lib/kullanim402";
-import { useMe } from "@/lib/queries";
+import { useCategories, useCreateCategory, useMe, usePatchCategory } from "@/lib/queries";
 import { reklamAktif, reklamOnYukle } from "@/lib/reklam";
 import { golge, R, SP, useRenkler } from "@/lib/theme";
 import type { Aday, CaptureYanit } from "@/lib/types";
@@ -44,6 +44,47 @@ export default function Confirm() {
   const guncelle = (i: number, yama: Partial<Aday>) =>
     setAdaylar((eski) => eski.map((a, j) => (j === i ? { ...a, ...yama } : a)));
   const sil = (i: number) => setAdaylar((eski) => eski.filter((_, j) => j !== i));
+
+  const kategoriler = useCategories();
+  const kategoriOlustur = useCreateCategory();
+  const kategoriGuncelle = usePatchCategory();
+  const oneriBekliyor = kategoriOlustur.isPending || kategoriGuncelle.isPending;
+
+  /** AI'ın önerdiği kategoriyi oluştur (gizli hâli varsa aç), aynı öneriyi alan kayıtlara da uygula. */
+  async function oneriKabul(a: Aday) {
+    const ad = a.kategori_onerisi?.trim();
+    if (!ad || oneriBekliyor) return;
+    const tip = a.direction === "gelir" ? "gelir" : a.tip;
+    const kucuk = (x: string) => x.toLocaleLowerCase("tr");
+    try {
+      const mevcut = kategoriler.data?.find((k) => k.tip === tip && kucuk(k.name) === kucuk(ad));
+      if (mevcut && !mevcut.is_active) {
+        await kategoriGuncelle.mutateAsync({ id: mevcut.id, body: { is_active: true } });
+      }
+      const kategori =
+        mevcut ??
+        (await kategoriOlustur.mutateAsync({
+          name: ad,
+          tip,
+          keywords: a.aciklama.trim().length >= 3 ? [kucuk(a.aciklama.trim())] : [],
+        }));
+      setAdaylar((eski) =>
+        eski.map((x) =>
+          x.kategori_onerisi === a.kategori_onerisi && x.direction === a.direction && x.tip === a.tip
+            ? {
+                ...x,
+                kategori: kategori.name,
+                kategori_onerisi: "",
+                neden: "", // "uygun kategori yok" gerekçesi artık geçersiz
+                inceleme_sebepleri: x.inceleme_sebepleri.filter((sb) => sb !== "AI bu kayıttan emin değil"),
+              }
+            : x,
+        ),
+      );
+    } catch (e) {
+      uyari("Kategori oluşturulamadı", hataMesaji(e, undefined, { ekran: "confirm" }));
+    }
+  }
 
   async function onayla() {
     if (adaylar.length === 0) return router.back();
@@ -120,15 +161,48 @@ export default function Confirm() {
                 <Ionicons name="close-circle" size={22} color={renk.textFaint} />
               </Pressable>
             )}
+            {!a.kategori?.trim() && !!a.kategori_onerisi && (
+              <View style={[s.oneri, { backgroundColor: renk.aksanSoft }]}>
+                <View style={s.oneriUst}>
+                  <Ionicons name="sparkles" size={16} color={renk.aksan} />
+                  <Text style={{ color: renk.text, fontSize: 14, flex: 1 }}>
+                    {a.direction === "gelir" ? "Bu gelirin" : "Bu harcamanın"} kategorisi yok.{" "}
+                    <Text style={{ fontWeight: "700" }}>{a.kategori_onerisi}</Text> olsun mu?
+                  </Text>
+                </View>
+                <View style={s.oneriButonlar}>
+                  <Pressable
+                    style={[s.oneriHayir, { borderColor: renk.border }]}
+                    onPress={() => guncelle(i, { kategori_onerisi: "" })}
+                    disabled={oneriBekliyor}
+                  >
+                    <Text style={{ color: renk.textMuted, fontWeight: "700", fontSize: 14 }}>Hayır</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[s.oneriEvet, { backgroundColor: renk.aksan }]}
+                    onPress={() => oneriKabul(a)}
+                    disabled={oneriBekliyor}
+                  >
+                    {oneriBekliyor ? (
+                      <ActivityIndicator size="small" color={renk.aksanUstu} />
+                    ) : (
+                      <Text style={{ color: renk.aksanUstu, fontWeight: "700", fontSize: 14 }}>
+                        Evet, oluştur
+                      </Text>
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            )}
             <IslemFormu deger={a} guncelle={(yama) => guncelle(i, yama)} />
             {!!a.neden && (
               <Text style={{ color: renk.textFaint, fontSize: 13, fontStyle: "italic" }}>
                 AI: {a.neden}
               </Text>
             )}
-            {a.inceleme_sebepleri.length > 0 && (
+            {a.inceleme_sebepleri.some((sb) => sb !== "Kategori seçilmedi" || !a.kategori?.trim()) && (
               <View style={s.sebepler}>
-                {a.inceleme_sebepleri.map((sb, k) => (
+                {a.inceleme_sebepleri.filter((sb) => sb !== "Kategori seçilmedi" || !a.kategori?.trim()).map((sb, k) => (
                   <Text key={k} style={[s.sebep, { backgroundColor: renk.warnSoft, color: renk.warn }]}>
                     {sb}
                   </Text>
@@ -185,6 +259,11 @@ const s = StyleSheet.create({
   uyari: { flexDirection: "row", alignItems: "center", gap: SP.sm, padding: SP.md, borderRadius: R.md },
   kart: { borderWidth: StyleSheet.hairlineWidth, borderRadius: R.lg, padding: SP.lg, gap: SP.md },
   silBtn: { position: "absolute", top: 8, right: 8, zIndex: 2 },
+  oneri: { borderRadius: R.md, padding: SP.md, gap: SP.sm, marginTop: SP.md },
+  oneriUst: { flexDirection: "row", gap: SP.sm, alignItems: "flex-start" },
+  oneriButonlar: { flexDirection: "row", gap: SP.sm },
+  oneriHayir: { flex: 1, borderWidth: 1, borderRadius: R.sm, paddingVertical: 9, alignItems: "center" },
+  oneriEvet: { flex: 2, borderRadius: R.sm, paddingVertical: 9, alignItems: "center", justifyContent: "center" },
   sebepler: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   sebep: { fontSize: 13, paddingHorizontal: 8, paddingVertical: 4, borderRadius: R.sm, overflow: "hidden" },
   altBar: { borderTopWidth: StyleSheet.hairlineWidth, padding: SP.lg, gap: SP.sm },

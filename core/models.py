@@ -7,6 +7,8 @@ from typing import Literal
 
 Direction = Literal["gider", "gelir"]
 TxType = Literal["kisisel", "isletme", "yatirim"]
+# Kategoriler işlemlerden bir tür fazlasına sahip: gelir kategorileri bölümden bağımsızdır.
+KategoriTip = Literal["kisisel", "isletme", "yatirim", "gelir"]
 
 TIP_ETIKETI = {"kisisel": "Kişisel", "isletme": "İşletme", "yatirim": "Yatırım"}
 TIP_EMOJI = {"kisisel": "👤", "isletme": "🏭", "yatirim": "💹"}
@@ -33,6 +35,8 @@ class Candidate:
     para_birimi: str = "TRY"
     emin: bool = True
     neden: str = ""  # AI'ın kategori/tip gerekçesi (kalıcı değil, onay ekranında gösterilir)
+    # Kategori boşken AI'ın önerdiği YENİ kategori adı (kalıcı değil; kullanıcı onaylarsa oluşur)
+    kategori_onerisi: str = ""
     ham_girdi: str = ""
     kaynak: str = "telegram_text"
     # onay aşamasında dolar:
@@ -145,11 +149,11 @@ def _as_dt(v) -> datetime | None:
 
 @dataclass
 class Category:
-    """Kullanıcının düzenlenebilir harcama kategorisi."""
+    """Kullanıcının düzenlenebilir harcama/gelir kategorisi."""
     id: str
     user_id: str
     name: str
-    tip: TxType
+    tip: KategoriTip
     color: str | None = None
     keywords: list[str] = field(default_factory=list)
     is_active: bool = True
@@ -157,11 +161,12 @@ class Category:
 
     @classmethod
     def from_row(cls, r: dict) -> Category:
+        tur = r.get("type", "kisisel")
         return cls(
             id=r["id"],
             user_id=r["user_id"],
             name=r.get("name", ""),
-            tip=tip_normalize(r.get("type", "kisisel")),
+            tip="gelir" if tur == "gelir" else tip_normalize(tur),
             color=r.get("color"),
             keywords=list(r.get("keywords") or []),
             is_active=bool(r.get("is_active", True)),

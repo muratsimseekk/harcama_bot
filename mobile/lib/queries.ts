@@ -1,11 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type IslemFiltre } from "./api";
-import type { Aday, Granularity, HaneRol, Kapsam, Kategori, Tip } from "./types";
+import type { Aday, Granularity, HaneRol, Kapsam, Kategori, KategoriTip } from "./types";
 
-export function useTransactions(filtre: IslemFiltre = { limit: 20 }) {
+export function useTransactions(filtre: IslemFiltre = { limit: 20 }, secenek?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["transactions", filtre],
     queryFn: () => api.listTransactions(filtre),
+    enabled: secenek?.enabled,
   });
 }
 
@@ -17,6 +18,15 @@ export function useSummary(period: Granularity, ref?: string) {
   return useQuery({
     queryKey: ["summary", period, ref ?? "now"],
     queryFn: () => api.summary(period, ref),
+  });
+}
+
+/** "summary" altında: işlem değişince özetle birlikte tazelenir. */
+export function useMevcut(aylar: number) {
+  return useQuery({
+    queryKey: ["summary", "mevcut", aylar],
+    queryFn: () => api.mevcut(aylar),
+    placeholderData: keepPreviousData, // dönem değişirken kart boşalıp zıplamasın
   });
 }
 
@@ -138,7 +148,7 @@ export function usePatchTransaction() {
 export function useCreateCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; tip: Tip; color?: string; keywords?: string[] }) =>
+    mutationFn: (body: { name: string; tip: KategoriTip; color?: string; keywords?: string[] }) =>
       api.createCategory(body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
   });
@@ -147,7 +157,7 @@ export function useCreateCategory() {
 export function useSeedBolum() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (tip: Tip) => api.seedBolum(tip),
+    mutationFn: (tip: KategoriTip) => api.seedBolum(tip),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
   });
 }

@@ -4,6 +4,14 @@ type Ikon = keyof typeof Ionicons.glyphMap;
 
 // Sıra önemli: ilk eşleşen kazanır → özel kalıplar üstte.
 const HARITA: [RegExp, Ikon][] = [
+  // gelir — genel kalıplardan önce ("Maaş" personel, "Kira Geliri" ev ikonuna düşmesin).
+  // [iİ]: JS'in /i bayrağı Türkçe İ'yi i ile eşlemez. ^çek: "İçecek" içinde eşleşmesin.
+  [/^maaş$/i, "wallet"],
+  [/[iİ]şçilik/i, "hammer"],
+  [/kira gelir/i, "home"],
+  [/^çek|senet/i, "document-text"],
+  [/faiz/i, "trending-up"],
+
   // faturalar / abonelik
   [/fatura|elektrik|enerji/i, "flash"],
   [/\bsu\b|doğalgaz|dogalgaz|gaz faturası/i, "water"],

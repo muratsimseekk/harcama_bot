@@ -7,23 +7,36 @@ import { PastaGrafik } from "@/components/charts";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
-import { AY_UZUN, birlestirKategori, selamlama, turkceTutar } from "@/lib/format";
-import { useHane, useSummary, useTransactions } from "@/lib/queries";
+import { AY_UZUN, katlaKategori, selamlama, turkceTutar } from "@/lib/format";
+import { useHane, useMevcut, useSummary, useTransactions } from "@/lib/queries";
 import { SP, T, useRenkler } from "@/lib/theme";
-import type { Granularity } from "@/lib/types";
+import type { Granularity, Yon } from "@/lib/types";
 
 const GRAN: Granularity[] = ["week", "month", "year"];
 const ETIKET: Record<Granularity, string> = { week: "Haftalık", month: "Aylık", year: "Yıllık" };
+const MEVCUT_DONEMLER = ["1", "3", "6", "12"] as const;
+type MevcutDonem = (typeof MEVCUT_DONEMLER)[number];
+const MEVCUT_ETIKET: Record<MevcutDonem, string> = { "1": "Bu ay", "3": "Son 3 ay", "6": "Son 6 ay", "12": "Son 1 yıl" };
+
+/** "2026-09-01".."2026-11-30" → "Eylül – Kasım 2026"; yıl değişiyorsa ikisi de yazılır. */
+function aralikEtiket(bas: string, bit: string): string {
+  const [y1, m1] = bas.split("-").map(Number);
+  const [y2, m2] = bit.split("-").map(Number);
+  if (y1 === y2 && m1 === m2) return `${AY_UZUN[m2 - 1]} ${y2}`;
+  return `${AY_UZUN[m1 - 1]}${y1 === y2 ? "" : ` ${y1}`} – ${AY_UZUN[m2 - 1]} ${y2}`;
+}
+
 /**
  * Dağılım kartı başlığı — dönemi adıyla söyler: "Eylül ayı harcamaları",
- * "2026 yılı harcamaları". Tarih özetten (baslangic) gelir; henüz yüklenmediyse
+ * "2026 yılı gelirleri". Tarih özetten (baslangic) gelir; henüz yüklenmediyse
  * bugüne düşer.
  */
-function dagilimBaslik(gran: Granularity, baslangic?: string): string {
+function dagilimBaslik(gran: Granularity, yon: Yon, baslangic?: string): string {
   const d = baslangic ? new Date(`${baslangic}T00:00:00`) : new Date();
-  if (gran === "month") return `${AY_UZUN[d.getMonth()]} ayı harcamaları`;
-  if (gran === "year") return `${d.getFullYear()} yılı harcamaları`;
-  return "Haftalık harcamalarım";
+  const ad = yon === "gelir" ? "gelirleri" : "harcamaları";
+  if (gran === "month") return `${AY_UZUN[d.getMonth()]} ayı ${ad}`;
+  if (gran === "year") return `${d.getFullYear()} yılı ${ad}`;
+  return yon === "gelir" ? "Haftalık gelirlerim" : "Haftalık harcamalarım";
 }
 
 export default function AnaSayfa() {
@@ -34,6 +47,8 @@ export default function AnaSayfa() {
   const ayOzet = useSummary("month");
   const sonlar = useTransactions({ limit: 5 });
   const hane = useHane();
+  const [mevcutDonem, setMevcutDonem] = useState<MevcutDonem>("3");
+  const mevcut = useMevcut(Number(mevcutDonem));
 
   const g = ozet.data?.bu_donem;
   const ay = ayOzet.data?.bu_donem;
@@ -44,28 +59,22 @@ export default function AnaSayfa() {
     return ay.toplam_gider / gun;
   }, [ay]);
 
-  const dilimler = useMemo(() => {
-    const hepsi = birlestirKategori(g?.kategori_kirilim ?? []);
-    if (hepsi.length <= 8) return hepsi;
-    const ilk = hepsi.slice(0, 7).map((d) => ({ ...d }));
-    const kalan = hepsi.slice(7);
-    const artikTutar = kalan.reduce((s, d) => s + d.tutar, 0);
-    const artikOran = kalan.reduce((s, d) => s + d.oran, 0);
-    // "Diğer" ilk 7'de zaten varsa artığı ona kat (çift "Diğer" satırı olmasın)
-    const mevcut = ilk.find((d) => d.ad === "Diğer");
-    if (mevcut) {
-      mevcut.tutar += artikTutar;
-      mevcut.oran += artikOran;
-      return ilk.sort((a, b) => b.tutar - a.tutar);
-    }
-    return [...ilk, { ad: "Diğer", tutar: artikTutar, oran: artikOran }];
-  }, [g?.kategori_kirilim]);
+  const dilimler = useMemo(() => katlaKategori(g?.kategori_kirilim ?? []), [g?.kategori_kirilim]);
+  const gelirDilimleri = useMemo(() => katlaKategori(g?.gelir_kirilim ?? []), [g?.gelir_kirilim]);
+
+  const detayAc = (d: { ad: string; kategoriler: string[] }, yon: Yon) =>
+    router.push({
+      pathname: "/kategori-detay",
+      params: { ad: d.ad, kategoriler: JSON.stringify(d.kategoriler), yon, gran },
+    });
+
+  const net = mevcut.data?.net ?? 0;
 
   return (
     <EkranBasligi
       baslik=""
       zil
-      onRefresh={() => Promise.all([ozet.refetch(), ayOzet.refetch(), sonlar.refetch()])}
+      onRefresh={() => Promise.all([ozet.refetch(), ayOzet.refetch(), sonlar.refetch(), mevcut.refetch()])}
       ustAlan={
         <View style={s.selam}>
           <Text style={[T.title, { color: renk.text }]}>{selamlama()}</Text>
@@ -95,18 +104,60 @@ export default function AnaSayfa() {
         </View>
       </Kart>
 
+      <Kart>
+        <Text style={[T.heading, { color: renk.text }]}>Mevcut durum</Text>
+        <Text style={[s.mevcutDonem, { color: renk.textFaint }]}>
+          {mevcut.data ? `${aralikEtiket(mevcut.data.baslangic, mevcut.data.bitis)} · ` : ""}gelir − gider
+        </Text>
+        <Sekmeli
+          secenekler={MEVCUT_DONEMLER}
+          etiket={(x) => MEVCUT_ETIKET[x]}
+          secili={mevcutDonem}
+          onSec={setMevcutDonem}
+          kucuk
+        />
+        <View style={[s.mevcutSatir, { marginTop: SP.md }]}>
+          <Text style={[s.mevcutEtiket, { color: renk.textMuted }]}>Gelir</Text>
+          <Text style={[s.mevcutTutar, { color: renk.success }]}>+{turkceTutar(mevcut.data?.gelir ?? 0)} ₺</Text>
+        </View>
+        <View style={s.mevcutSatir}>
+          <Text style={[s.mevcutEtiket, { color: renk.textMuted }]}>Gider</Text>
+          <Text style={[s.mevcutTutar, { color: renk.blue }]}>−{turkceTutar(mevcut.data?.gider ?? 0)} ₺</Text>
+        </View>
+        <View style={[s.mevcutAyrac, { backgroundColor: renk.hairline }]} />
+        <View style={s.mevcutSatir}>
+          <Text style={[s.mevcutEtiket, { color: renk.text, fontWeight: "700" }]}>Mevcut</Text>
+          <Text style={[s.mevcutNet, { color: net < 0 ? renk.danger : renk.success }]}>
+            {net < 0 ? "−" : ""}
+            {turkceTutar(Math.abs(net))} ₺
+          </Text>
+        </View>
+      </Kart>
+
       <Sekmeli secenekler={GRAN} etiket={(x) => ETIKET[x]} secili={gran} onSec={setGran} />
 
       <Kart>
-        <Text style={[T.heading, { color: renk.text, marginBottom: SP.md }]}>
-          {dagilimBaslik(gran, ozet.data?.baslangic)}
+        <Text style={[T.heading, { color: renk.text }]}>
+          {dagilimBaslik(gran, "gider", ozet.data?.baslangic)}
+        </Text>
+        <Text style={[s.detayIpucu, { color: renk.textFaint }]}>
+          {dilimler.length > 0 ? "Detayını görmek için kategoriye dokun" : " "}
         </Text>
         {ozet.isLoading ? (
           <YuklemeHalkasi boyut={64} yukseklik={190} />
         ) : (
-          <PastaGrafik dilimler={dilimler} />
+          <PastaGrafik dilimler={dilimler} onDilimSec={(d) => detayAc(d, "gider")} />
         )}
       </Kart>
+
+      {gelirDilimleri.length > 0 && (
+        <Kart>
+          <Text style={[T.heading, { color: renk.text, marginBottom: SP.md }]}>
+            {dagilimBaslik(gran, "gelir", ozet.data?.baslangic)}
+          </Text>
+          <PastaGrafik dilimler={gelirDilimleri} onDilimSec={(d) => detayAc(d, "gelir")} />
+        </Kart>
+      )}
 
       <Text style={[T.heading, { color: renk.text, marginTop: SP.xs }]}>Son işlemler</Text>
 
@@ -141,4 +192,11 @@ const s = StyleSheet.create({
   hcAlt: { flexDirection: "row", justifyContent: "space-between" },
   miniEtiket: { fontSize: 12, fontWeight: "500" },
   miniDeger: { fontSize: 16, fontWeight: "700", marginTop: 2 },
+  mevcutDonem: { fontSize: 12.5, fontWeight: "500", marginTop: 2, marginBottom: SP.md },
+  mevcutSatir: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 4 },
+  mevcutEtiket: { fontSize: 14, fontWeight: "600" },
+  mevcutTutar: { fontSize: 15, fontWeight: "700", fontVariant: ["tabular-nums"] },
+  mevcutAyrac: { height: 1, marginVertical: SP.sm },
+  mevcutNet: { fontSize: 20, fontWeight: "800", letterSpacing: -0.3, fontVariant: ["tabular-nums"] },
+  detayIpucu: { fontSize: 12.5, fontWeight: "500", marginTop: 2, marginBottom: SP.md },
 });

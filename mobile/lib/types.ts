@@ -1,5 +1,7 @@
 export type Tip = "kisisel" | "isletme" | "yatirim";
 export type Yon = "gider" | "gelir";
+/** Kategoriler işlemlerden bir tür fazlasına sahip: gelir kategorileri bölümden bağımsızdır. */
+export type KategoriTip = Tip | "gelir";
 
 export interface Aday {
   aciklama: string;
@@ -11,6 +13,7 @@ export interface Aday {
   para_birimi: string;
   emin: boolean;
   neden?: string;
+  kategori_onerisi?: string; // kategori boşken AI'ın önerdiği yeni kategori adı
   kaynak?: string; // mobile_manual/mobile_text/mobile_voice — hepsi günlük kayıt hakkına sayılır
   inceleme_sebepleri: string[];
 }
@@ -78,7 +81,7 @@ export interface EnerjiBitti402 {
 export interface Kategori {
   id: string;
   name: string;
-  tip: Tip;
+  tip: KategoriTip;
   color: string | null;
   keywords: string[];
   is_active: boolean;
@@ -117,6 +120,7 @@ export interface OzetGovde {
   tip_kirilim: TipKirilim[];
   kategori_kirilim: KategoriKirilim[];
   gunluk: GunlukNokta[];
+  gelir_kirilim?: KategoriKirilim[];
 }
 
 export type Kapsam = "genel" | "kategori" | "tip";
@@ -150,6 +154,15 @@ export interface Ozet {
   yatirim: YatirimIlerleme | null;
 }
 
+export interface Mevcut {
+  aylar: number;
+  baslangic: string;
+  bitis: string;
+  gelir: number;
+  gider: number;
+  net: number;
+}
+
 export interface Butce {
   id: string;
   kapsam: Kapsam;
@@ -178,6 +191,8 @@ export const TIP_ETIKET: Record<Tip, string> = {
   isletme: "İşletme",
   yatirim: "Yatırım",
 };
+
+export const KATEGORI_TIP_ETIKET: Record<KategoriTip, string> = { ...TIP_ETIKET, gelir: "Gelir" };
 
 export const TIP_RENK: Record<Tip, string> = {
   kisisel: "#3299FF",

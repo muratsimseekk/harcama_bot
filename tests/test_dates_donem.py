@@ -5,8 +5,18 @@ from core.dates import (
     donem_etiket,
     donem_kaydir,
     hafta_araligi,
+    son_aylar_araligi,
     yil_araligi,
 )
+
+
+def test_son_aylar_araligi():
+    ref = date(2026, 11, 4)
+    assert son_aylar_araligi(1, ref) == (date(2026, 11, 1), date(2026, 11, 30))
+    assert son_aylar_araligi(3, ref) == (date(2026, 9, 1), date(2026, 11, 30))
+    assert son_aylar_araligi(12, ref) == (date(2025, 12, 1), date(2026, 11, 30))
+    # yıl sınırı ve kısa ay
+    assert son_aylar_araligi(3, date(2026, 2, 28)) == (date(2025, 12, 1), date(2026, 2, 28))
 
 
 def test_hafta_araligi_pazartesi_pazar():

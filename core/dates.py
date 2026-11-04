@@ -123,6 +123,11 @@ def donem_kaydir(period: Donem, ref: date, yon: int) -> date:
     return date(yil, ay % 12 + 1, 1)
 
 
+def son_aylar_araligi(aylar: int, ref: date) -> tuple[date, date]:
+    """İçinde bulunulan ay dahil son `aylar` takvim ayı: 3 ve 2026-11-04 → 1 Eylül – 30 Kasım."""
+    return ay_araligi(donem_kaydir("month", ref, -(aylar - 1)))[0], ay_araligi(ref)[1]
+
+
 def donem_etiket(period: Donem, ref: date) -> str:
     if period == "week":
         b, s = hafta_araligi(ref)

@@ -31,10 +31,75 @@ def test_listele_bos_ise_seed_calisir(client, monkeypatch):
     monkeypatch.setattr(rota.repo, "categories_list", bos_liste)
     monkeypatch.setattr(rota.repo, "categories_seed", seed)
 
+    async def seed_tip(uid, tip):
+        return 0
+
+    monkeypatch.setattr(rota.repo, "category_seed_tip", seed_tip)
+
     r = client.get("/v1/categories")
     assert r.status_code == 200
     assert cagrildi["tipler"] == ["kisisel", "isletme"]  # yeni kullanıcı: Kişisel + 5 temel İşletme
     assert r.json()[0]["name"] == "Market"
+
+
+def test_listele_gelir_kategorisi_yoksa_eklenir(client, monkeypatch):
+    """Eski kullanıcı: harcama kategorileri var, gelir yok → ilk listelemede eklenir."""
+    eklendi = {"tip": None}
+
+    async def liste(uid, *, only_active=False):
+        if eklendi["tip"]:
+            return [_cat(), _cat(id="c2", name="Maaş", tip="gelir")]
+        return [_cat()]
+
+    async def seed_tip(uid, tip):
+        eklendi["tip"] = tip
+        return 9
+
+    monkeypatch.setattr(rota.repo, "categories_list", liste)
+    monkeypatch.setattr(rota.repo, "category_seed_tip", seed_tip)
+
+    r = client.get("/v1/categories")
+    assert r.status_code == 200
+    assert eklendi["tip"] == "gelir"
+    assert {"name": "Maaş", "tip": "gelir"}.items() <= r.json()[1].items()
+
+
+def test_listele_gelir_varsa_tekrar_eklenmez(client, monkeypatch):
+    async def liste(uid, *, only_active=False):
+        return [_cat(name="Maaş", tip="gelir")]
+
+    async def seed_tip(uid, tip):
+        raise AssertionError("çağrılmamalı")
+
+    monkeypatch.setattr(rota.repo, "categories_list", liste)
+    monkeypatch.setattr(rota.repo, "category_seed_tip", seed_tip)
+    assert client.get("/v1/categories").status_code == 200
+
+
+def test_listele_gelir_eklenemezse_liste_bozulmaz(client, monkeypatch):
+    """Migration uygulanmadıysa insert patlar; mevcut kategoriler yine de dönmeli."""
+    async def liste(uid, *, only_active=False):
+        return [_cat()]
+
+    async def seed_tip(uid, tip):
+        raise Exception("check constraint")
+
+    monkeypatch.setattr(rota.repo, "categories_list", liste)
+    monkeypatch.setattr(rota.repo, "category_seed_tip", seed_tip)
+
+    r = client.get("/v1/categories")
+    assert r.status_code == 200
+    assert r.json()[0]["name"] == "Market"
+
+
+def test_olustur_gelir_kategorisi(client, monkeypatch):
+    async def create(uid, name, tip, color, keywords):
+        return _cat(name=name, tip=tip)
+
+    monkeypatch.setattr(rota.repo, "category_create", create)
+    r = client.post("/v1/categories", json={"name": "Danışmanlık", "tip": "gelir"})
+    assert r.status_code == 201
+    assert r.json()["tip"] == "gelir"
 
 
 def test_bolum_ekle(client, monkeypatch):

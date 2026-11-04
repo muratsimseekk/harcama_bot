@@ -36,6 +36,21 @@ def test_tip_ve_kategori_kirilim():
     assert market.tutar == 400.0 and market.adet == 2
 
 
+def test_gelir_kirilim_kategori_bazli():
+    o = ozetle([
+        _tx(1000, direction="gelir", kategori="Kira Geliri", gun=1),
+        _tx(3000, direction="gelir", kategori="Maaş", gun=2),
+        _tx(1000, direction="gelir", kategori="Maaş", gun=3),
+        _tx(200, kategori="Market", gun=3),
+    ])
+    assert [(k.kategori, k.tutar, k.adet, k.oran) for k in o.gelir_kirilim] == [
+        ("Maaş", 4000.0, 2, 80.0),
+        ("Kira Geliri", 1000.0, 1, 20.0),
+    ]
+    assert [k.kategori for k in o.kategori_kirilim] == ["Market"]
+    assert o.net == 4800.0
+
+
 def test_gelir_net_ve_gunluk():
     txs = [
         _tx(200, direction="gider", gun=10),

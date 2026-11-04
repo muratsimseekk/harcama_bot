@@ -6,7 +6,7 @@ create table if not exists public.categories (
     id          uuid primary key default gen_random_uuid(),
     user_id     text not null,
     name        text not null,
-    type        text not null check (type in ('kisisel', 'isletme', 'yatirim')),
+    type        text not null check (type in ('kisisel', 'isletme', 'yatirim', 'gelir')),
     color       text,
     keywords    text[] not null default '{}',
     is_active   boolean not null default true,

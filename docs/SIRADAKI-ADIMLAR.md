@@ -129,7 +129,7 @@ açarken bu seçim sonradan değiştirilemez.
 | Plan | Aylık | Yıllık (%33 indirim) |
 |---|---|---|
 | **Base** | ₺59,99 | ₺479,99 (≈₺40/ay) |
-| **Pro** | ₺99,99 | ₺799,99 (≈₺67/ay) |
+| **Pro** | ₺49,99 | ₺399,99 (≈₺33/ay) |
 
 ### Diğer pazarlar (USD çıpası — mağazalar otomatik lokalize eder, TR manuel override)
 | Plan | Aylık | Yıllık |

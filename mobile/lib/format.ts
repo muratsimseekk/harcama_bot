@@ -58,6 +58,31 @@ export function birlestirKategori<T extends { kategori: string; tutar: number; o
   return [...map.values()].sort((a, b) => b.tutar - a.tutar);
 }
 
+/**
+ * Dağılım için ilk 7 kategori + artıklar "Diğer" olarak. `kategoriler`, satırın kapsadığı gerçek
+ * kategori adlarıdır — katlanmış "Diğer"in detayı içindeki tüm kategorileri göstersin diye.
+ */
+export function katlaKategori<T extends { kategori: string; tutar: number; oran: number }>(
+  liste: T[],
+): { ad: string; tutar: number; oran: number; kategoriler: string[] }[] {
+  const hepsi = birlestirKategori(liste).map((d) => ({ ...d, kategoriler: [d.ad] }));
+  if (hepsi.length <= 8) return hepsi;
+  const ilk = hepsi.slice(0, 7);
+  const kalan = hepsi.slice(7);
+  const artikTutar = kalan.reduce((s, d) => s + d.tutar, 0);
+  const artikOran = kalan.reduce((s, d) => s + d.oran, 0);
+  const artikAdlar = kalan.map((d) => d.ad);
+  // "Diğer" ilk 7'de zaten varsa artığı ona kat (çift "Diğer" satırı olmasın)
+  const mevcut = ilk.find((d) => d.ad === "Diğer");
+  if (mevcut) {
+    mevcut.tutar += artikTutar;
+    mevcut.oran += artikOran;
+    mevcut.kategoriler.push(...artikAdlar);
+    return ilk.sort((a, b) => b.tutar - a.tutar);
+  }
+  return [...ilk, { ad: "Diğer", tutar: artikTutar, oran: artikOran, kategoriler: artikAdlar }];
+}
+
 /** İki değeri kıyaslar → "+%12" / "−%8" / "yeni" */
 export function kiyas(bu: number, onceki: number): { yazi: string; yon: 1 | 0 | -1 } {
   if (onceki <= 0) return { yazi: bu > 0 ? "yeni" : "—", yon: 0 };

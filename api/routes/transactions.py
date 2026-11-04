@@ -46,12 +46,18 @@ async def listele(
     bit: date | None = Query(default=None, alias="to"),
     tip: str | None = Query(default=None),
     direction: str | None = Query(default=None),
+    kategori: list[str] | None = Query(default=None),
 ) -> list[IslemModel]:
     uyelik = await deps.hane_uyeligi(user_id)
     ids = [user_id] if uyelik is None else await repo.hane_uye_idleri(uyelik.household_id)
 
+    # Özet kategorisiz kayıtları "Diğer" adıyla gösterir; o satırın detayı bunları da kapsamalı.
+    kategoriler = [*kategori, ""] if kategori and "Diğer" in kategori else kategori
+
     if bas and bit:
-        txs = await repo.list_period(ids, bas, bit, direction=direction, tip=tip)
+        txs = await repo.list_period(
+            ids, bas, bit, direction=direction, tip=tip, kategoriler=kategoriler
+        )
         txs = list(reversed(txs))[:limit]
     else:
         txs = await repo.list_recent(ids, limit)
@@ -59,6 +65,8 @@ async def listele(
             txs = [t for t in txs if t.tip == tip]
         if direction:
             txs = [t for t in txs if t.direction == direction]
+        if kategoriler:
+            txs = [t for t in txs if t.kategori in kategoriler]
 
     ad_map: dict[str, str] = {}
     if uyelik is not None:

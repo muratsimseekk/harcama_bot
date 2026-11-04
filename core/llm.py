@@ -29,9 +29,9 @@ from core.config import settings
 from core.dates import tarih_parse, tarih_str, today
 from core.models import Candidate, tip_normalize
 from core.varsayilan_kategoriler import (
-    GELIR_KATEGORILERI,
     VARSAYILAN_KATEGORILER,
     digermi,
+    kucuk_tr,
 )
 from core.varsayilan_kategoriler import kategori_bolumu as _kategori_bolumu_kur
 from core.varsayilan_kategoriler import varsayilan_bolum as _varsayilan_bolum
@@ -165,7 +165,7 @@ karışık yazılmış olabilir. Her işlemi ayrı ayrı, şu sırayla analiz et
   2) YÖN: para giriyor mu (gelir) çıkıyor mu (gider)?
   3) TİP: yatirim / isletme / kisisel (aşağıdaki önceliğe göre).
   4) KATEGORİ: aşağıdaki listede, anahtar kelimelerle EŞLEŞEN kategoriyi seç.
-  5) EMİN misin? Değilsen kategoriyi boş bırak.
+  5) EMİN misin? Değilsen kategoriyi boş bırak ve yeni bir kategori adı öner.
 
 MUTLAKA şu JSON formatında yanıt ver (başka hiçbir şey yazma, sadece JSON):
 {{
@@ -174,6 +174,7 @@ MUTLAKA şu JSON formatında yanıt ver (başka hiçbir şey yazma, sadece JSON)
       "aciklama": "kısa ve net açıklama (ne alındı / ne için)",
       "tutar": 123.45,
       "kategori": "listeden bir kategori adı VEYA boş string",
+      "kategori_onerisi": "kategori boşsa önerdiğin YENİ kategori adı, değilse boş string",
       "neden": "kategori/tip seçimini 8 kelimeyi geçmeyecek şekilde gerekçelendir",
       "tip": "kisisel | isletme | yatirim",
       "yon": "gider | gelir",
@@ -185,8 +186,9 @@ MUTLAKA şu JSON formatında yanıt ver (başka hiçbir şey yazma, sadece JSON)
 
 YÖN KURALLARI:
 - "maaş aldım", "tahsilat", "satış yaptım", "ödeme aldım", "para geldi", "fatura kestim",
-  "sattım" → yon: "gelir"
-- Diğer her şey (aldım, ödedim, harcadım, fatura geldi) → yon: "gider"
+  "sattım", "kira aldım", "kira geldi", "işçilik aldım", "çek/senet tahsil ettim",
+  "çek/senet ödemesi aldım", "faiz geldi" → yon: "gelir"
+- Diğer her şey (aldım, ödedim, harcadım, fatura geldi, kira ödedim, çek/senet ödedim) → yon: "gider"
 
 TİP KURALLARI — ÖNCELİK SIRASI (ilk uyan kazanır):
 1. YATIRIM: BES, bireysel emeklilik, hisse, borsa, BIST, Midas, temettü, kripto, bitcoin,
@@ -202,10 +204,15 @@ KATEGORİ KURALLARI:
 - Fatura türü tüm giderler (elektrik, su, doğalgaz, internet, telefon faturası, aidat,
   abonelik) → kişiselse listedeki kişisel fatura kategorisi, işyerine aitse listedeki işletme
   fatura kategorisi.
+- Gelir kaydı (yon: "gelir") için YALNIZ GELİR başlığından, gider kaydı için YALNIZ diğer
+  başlıklardan seç.
 - Hiçbir kategori net uymuyorsa: kategori alanını BOŞ string ("") bırak ve "emin": false ver.
-  ASLA kategori uydurma, ASLA "Diğer" yazma, listede olmayan bir isim yazma.
+  "kategori" alanına ASLA kategori uydurma, ASLA "Diğer" yazma, listede olmayan bir isim yazma.
+- Kategori boşsa ve kaydın ne olduğu anlaşılıyorsa "kategori_onerisi" alanına bu kayıt için
+  1-2 kelimelik genel bir kategori adı yaz (ürün adı değil, örn. "Evcil Hayvan", "Kırtasiye").
+  Kayıt belirsizse ("şey", "harcama") ya da kategori doluysa "kategori_onerisi" boş kalır.
+  Öneride "Diğer" kullanma.
 {kategori_bolumu}
-- GELİR: {gelir_kategorileri}
 
 TARİH KURALLARI:
 - Tarih belirtildiyse onu kullan (örn: "2 Mayıs" → 02.05.{yil}).
@@ -226,7 +233,9 @@ Girdi: "elektrik faturası 850, internet 400"
 → [{{"aciklama":"Elektrik faturası","tutar":850,"kategori":"Faturalar","neden":"fatura","tip":"kisisel","yon":"gider","emin":true}},
    {{"aciklama":"İnternet faturası","tutar":400,"kategori":"Faturalar","neden":"internet aboneliği","tip":"kisisel","yon":"gider","emin":true}}]
 Girdi: "şey için 200 harcadım"
-→ [{{"aciklama":"Belirsiz harcama","tutar":200,"kategori":"","neden":"kategori belirsiz","tip":"kisisel","yon":"gider","emin":false}}]
+→ [{{"aciklama":"Belirsiz harcama","tutar":200,"kategori":"","kategori_onerisi":"","neden":"kategori belirsiz","tip":"kisisel","yon":"gider","emin":false}}]
+Girdi: "kedi maması 300" (listede uygun kategori yoksa)
+→ [{{"aciklama":"Kedi maması","tutar":300,"kategori":"","kategori_onerisi":"Evcil Hayvan","neden":"listede uygun kategori yok","tip":"kisisel","yon":"gider","emin":false}}]
 
 Eğer metin hiç işlem içermiyorsa: {{"kayitlar": []}}"""
 
@@ -236,25 +245,53 @@ def _kategori_bolumu(kategoriler) -> str:
     if not kategoriler:
         return _varsayilan_bolum()
     gruplar: dict[str, list[tuple[str, list[str]]]] = {
-        "kisisel": [], "isletme": [], "yatirim": [],
+        "kisisel": [], "isletme": [], "yatirim": [], "gelir": [],
     }
-    gorulen: dict[str, set[str]] = {"kisisel": set(), "isletme": set(), "yatirim": set()}
+    gorulen: dict[str, set[str]] = {t: set() for t in gruplar}
     for k in kategoriler:
         if k.tip in gruplar and k.name not in gorulen[k.tip] and not digermi(k.name):
             gorulen[k.tip].add(k.name)
             gruplar[k.tip].append((k.name, list(getattr(k, "keywords", []) or [])))
+    # Gelir kategorileri henüz yüklenmemiş kullanıcıda da gelir kayıtları kategorilensin.
+    if not gruplar["gelir"]:
+        gruplar["gelir"] = _varsayilan_gelirler()
     return _kategori_bolumu_kur(gruplar) or _varsayilan_bolum()
 
 
-def _gecerli_kategori_adlari(kategoriler) -> set[str]:
-    """Modelin seçebileceği geçerli kategori adları (küçük harf). Liste dışı isim reddedilir."""
-    adlar = {g.lower() for g in GELIR_KATEGORILERI}
+def _varsayilan_gelirler() -> list[tuple[str, list[str]]]:
+    return [
+        (o["name"], o["keywords"])
+        for o in VARSAYILAN_KATEGORILER["gelir"] if not digermi(o["name"])
+    ]
+
+
+def _gecerli_kategori_adlari(kategoriler) -> dict[str, dict[str, str]]:
+    """Modelin yöne göre seçebileceği adlar: {yön: {küçük ad: asıl ad}}. Liste dışı isim reddedilir."""
+    gider: dict[str, str] = {}
+    gelir: dict[str, str] = {}
     if kategoriler:
-        adlar |= {k.name.lower() for k in kategoriler if not digermi(k.name)}
+        for k in kategoriler:
+            if not digermi(k.name):
+                (gelir if k.tip == "gelir" else gider)[kucuk_tr(k.name)] = k.name
     else:
-        for ogeler in VARSAYILAN_KATEGORILER.values():
-            adlar |= {o["name"].lower() for o in ogeler}
-    return adlar
+        for tip, ogeler in VARSAYILAN_KATEGORILER.items():
+            if tip != "gelir":
+                gider |= {kucuk_tr(o["name"]): o["name"] for o in ogeler}
+    if not gelir:
+        gelir = {kucuk_tr(ad): ad for ad, _ in _varsayilan_gelirler()}
+    return {"gider": gider, "gelir": gelir}
+
+
+_ONERI_MAX = 30
+
+
+def _oneri_temizle(ham) -> str:
+    """AI'ın kategori önerisini kullanılabilir hâle getirir; uygun değilse boş döner."""
+    ad = " ".join(str(ham or "").split())
+    if not ad or len(ad) > _ONERI_MAX or digermi(ad) or kucuk_tr(ad).startswith(("diğer", "diger")):
+        return ""
+    ilk = {"i": "İ", "ı": "I"}.get(ad[0], ad[0].upper())
+    return ilk + ad[1:]
 
 
 async def parse_transactions(
@@ -268,7 +305,6 @@ async def parse_transactions(
     sistem = _PARSE_SISTEM.format(
         bugun=tarih_str(bugun), yil=bugun.year,
         kategori_bolumu=_kategori_bolumu(kategoriler),
-        gelir_kategorileri=", ".join(GELIR_KATEGORILERI),
     )
 
     try:
@@ -306,21 +342,25 @@ async def parse_transactions(
         if tutar <= 0:
             continue
 
+        yon = "gelir" if str(h.get("yon", "gider")).lower().startswith("gel") else "gider"
         kategori = str(h.get("kategori", "")).strip()
         emin = bool(h.get("emin", True))
-        if kategori and kategori.lower() not in gecerli_adlar:
-            # Model listede olmayan bir kategori uydurdu → boşalt, kullanıcı seçsin.
-            logger.info("parse: liste dışı kategori %r → boşaltıldı", kategori)
-            kategori = ""
-            emin = False
+        if kategori:
+            asil_ad = gecerli_adlar[yon].get(kucuk_tr(kategori))
+            if asil_ad is None:
+                # Model listede olmayan bir kategori uydurdu → boşalt, kullanıcı seçsin.
+                logger.info("parse: liste dışı kategori %r → boşaltıldı", kategori)
+                emin = False
+            kategori = asil_ad or ""
 
         adaylar.append(Candidate(
             aciklama=str(h.get("aciklama", "")).strip() or "—",
             tutar=tutar,
             kategori=kategori,
+            kategori_onerisi="" if kategori else _oneri_temizle(h.get("kategori_onerisi")),
             neden=str(h.get("neden", "")).strip(),
             tip=tip_normalize(h.get("tip", "kisisel")),
-            direction="gelir" if str(h.get("yon", "gider")).lower().startswith("gel") else "gider",
+            direction=yon,
             tarih=tarih_parse(h.get("tarih", "")) if h.get("tarih") else bugun,
             emin=emin,
             ham_girdi=metin,

@@ -181,6 +181,7 @@ async def list_period(
     *,
     direction: str | None = None,
     tip: str | None = None,
+    kategoriler: list[str] | None = None,
 ) -> list[Transaction]:
     def _run() -> list[dict]:
         q = _db().table("transactions").select("*")
@@ -194,9 +195,62 @@ async def list_period(
             q = q.eq("direction", direction)
         if tip and tip != "hepsi":
             q = q.eq("type", tip)
+        if kategoriler:
+            q = q.in_("category", kategoriler)
         return q.order("occurred_on", desc=False).execute().data
 
     return [Transaction.from_row(r) for r in await _call(_run)]
+
+
+async def donem_toplamlari(
+    user_id: str | list[str], baslangic: date, bitis: date,
+) -> tuple[float, float]:
+    """Dönemin (gelir, gider) toplamı. Sayfalı: PostgREST tek yanıtta en çok 1000 satır döndürür,
+    uzun dönemde toplam sessizce eksik çıkmasın."""
+    def _run() -> tuple[float, float]:
+        gelir = gider = 0.0
+        bas = 0
+        while True:
+            q = _db().table("transactions").select("direction,amount")
+            satirlar = (
+                _kullanici_filtresi(q, user_id)
+                .is_("deleted_at", "null")
+                .gte("occurred_on", baslangic.isoformat())
+                .lte("occurred_on", bitis.isoformat())
+                .order("id")
+                .range(bas, bas + 999)
+                .execute()
+                .data
+            )
+            for r in satirlar:
+                tutar = float(r.get("amount") or 0)
+                if r.get("direction") == "gelir":
+                    gelir += tutar
+                else:
+                    gider += tutar
+            if len(satirlar) < 1000:
+                return round(gelir, 2), round(gider, 2)
+            bas += 1000
+
+    return await _call(_run)
+
+
+async def gecmis_kategorili_kayitlar(user_id: str, n: int = 500) -> list[dict]:
+    """Kullanıcının son kayıtları (en yeni önce) — geçmişe göre kategori önerisi için.
+    Hane havuzu değil: başkasının kategorileme alışkanlığı öğrenilmez."""
+    def _run() -> list[dict]:
+        return (
+            _db().table("transactions")
+            .select("description,category,type,direction")
+            .eq("user_id", user_id)
+            .is_("deleted_at", "null")
+            .order("created_at", desc=True)
+            .limit(n)
+            .execute()
+            .data
+        )
+
+    return await _call(_run)
 
 
 # --------------------------------------------------------------------------- #

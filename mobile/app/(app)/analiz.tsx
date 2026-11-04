@@ -8,6 +8,7 @@ import { EkranBasligi } from "@/components/EkranBasligi";
 import { IlerlemeCubugu } from "@/components/IlerlemeCubugu";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
+import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { turkceTutar } from "@/lib/format";
 import { useSummary, useTransactions } from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
@@ -59,7 +60,12 @@ export default function Analiz() {
 
   const ozet = useSummary(gran);
   const g = ozet.data?.bu_donem;
-  const txQ = useTransactions({ limit: 300, from: ozet.data?.baslangic, to: ozet.data?.bitis });
+  // Tarih aralığı özetten gelir: özet gelmeden sorgu atılırsa tarihsiz (başka dönemin) kayıtları görünür.
+  const txQ = useTransactions(
+    { limit: 300, from: ozet.data?.baslangic, to: ozet.data?.bitis },
+    { enabled: !!ozet.data },
+  );
+  const islemlerYukleniyor = ozet.isLoading || txQ.isLoading;
 
   const grafik = useMemo(() => {
     if (!g) return { etiketler: [] as string[], gelir: [] as number[], gider: [] as number[] };
@@ -196,21 +202,29 @@ export default function Analiz() {
         </Kart>
       )}
 
-      <View>
-        {bolumler.map(([tarih, list]) => (
-          <View key={tarih}>
-            <Text style={[s.gunBaslik, { color: renk.textMuted }]}>{tarihUzun(tarih)}</Text>
-            {list.map((t) => (
-              <IslemSatiri key={t.id} islem={t} onPress={() => islemAc(t)} />
-            ))}
-          </View>
-        ))}
-        {bolumler.length === 0 && !txQ.isLoading && (
-          <Text style={{ color: renk.textFaint, textAlign: "center", paddingVertical: SP.xl }}>
-            Bu dönemde işlem yok.
-          </Text>
-        )}
-      </View>
+      {islemlerYukleniyor ? (
+        <Kart>
+          <YuklemeHalkasi boyut={48} yukseklik={120} yazi="İşlemler yükleniyor" />
+        </Kart>
+      ) : (
+        <View>
+          {bolumler.map(([tarih, list]) => (
+            <View key={tarih}>
+              <Text style={[s.gunBaslik, { color: renk.textMuted }]}>{tarihUzun(tarih)}</Text>
+              {list.map((t) => (
+                <IslemSatiri key={t.id} islem={t} onPress={() => islemAc(t)} />
+              ))}
+            </View>
+          ))}
+          {bolumler.length === 0 && (
+            <Text style={{ color: renk.textFaint, textAlign: "center", paddingVertical: SP.xl }}>
+              {ozet.isError || txQ.isError
+                ? "İşlemler yüklenemedi. Yenilemek için aşağı çek."
+                : "Bu dönemde işlem yok."}
+            </Text>
+          )}
+        </View>
+      )}
     </EkranBasligi>
   );
 }

@@ -44,14 +44,14 @@ export type Paket = {
   id: string; // RC package / ürün id ("pro_aylik" vb.)
   plan: "pro";
   period: "aylik" | "yillik";
-  fiyat: string; // yerelleştirilmiş, "₺99,99"
+  fiyat: string; // yerelleştirilmiş, "₺49,99"
   _rc: unknown; // PurchasesPackage — satinAl'e verilir
 };
 
 /** Mağazadan teklif alınamadığında paywall'ın göstereceği referans fiyatlar (TR). */
 export const STATIK_FIYAT: Record<string, string> = {
-  pro_aylik: "₺99,99",
-  pro_yillik: "₺799,99",
+  pro_aylik: "₺49,99",
+  pro_yillik: "₺399,99",
 };
 
 /** react-native-purchases + RC anahtarı mevcut mu (yani gerçek satın alma mümkün mü). */

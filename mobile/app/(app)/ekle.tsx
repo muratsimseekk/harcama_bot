@@ -31,12 +31,14 @@ import { cevrimdisi } from "@/lib/baglanti";
 import { reklamIzleProaktif } from "@/lib/kullanim402";
 import { useMe } from "@/lib/queries";
 import { reklamAktif } from "@/lib/reklam";
+import { OLCUM_ARALIGI_MS, sessizlikAlgilayici } from "@/lib/sessizlik";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
 import type { CaptureYanit } from "@/lib/types";
 import { hataMesaji } from "@/lib/hata";
 
 type Durum = "bos" | "hazirlaniyor" | "kayit" | "gonderiliyor";
 const MIN_KAYIT_MS = 700;
+const KAYIT_AYARI = { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true };
 const ORNEKLER = ["market 250, dün benzin 600", "kahve 90", "maaş geldi 45000", "3 mayıs kira 15000"];
 
 export default function Ekle() {
@@ -44,8 +46,8 @@ export default function Ekle() {
   const uyari = useUyari();
   const router = useRouter();
   const qc = useQueryClient();
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const rState = useAudioRecorderState(recorder);
+  const recorder = useAudioRecorder(KAYIT_AYARI);
+  const rState = useAudioRecorderState(recorder, OLCUM_ARALIGI_MS);
   const me = useMe();
   const [sheetAcik, setSheetAcik] = useState(false);
   const [sheetDurum, setSheetDurum] = useState<EnerjiSheetDurum>(null);
@@ -53,8 +55,30 @@ export default function Ekle() {
   const [yaziyor, setYaziyor] = useState(false);
   const [durum, setDurum] = useState<Durum>("bos");
   const basladiRef = useRef(0);
+  const algilayiciRef = useRef<ReturnType<typeof sessizlikAlgilayici> | null>(null);
+  // Bitirme tek sefer: dokunuş, sessizlik ve Vazgeç aynı anda gelebilir.
+  const kapaniyorRef = useRef(false);
   const inputRef = useRef<TextInput>(null);
   const halka = useRef(new Animated.Value(0)).current;
+
+  // Kullanıcı susunca kendiliğinden bitir: "tekrar dokun" yazısını görmeyen kişi mikrofonu
+  // açık bırakıp bekliyordu. Hiç konuşmadıysa ses sunucuya gitmez.
+  useEffect(() => {
+    if (durum !== "kayit" || !algilayiciRef.current) return;
+    const karar = algilayiciRef.current(rState.metering, Date.now());
+    if (karar === "bitir") kayitBitir();
+    else if (karar === "vazgec") {
+      kayitAt().then(() =>
+        uyari(
+          "Seni duyamadım",
+          "Ses algılanmadı, kayıt gönderilmedi. Mikrofona yakın konuşup tekrar dene ya da yazarak ekle.",
+          undefined,
+          { ikon: "mic-off-outline" },
+        ),
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- her seviye ölçümünde çalışmalı
+  }, [rState, durum]);
 
   useEffect(() => {
     if (durum === "kayit") {
@@ -134,6 +158,8 @@ export default function Ekle() {
       await recorder.prepareToRecordAsync();
       recorder.record();
       basladiRef.current = Date.now();
+      algilayiciRef.current = sessizlikAlgilayici(basladiRef.current);
+      kapaniyorRef.current = false;
       setDurum("kayit");
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (e) {
@@ -143,8 +169,9 @@ export default function Ekle() {
   }
 
   /** Kaydı durdur ama gönderme — ses atılır, ekran anında boş duruma döner. */
-  async function kayitIptal() {
-    if (durum !== "kayit") return; // çift dokunuş koruması
+  async function kayitAt() {
+    if (durum !== "kayit" || kapaniyorRef.current) return; // çift dokunuş koruması
+    kapaniyorRef.current = true;
     setDurum("bos"); // UI anında sıfırlansın ("Analiz ediliyor…" görünmesin)
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
@@ -164,6 +191,8 @@ export default function Ekle() {
   }
 
   async function kayitBitir() {
+    if (kapaniyorRef.current) return;
+    kapaniyorRef.current = true;
     const sure = Date.now() - basladiRef.current;
     if (sure < MIN_KAYIT_MS) await new Promise((r) => setTimeout(r, MIN_KAYIT_MS - sure));
     setDurum("gonderiliyor");
@@ -234,13 +263,17 @@ export default function Ekle() {
           </Text>
           {!yaziyor && (
             <Text style={[s.ipucu, { color: renk.textFaint }]}>
-              {kayitta ? "Bitince tekrar dokun" : "Sesli ya da yazılı — birden çok kalem tek seferde"}
+              {!kayitta
+                ? "Sesli ya da yazılı — birden çok kalem tek seferde"
+                : rState.metering === undefined
+                  ? "Bitince tekrar dokun"
+                  : "Bitirmek için dokun veya 3 sn sessiz kal"}
             </Text>
           )}
 
           {kayitta && (
             <Pressable
-              onPress={kayitIptal}
+              onPress={kayitAt}
               style={[s.vazgec, { backgroundColor: renk.cardAlt }]}
               hitSlop={8}
             >

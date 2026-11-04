@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useEffect, useRef, useState } from "react";
 import { BarChart, PieChart } from "react-native-gifted-charts";
-import { Animated, Easing, StyleSheet, View } from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import { tutarKisa, yuzde } from "@/lib/format";
 import { kategoriIkon } from "@/lib/kategoriIkon";
@@ -13,9 +13,19 @@ export interface Dilim {
   tutar: number;
   oran: number;
   renk?: string | null;
+  kategoriler?: string[]; // satırın kapsadığı kategori adları (katlanmış "Diğer" için birden çok)
 }
 
-export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
+export function PastaGrafik<D extends Dilim>({
+  dilimler,
+  onDilimSec,
+  bosMesaj = "Bu dönemde gider yok.",
+}: {
+  dilimler: D[];
+  /** Verilirse satırlar dokunulabilir olur (kategori detayına gider). */
+  onDilimSec?: (dilim: D) => void;
+  bosMesaj?: string;
+}) {
   const renk = useRenkler();
   const renkDizi = useDagilimRenkleri();
   const digerRenk = useDigerRenk();
@@ -48,7 +58,7 @@ export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
   if (veri.length === 0) {
     return (
       <Text style={[T.body, { color: renk.textMuted, textAlign: "center", paddingVertical: SP.lg }]}>
-        Bu dönemde gider yok.
+        {bosMesaj}
       </Text>
     );
   }
@@ -98,32 +108,38 @@ export function PastaGrafik({ dilimler }: { dilimler: Dilim[] }) {
           return (
             <Animated.View
               key={`${d.ad}-${i}`}
-              style={[
-                s.satir,
-                {
-                  opacity: giris.interpolate({ inputRange: [bas, son], outputRange: [0, 1], extrapolate: "clamp" }),
-                  transform: [
-                    {
-                      translateY: giris.interpolate({
-                        inputRange: [bas, son],
-                        outputRange: [10, 0],
-                        extrapolate: "clamp",
-                      }),
-                    },
-                  ],
-                },
-              ]}
+              style={{
+                opacity: giris.interpolate({ inputRange: [bas, son], outputRange: [0, 1], extrapolate: "clamp" }),
+                transform: [
+                  {
+                    translateY: giris.interpolate({
+                      inputRange: [bas, son],
+                      outputRange: [10, 0],
+                      extrapolate: "clamp",
+                    }),
+                  },
+                ],
+              }}
             >
-              <View style={[s.ikonKutu, { backgroundColor: d.c + "22" }]}>
-                <Ionicons name={kategoriIkon(d.ad)} size={15} color={d.c} />
-              </View>
-              <Text style={[s.ad, { color: renk.text }]} numberOfLines={1}>
-                {d.ad}
-              </Text>
-              <Text style={[s.oran, { color: renk.textFaint }]}>{yuzde(d.oran)}</Text>
-              <Text style={[s.tutar, { color: renk.text }]} numberOfLines={1}>
-                {tutarKisa(d.tutar)} ₺
-              </Text>
+              <Pressable
+                disabled={!onDilimSec}
+                onPress={() => onDilimSec?.(d)}
+                accessibilityRole={onDilimSec ? "button" : undefined}
+                accessibilityLabel={onDilimSec ? `${d.ad} detayını gör` : undefined}
+                style={({ pressed }) => [s.satir, pressed ? { opacity: 0.6 } : null]}
+              >
+                <View style={[s.ikonKutu, { backgroundColor: d.c + "22" }]}>
+                  <Ionicons name={kategoriIkon(d.ad)} size={15} color={d.c} />
+                </View>
+                <Text style={[s.ad, { color: renk.text }]} numberOfLines={1}>
+                  {d.ad}
+                </Text>
+                <Text style={[s.oran, { color: renk.textFaint }]}>{yuzde(d.oran)}</Text>
+                <Text style={[s.tutar, { color: renk.text }]} numberOfLines={1}>
+                  {tutarKisa(d.tutar)} ₺
+                </Text>
+                {onDilimSec && <Ionicons name="chevron-forward" size={15} color={renk.textFaint} />}
+              </Pressable>
             </Animated.View>
           );
         })}

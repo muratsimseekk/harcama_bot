@@ -11,6 +11,7 @@ from core.summary import HedefIlerleme, Ozet
 
 Tip = Literal["kisisel", "isletme", "yatirim"]
 Yon = Literal["gider", "gelir"]
+KategoriTip = Literal["kisisel", "isletme", "yatirim", "gelir"]
 
 
 def bas_harf_buyuk(metin: str | None) -> str | None:
@@ -35,6 +36,7 @@ class AdayModel(BaseModel):
     para_birimi: str = "TRY"
     emin: bool = True
     neden: str = ""
+    kategori_onerisi: str = ""  # kategori boşken AI'ın önerdiği yeni kategori adı (kaydedilmez)
     kaynak: str = "mobile_manual"  # capture'dan gelen adaylarda mobile_text/mobile_voice
     inceleme_sebepleri: list[str] = Field(default_factory=list)
 
@@ -45,7 +47,7 @@ class AdayModel(BaseModel):
         return cls(
             aciklama=c.aciklama, tutar=c.tutar, kategori=c.kategori, tip=c.tip,
             direction=c.direction, tarih=c.tarih, para_birimi=c.para_birimi,
-            emin=c.emin, neden=c.neden, kaynak=c.kaynak,
+            emin=c.emin, neden=c.neden, kategori_onerisi=c.kategori_onerisi, kaynak=c.kaynak,
             inceleme_sebepleri=list(c.inceleme_sebepleri),
         )
 
@@ -136,7 +138,7 @@ class BenModel(BaseModel):
 class KategoriModel(BaseModel):
     id: str
     name: str
-    tip: Tip
+    tip: KategoriTip
     color: str | None = None
     keywords: list[str] = Field(default_factory=list)
     is_active: bool = True
@@ -152,18 +154,18 @@ class KategoriModel(BaseModel):
 
 class KategoriOlusturIstek(BaseModel):
     name: str = Field(min_length=1, max_length=60)
-    tip: Tip
+    tip: KategoriTip
     color: str | None = None
     keywords: list[str] = Field(default_factory=list)
 
 
 class BolumEkleIstek(BaseModel):
-    tip: Tip
+    tip: KategoriTip
 
 
 class KategoriGuncelleIstek(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=60)
-    tip: Tip | None = None
+    tip: KategoriTip | None = None
     color: str | None = None
     keywords: list[str] | None = None
     is_active: bool | None = None
@@ -248,6 +250,7 @@ class OzetGovde(BaseModel):
     tip_kirilim: list[TipKirilimModel]
     kategori_kirilim: list[KategoriKirilimModel]
     gunluk: list[GunlukNoktaModel]
+    gelir_kirilim: list[KategoriKirilimModel] = Field(default_factory=list)
 
     @classmethod
     def from_ozet(cls, o: Ozet) -> OzetGovde:
@@ -256,7 +259,18 @@ class OzetGovde(BaseModel):
             tip_kirilim=[TipKirilimModel(**vars(x)) for x in o.tip_kirilim],
             kategori_kirilim=[KategoriKirilimModel(**vars(x)) for x in o.kategori_kirilim],
             gunluk=[GunlukNoktaModel(**vars(x)) for x in o.gunluk],
+            gelir_kirilim=[KategoriKirilimModel(**vars(x)) for x in o.gelir_kirilim],
         )
+
+
+class MevcutModel(BaseModel):
+    """Gelir − gider = mevcut; ana sayfa kartı (son N takvim ayı)."""
+    aylar: int
+    baslangic: date
+    bitis: date
+    gelir: float
+    gider: float
+    net: float
 
 
 class HedefIlerlemeModel(BaseModel):

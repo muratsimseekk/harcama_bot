@@ -474,10 +474,10 @@ yalnız Pro satın alınabilir).
 | **Free** | Günlük **3 kayıt hakkı** (`GUNLUK_ENERJI`), **elle + AI ortak** — hangi yoldan eklenirse eklensin her kayıt 1 hak harcar. Hak gece yarısı (Europe/Istanbul) sıfırlanır. Hak biterse ödüllü reklamla +1 hak (`AD_KREDI_ADET`, 10-20'de 2→1) — **tavansız**, istediği kadar izleyebilir. Hane YOK. |
 | **Pro** | Sınırsız kayıt · **hane paylaşımı** · reklamsız · (ileride: fiş okuma, YZ öngörüleri, export, kişi-bazı hane kırılımı — bkz `docs/HANE-PRO.md`) |
 
-### Fiyatlar (Türkiye — öncelik) — Pro fiyatı değişmedi (2026-09-09'da karar verildi)
+### Fiyatlar (Türkiye — öncelik) — 2026-11-04'te düşürüldü (önceki: ₺99,99 / ₺799,99)
 | | Aylık | Yıllık (~%33 indirim) |
 |---|---|---|
-| Pro  | **₺99,99** | **₺799,99** (≈₺67/ay) |
+| Pro  | **₺49,99** | **₺399,99** (≈₺33/ay) |
 
 Diğer pazarlar USD anchor: Pro $6.99/$59.99 (mağaza otomatik lokalize; TR manuel override).
 Ürün ID: `pro_aylik`, `pro_yillik` (yalnız bu ikisi — `base_aylik`/`base_yillik` iptal).

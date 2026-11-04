@@ -8,12 +8,27 @@ from fastapi import APIRouter, Query
 
 from api import deps
 from api.deps import CurrentUser
-from api.schemas import HedefIlerlemeModel, OzetGovde, OzetModel, YatirimModel
+from api.schemas import HedefIlerlemeModel, MevcutModel, OzetGovde, OzetModel, YatirimModel
 from core import repo
-from core.dates import donem_araligi, donem_etiket, donem_kaydir, today
+from core.dates import donem_araligi, donem_etiket, donem_kaydir, son_aylar_araligi, today
 from core.summary import hedef_ilerleme, ozetle, yatirim_ilerleme
 
 router = APIRouter(prefix="/v1", tags=["summary"])
+
+
+@router.get("/summary/mevcut", response_model=MevcutModel)
+async def mevcut(
+    user_id: CurrentUser,
+    aylar: int = Query(default=3, ge=1, le=12),
+) -> MevcutModel:
+    """Son `aylar` takvim ayının (içinde bulunulan ay dahil) gelir − gider durumu."""
+    bas, bit = son_aylar_araligi(aylar, today())
+    ids = await deps.kapsam(user_id)
+    gelir, gider = await repo.donem_toplamlari(ids, bas, bit)
+    return MevcutModel(
+        aylar=aylar, baslangic=bas, bitis=bit,
+        gelir=gelir, gider=gider, net=round(gelir - gider, 2),
+    )
 
 
 @router.get("/summary", response_model=OzetModel)

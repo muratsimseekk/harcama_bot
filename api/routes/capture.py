@@ -10,6 +10,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from api.deps import CurrentUser, capture_limiti
 from api.schemas import AdayModel, CaptureYanit
 from core import repo
+from core.kategori_oneri import kategorileri_tamamla
 from core.llm import GroqBusy, parse_transactions, transcribe
 from core.review import inceleme_gerek
 
@@ -89,6 +90,14 @@ async def capture(
     if not adaylar:
         logger.info("capture: aday çıkmadı | metin=%r", metin)
         return CaptureYanit(candidates=[], needs_review=False, transcript=transcript)
+
+    if kategoriler:
+        try:
+            gecmis = await repo.gecmis_kategorili_kayitlar(user_id)
+        except Exception:
+            logger.warning("capture: geçmiş kayıtlar yüklenemedi, yalnız anahtar kelime kullanılıyor")
+            gecmis = []
+        kategorileri_tamamla(adaylar, kategoriler, gecmis)
 
     gerek = inceleme_gerek(adaylar)
     return CaptureYanit(

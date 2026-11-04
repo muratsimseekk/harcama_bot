@@ -41,6 +41,42 @@ def test_summary_ay_ve_onceki(client, monkeypatch):
     assert j["onceki"]["toplam_gider"] == 1000.0
 
 
+def test_mevcut_varsayilan_son_3_ay(client, monkeypatch):
+    yakalanan = {}
+
+    async def toplamlar(ids, bas, bit):
+        yakalanan.update(bas=bas, bit=bit)
+        return 5000.0, 7250.5
+
+    monkeypatch.setattr(rota, "today", lambda: date(2026, 11, 4))
+    monkeypatch.setattr(rota.repo, "donem_toplamlari", toplamlar)
+
+    r = client.get("/v1/summary/mevcut")
+    assert r.status_code == 200
+    assert r.json() == {
+        "aylar": 3, "baslangic": "2026-09-01", "bitis": "2026-11-30",
+        "gelir": 5000.0, "gider": 7250.5, "net": -2250.5,
+    }
+    assert yakalanan == {"bas": date(2026, 9, 1), "bit": date(2026, 11, 30)}
+
+
+def test_mevcut_secilen_donem(client, monkeypatch):
+    async def toplamlar(ids, bas, bit):
+        return 0.0, 0.0
+
+    monkeypatch.setattr(rota, "today", lambda: date(2026, 11, 4))
+    monkeypatch.setattr(rota.repo, "donem_toplamlari", toplamlar)
+
+    assert client.get("/v1/summary/mevcut?aylar=1").json()["baslangic"] == "2026-11-01"
+    assert client.get("/v1/summary/mevcut?aylar=6").json()["baslangic"] == "2026-06-01"
+    assert client.get("/v1/summary/mevcut?aylar=12").json()["baslangic"] == "2025-12-01"
+
+
+def test_mevcut_gecersiz_aralik_422(client):
+    assert client.get("/v1/summary/mevcut?aylar=0").status_code == 422
+    assert client.get("/v1/summary/mevcut?aylar=13").status_code == 422
+
+
 def test_summary_gecersiz_period_422(client):
     r = client.get("/v1/summary?period=decade")
     assert r.status_code == 422

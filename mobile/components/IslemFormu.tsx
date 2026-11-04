@@ -28,6 +28,7 @@ export function IslemFormu({
 }) {
   const renk = useRenkler();
   const kategoriler = useCategories();
+  const gelir = deger.direction === "gelir";
 
   return (
     <View style={{ gap: SP.md }}>
@@ -59,24 +60,31 @@ export function IslemFormu({
         </View>
       </View>
 
-      <View>
-        <Text style={[T.label, { color: renk.text, marginBottom: 6 }]}>Kategori</Text>
-        <KategoriSecici
-          kategoriler={kategoriler.data ?? []}
-          tip={deger.tip}
-          secili={deger.kategori}
-          onSec={(ad) => guncelle({ kategori: ad })}
-        />
-      </View>
-
-      <Sekmeli secenekler={TIPLER} etiket={(t) => TIP_ETIKET[t]} secili={deger.tip} onSec={(t) => guncelle({ tip: t })} kucuk />
       <Sekmeli
         secenekler={YONLER}
         etiket={(y) => (y === "gelir" ? "Gelir" : "Gider")}
         secili={deger.direction}
-        onSec={(y) => guncelle({ direction: y })}
+        // Gider ve gelir kategorileri ayrı listeler: eski seçim yeni yönde geçersiz kalır.
+        onSec={(y) => {
+          if (y !== deger.direction) guncelle({ direction: y, kategori: "" });
+        }}
         kucuk
       />
+      {!gelir && (
+        <Sekmeli secenekler={TIPLER} etiket={(t) => TIP_ETIKET[t]} secili={deger.tip} onSec={(t) => guncelle({ tip: t })} kucuk />
+      )}
+
+      <View>
+        <Text style={[T.label, { color: renk.text, marginBottom: 6 }]}>
+          {gelir ? "Gelir kategorisi" : "Kategori"}
+        </Text>
+        <KategoriSecici
+          kategoriler={kategoriler.data ?? []}
+          tip={gelir ? "gelir" : deger.tip}
+          secili={deger.kategori}
+          onSec={(ad) => guncelle({ kategori: ad })}
+        />
+      </View>
 
       <View>
         <Text style={[T.label, { color: renk.text, marginBottom: 6 }]}>Tarih</Text>

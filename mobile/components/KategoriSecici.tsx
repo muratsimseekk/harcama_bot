@@ -7,7 +7,7 @@ import { kategoriIkon } from "@/lib/kategoriIkon";
 import { useKategoriRenk } from "@/lib/kategoriRenk";
 import { useCreateCategory } from "@/lib/queries";
 import { FONT, R, useRenkler } from "@/lib/theme";
-import type { Kategori, Tip } from "@/lib/types";
+import type { Kategori, KategoriTip } from "@/lib/types";
 import { hataMesaji } from "@/lib/hata";
 
 export function KategoriSecici({
@@ -17,7 +17,7 @@ export function KategoriSecici({
   onSec,
 }: {
   kategoriler: Kategori[];
-  tip: Tip;
+  tip: KategoriTip;
   secili: string;
   onSec: (ad: string) => void;
 }) {

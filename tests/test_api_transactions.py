@@ -57,6 +57,36 @@ def test_listele_hane_havuzu_ve_ekleyen(client, monkeypatch):
     assert digeri["ekleyen"] == "Ayşe"
 
 
+def test_listele_kategori_filtresi_doneme_iletilir(client, monkeypatch):
+    yakalanan = {}
+
+    async def period(ids, bas, bit, *, direction=None, tip=None, kategoriler=None):
+        yakalanan.update(direction=direction, kategoriler=kategoriler)
+        return [_tx()]
+
+    monkeypatch.setattr(rota.repo, "list_period", period)
+    r = client.get(
+        "/v1/transactions",
+        params={"from": "2026-09-01", "to": "2026-09-30", "direction": "gider",
+                "kategori": ["Market", "Giyim"]},
+    )
+    assert r.status_code == 200
+    assert yakalanan == {"direction": "gider", "kategoriler": ["Market", "Giyim"]}
+
+
+def test_listele_diger_kategorisizleri_de_kapsar(client, monkeypatch):
+    """Özet boş kategoriyi 'Diğer' gösterir → detayda da gelmeli."""
+    yakalanan = {}
+
+    async def period(ids, bas, bit, *, direction=None, tip=None, kategoriler=None):
+        yakalanan["kategoriler"] = kategoriler
+        return []
+
+    monkeypatch.setattr(rota.repo, "list_period", period)
+    client.get("/v1/transactions", params={"from": "2026-09-01", "to": "2026-09-30", "kategori": "Diğer"})
+    assert yakalanan["kategoriler"] == ["Diğer", ""]
+
+
 def test_sahiplik_kendi_kaydi(client, monkeypatch):
     async def get(tid):
         return _tx("t1", "u1")

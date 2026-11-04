@@ -1,6 +1,8 @@
 """/v1/categories — düzenlenebilir kategori sistemi."""
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, HTTPException, status
 
 from api.deps import CurrentUser
@@ -12,6 +14,7 @@ from api.schemas import (
 )
 from core import repo
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1/categories", tags=["categories"])
 
 
@@ -22,6 +25,14 @@ async def listele(user_id: CurrentUser) -> list[KategoriModel]:
         # Yeni kullanıcı: Kişisel + 5 temel İşletme gideri. Yatırım bölümünü kullanıcı ekler.
         await repo.categories_seed(user_id, ["kisisel", "isletme"])
         kategoriler = await repo.categories_list(user_id, only_active=False)
+    if not any(c.tip == "gelir" for c in kategoriler):
+        # Gelir kategorileri sonradan geldi: eski ve yeni kullanıcıya ilk listelemede eklenir.
+        # Yazılamazsa (migration uygulanmadı / eşzamanlı istek) kategori listesi bozulmasın.
+        try:
+            if await repo.category_seed_tip(user_id, "gelir"):
+                kategoriler = await repo.categories_list(user_id, only_active=False)
+        except Exception as e:
+            logger.warning("gelir kategorileri eklenemedi: %s", e)
     return [KategoriModel.from_cat(c) for c in kategoriler]
 
 

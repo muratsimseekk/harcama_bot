@@ -185,8 +185,8 @@ edebilir: **Evet** (uygulama içi + 2.2'deki web sayfası URL'si)
 
 - [ ] 👤 Play Console → **Payments profile** → Türk IBAN + vergi bilgileri
 - [ ] 👤 Monetize → Products → **Subscriptions** → 2 ürün:
-      - `pro_aylik` → base plan aylık, otomatik yenilenen, **₺99,99**
-      - `pro_yillik` → base plan yıllık, otomatik yenilenen, **₺799,99**
+      - `pro_aylik` → base plan aylık, otomatik yenilenen, **₺49,99**
+      - `pro_yillik` → base plan yıllık, otomatik yenilenen, **₺399,99**
       (ürün ID'leri birebir böyle olmalı — kod bunlara bakıyor)
 - [ ] 👤 https://app.revenuecat.com → proje "Paraİzi" → Android app ekle (`com.paraizi.app`)
 - [ ] 👤 RevenueCat'in rehberiyle **Google Cloud service account JSON** oluştur → Play Console

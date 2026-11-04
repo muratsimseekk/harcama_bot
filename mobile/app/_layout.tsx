@@ -201,6 +201,7 @@ function Kapi() {
           çubuğunun altına giriyordu ve geri düğmesi yoktu. */}
       <Stack.Screen name="ara" options={{ ...baslik, title: "Ara" }} />
       <Stack.Screen name="kategori-yonet" options={{ ...baslik, title: "Kategoriler" }} />
+      <Stack.Screen name="kategori-detay" options={{ ...baslik, title: "Kategori" }} />
       <Stack.Screen name="hane/index" options={{ ...baslik, title: "Hane" }} />
       <Stack.Screen name="yasal" options={{ ...baslik, title: "Yasal" }} />
       <Stack.Screen name="uyelik" options={{ ...baslik, title: "Üyelik" }} />

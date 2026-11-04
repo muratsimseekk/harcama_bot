@@ -92,6 +92,57 @@ async def test_parse_liste_disi_kategori_bosaltilir(monkeypatch):
     assert a.emin is False
 
 
+async def test_parse_kategori_onerisi_tasinir_ve_temizlenir(monkeypatch):
+    _patch(monkeypatch, json.dumps({"kayitlar": [
+        {"aciklama": "kedi maması", "tutar": 300, "kategori": "", "kategori_onerisi": "evcil hayvan",
+         "tip": "kisisel", "yon": "gider", "emin": False},
+        {"aciklama": "x", "tutar": 10, "kategori": "", "kategori_onerisi": "Diğer Giderler",
+         "tip": "kisisel", "yon": "gider"},
+        {"aciklama": "y", "tutar": 10, "kategori": "", "kategori_onerisi": "ç" * 31,
+         "tip": "kisisel", "yon": "gider"},
+        {"aciklama": "elektrik", "tutar": 10, "kategori": "Faturalar", "kategori_onerisi": "Enerji",
+         "tip": "kisisel", "yon": "gider"},
+    ]}))
+    adaylar = await llm.parse_transactions("x")
+    assert [a.kategori_onerisi for a in adaylar] == ["Evcil hayvan", "", "", ""]
+
+
+async def test_parse_gelir_kategorisi_yone_gore_dogrulanir(monkeypatch):
+    """Gider listesindeki ad gelir kaydına, gelir listesindeki ad gider kaydına yazılamaz."""
+    from core.models import Category
+
+    _patch(monkeypatch, json.dumps({"kayitlar": [
+        {"aciklama": "a", "tutar": 1, "kategori": "Market", "yon": "gelir"},
+        {"aciklama": "b", "tutar": 1, "kategori": "Faiz", "yon": "gider"},
+        {"aciklama": "c", "tutar": 1, "kategori": "faiz", "yon": "gelir"},
+    ]}))
+    cats = [
+        Category(id="1", user_id="u", name="Market", tip="kisisel"),
+        Category(id="2", user_id="u", name="Faiz", tip="gelir"),
+    ]
+    a, b, c = await llm.parse_transactions("x", kategoriler=cats)
+    assert a.kategori == "" and b.kategori == ""
+    assert c.kategori == "Faiz"  # asıl yazımına çevrilir
+
+
+async def test_parse_kullanici_gelir_kategorileri_prompta_girer(monkeypatch):
+    from core.models import Category
+
+    yakalanan = {}
+
+    def _fake(system, user, *, max_tokens, temperature=0.1, reasoning_effort="low"):
+        yakalanan["system"] = system
+        return json.dumps({"kayitlar": []}), {}
+
+    monkeypatch.setattr(llm, "_chat_json", _fake)
+    await llm.parse_transactions("x", kategoriler=[
+        Category(id="1", user_id="u", name="Danışmanlık", tip="gelir", keywords=["danışman"]),
+    ])
+    assert "- GELİR:" in yakalanan["system"]
+    assert "Danışmanlık — danışman" in yakalanan["system"]
+    assert "Çek Tahsilatı" not in yakalanan["system"]  # kullanıcınınki varsa varsayılan girmez
+
+
 async def test_parse_kategoriler_prompta_girer(monkeypatch):
     from core.models import Category
 

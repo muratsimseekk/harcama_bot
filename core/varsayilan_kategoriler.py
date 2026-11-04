@@ -88,23 +88,41 @@ VARSAYILAN_KATEGORILER: dict[str, list[dict]] = {
             "tahvil", "bono", "hazine bonosu", "eurobond", "devlet tahvili",
         ]},
     ],
+    # Gelir kategorileri bölümden (kişisel/işletme/yatırım) bağımsızdır: "gelir" türüyle saklanır.
+    "gelir": [
+        {"name": "Maaş", "keywords": ["maaş", "ücret", "ikramiye", "prim aldım", "bordro"]},
+        {"name": "İşçilik", "keywords": [
+            "işçilik", "yevmiye aldım", "usta parası", "montaj ücreti", "iş ücreti",
+        ]},
+        {"name": "Kira Geliri", "keywords": [
+            "kira geliri", "kira aldım", "kira geldi", "kiracı", "kiracıdan",
+        ]},
+        {"name": "Çek Tahsilatı", "keywords": ["çek", "çek ödemesi", "çek tahsilatı", "çek bozdurdum"]},
+        {"name": "Senet Tahsilatı", "keywords": ["senet", "senet ödemesi", "senet tahsilatı"]},
+        {"name": "Faiz Geliri", "keywords": ["faiz", "faiz geliri", "mevduat", "repo geliri"]},
+        {"name": "Tahsilat", "keywords": ["tahsilat", "müşteri ödemesi", "alacak", "ödeme aldım", "havale geldi"]},
+        {"name": "Satış", "keywords": ["satış", "sattım", "ciro"]},
+        {"name": "Diğer Gelir", "keywords": []},
+    ],
 }
-
-# Gelir kategorileri tabloya girmez, yalnız prompt'ta kullanılır.
-GELIR_KATEGORILERI: list[str] = ["Maaş", "Tahsilat", "Satış", "Diğer Gelir"]
 
 # "Diğer" türevi isimler — yapay zekaya asla seçtirilmez (kullanıcı elle seçebilir).
 # Eski seed'lerden kalma "Diğer" kategorileri prompt'tan ve geçerli-isim setinden düşürülür.
 DIGER_ADLARI: frozenset[str] = frozenset({
     "diğer", "diger", "diğer işletme", "diger isletme",
-    "diğer yatırım", "diger yatirim",
+    "diğer yatırım", "diger yatirim", "diğer gelir", "diger gelir",
 })
 
 
-def digermi(ad: str) -> bool:
-    return ad.strip().lower() in DIGER_ADLARI
+def kucuk_tr(metin: str) -> str:
+    """Türkçe kurallı küçültme + kırpma ("İşçilik" → "işçilik"); Python .lower() İ'yi bozar."""
+    return metin.replace("İ", "i").replace("I", "ı").lower().strip()
 
-_TIP_BASLIK = {"kisisel": "KİŞİSEL", "isletme": "İŞLETME", "yatirim": "YATIRIM"}
+
+def digermi(ad: str) -> bool:
+    return kucuk_tr(ad) in DIGER_ADLARI
+
+_TIP_BASLIK = {"kisisel": "KİŞİSEL", "isletme": "İŞLETME", "yatirim": "YATIRIM", "gelir": "GELİR"}
 
 
 def kategori_bolumu(
@@ -128,7 +146,7 @@ def kategori_bolumu(
 def varsayilan_bolum() -> str:
     """Kullanıcı kategorisi yokken kullanılan varsayılan prompt bloğu."""
     gruplar = {
-        tip: [(o["name"], o["keywords"]) for o in ogeler]
+        tip: [(o["name"], o["keywords"]) for o in ogeler if not digermi(o["name"])]
         for tip, ogeler in VARSAYILAN_KATEGORILER.items()
     }
     return kategori_bolumu(gruplar)

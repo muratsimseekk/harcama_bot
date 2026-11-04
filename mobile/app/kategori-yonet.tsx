@@ -15,10 +15,10 @@ import {
   useSeedBolum,
 } from "@/lib/queries";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
-import { type Kategori, TIP_ETIKET, type Tip } from "@/lib/types";
+import { KATEGORI_TIP_ETIKET, type Kategori, type KategoriTip } from "@/lib/types";
 import { hataMesaji } from "@/lib/hata";
 
-const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
+const TIPLER: KategoriTip[] = ["kisisel", "isletme", "yatirim", "gelir"];
 
 const kelimeAyir = (s: string): string[] =>
   s.split(/[,\n]/).map((k) => k.trim()).filter(Boolean);
@@ -31,7 +31,7 @@ export default function KategoriYonet() {
   const bolumEkle = useSeedBolum();
 
   const [ad, setAd] = useState("");
-  const [tip, setTip] = useState<Tip>("kisisel");
+  const [tip, setTip] = useState<KategoriTip>("kisisel");
   const [kelimeler, setKelimeler] = useState("");
 
   function ekle() {
@@ -48,7 +48,7 @@ export default function KategoriYonet() {
     );
   }
 
-  const grupla = (t: Tip) => (liste.data ?? []).filter((k) => k.tip === t);
+  const grupla = (t: KategoriTip) => (liste.data ?? []).filter((k) => k.tip === t);
 
   return (
     <ScrollView style={{ backgroundColor: renk.bg }} contentContainerStyle={s.icerik}>
@@ -60,7 +60,7 @@ export default function KategoriYonet() {
           value={ad}
           onChangeText={setAd}
         />
-        <Sekmeli secenekler={TIPLER} etiket={(t) => TIP_ETIKET[t]} secili={tip} onSec={setTip} kucuk />
+        <Sekmeli secenekler={TIPLER} etiket={(t) => KATEGORI_TIP_ETIKET[t]} secili={tip} onSec={setTip} kucuk />
         <TextInput
           style={[s.input, { color: renk.text, backgroundColor: renk.bg }]}
           placeholder="anahtar kelimeler (virgülle): elektrik, su, aidat"
@@ -75,7 +75,7 @@ export default function KategoriYonet() {
         const grup = grupla(t);
         return (
           <View key={t} style={{ gap: SP.sm }}>
-            <Text style={[T.overline, { color: renk.textFaint, marginTop: SP.sm }]}>{TIP_ETIKET[t]}</Text>
+            <Text style={[T.overline, { color: renk.textFaint, marginTop: SP.sm }]}>{KATEGORI_TIP_ETIKET[t]}</Text>
             {grup.length > 0 ? (
               grup.map((k) => <Satir key={k.id} kat={k} />)
             ) : (
@@ -90,7 +90,7 @@ export default function KategoriYonet() {
                   <Ionicons name="add-circle-outline" size={17} color={renk.aksan} />
                 )}
                 <Text style={{ color: renk.aksan, fontSize: 13.5, fontWeight: "700" }}>
-                  {TIP_ETIKET[t]} kategorilerini ekle
+                  {KATEGORI_TIP_ETIKET[t]} kategorilerini ekle
                 </Text>
               </Pressable>
             )}

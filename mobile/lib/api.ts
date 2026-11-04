@@ -13,6 +13,8 @@ import type {
   Islem,
   Kapsam,
   Kategori,
+  KategoriTip,
+  Mevcut,
   Ozet,
   Tip,
 } from "./types";
@@ -22,6 +24,7 @@ export interface IslemFiltre {
   to?: string;
   tip?: Tip;
   direction?: "gider" | "gelir";
+  kategoriler?: string[];
   limit?: number;
 }
 
@@ -145,6 +148,7 @@ export const api = {
     if (f.to) q.set("to", f.to);
     if (f.tip) q.set("tip", f.tip);
     if (f.direction) q.set("direction", f.direction);
+    for (const k of f.kategoriler ?? []) q.append("kategori", k);
     const qs = q.toString();
     return jsonReq<Islem[]>(`/v1/transactions${qs ? `?${qs}` : ""}`, "GET");
   },
@@ -206,13 +210,17 @@ export const api = {
     return jsonReq<Ozet>(`/v1/summary?${q.toString()}`, "GET");
   },
 
+  mevcut(aylar: number): Promise<Mevcut> {
+    return jsonReq<Mevcut>(`/v1/summary/mevcut?aylar=${aylar}`, "GET");
+  },
+
   listCategories(): Promise<Kategori[]> {
     return jsonReq<Kategori[]>("/v1/categories", "GET");
   },
 
   createCategory(body: {
     name: string;
-    tip: Tip;
+    tip: KategoriTip;
     color?: string;
     keywords?: string[];
   }): Promise<Kategori> {
@@ -223,7 +231,7 @@ export const api = {
     return jsonReq<Kategori>(`/v1/categories/${id}`, "PATCH", body);
   },
 
-  seedBolum(tip: Tip): Promise<{ eklendi: number }> {
+  seedBolum(tip: KategoriTip): Promise<{ eklendi: number }> {
     return jsonReq(`/v1/categories/bolum`, "POST", { tip });
   },
 

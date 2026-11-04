@@ -10,10 +10,10 @@ import { api } from "@/lib/api";
 import { tarihEtiket, turkceTutar } from "@/lib/format";
 import { useCategories } from "@/lib/queries";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
-import type { Islem, Tip, Yon } from "@/lib/types";
+import type { Islem, KategoriTip, Yon } from "@/lib/types";
 
 // Kişisel önce: kategoriler API'den tür karışık geliyor (işletme kategorileri başa düşüyordu)
-const TIP_SIRA: Record<Tip, number> = { kisisel: 0, isletme: 1, yatirim: 2 };
+const TIP_SIRA: Record<KategoriTip, number> = { kisisel: 0, isletme: 1, yatirim: 2, gelir: 3 };
 
 type Aralik = "hepsi" | "buAy" | "gecenAy" | "ozel";
 const ARALIK_ETIKET: Record<Aralik, string> = {
