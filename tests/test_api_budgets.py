@@ -64,3 +64,66 @@ def test_hedef_ayarla_getir(client, monkeypatch):
     assert r.status_code == 200 and r.json()["hedef_amount"] == 30000.0
     r = client.get("/v1/goals")
     assert r.json()["hedef_amount"] == 30000.0
+
+
+# ---- yatırım alt hedefleri ------------------------------------------------- #
+@pytest.fixture
+def hedef_deposu(monkeypatch):
+    """goals tablosunun bellek içi taklidi: {tip: tutar}."""
+    depo: dict[str, float] = {}
+
+    async def upsert(uid, tutar, tip="yatirim"):
+        depo[tip] = tutar
+        return Goal(id=tip, user_id=uid, hedef_amount=tutar, tip=tip)
+
+    async def sil(uid, tip="yatirim"):
+        return depo.pop(tip, None) is not None
+
+    async def liste(uid):
+        return [Goal(id=t, user_id=uid, hedef_amount=v, tip=t) for t, v in depo.items()]
+
+    monkeypatch.setattr(rota.repo, "goal_upsert", upsert)
+    monkeypatch.setattr(rota.repo, "goal_delete", sil)
+    monkeypatch.setattr(rota.repo, "goals_list", liste)
+    return depo
+
+
+def test_alt_hedefler_genel_hedefi_izler(client, hedef_deposu):
+    client.put("/v1/goals", json={"hedef_amount": 2000, "kategori": "Altın/Döviz"})
+    assert hedef_deposu == {"yatirim:Altın/Döviz": 2000, "yatirim": 2000}
+    client.put("/v1/goals", json={"hedef_amount": 3000, "kategori": "Hisse Senedi"})
+    assert hedef_deposu["yatirim"] == 5000
+    client.put("/v1/goals", json={"hedef_amount": 1000, "kategori": "Hisse Senedi"})
+    assert hedef_deposu["yatirim"] == 3000
+    r = client.delete("/v1/goals", params={"kategori": "Altın/Döviz"})
+    assert r.status_code == 200
+    assert hedef_deposu == {"yatirim:Hisse Senedi": 1000, "yatirim": 1000}
+    client.delete("/v1/goals", params={"kategori": "Hisse Senedi"})
+    assert hedef_deposu == {}  # uyumlu genel hedef de kalkar
+
+
+def test_elle_konan_genel_hedef_korunur(client, hedef_deposu):
+    client.put("/v1/goals", json={"hedef_amount": 10000})  # genel, alt hedef yok
+    client.put("/v1/goals", json={"hedef_amount": 2000, "kategori": "Altın/Döviz"})
+    # kullanıcı bilerek 10.000 koymuştu → değişmez, fark uygulamada gösterilir
+    assert hedef_deposu["yatirim"] == 10000
+
+
+def test_yatirim_ilerleme_alt_kategoriler():
+    from datetime import date
+
+    from core.models import Transaction
+    from core.summary import yatirim_ilerleme
+
+    def tx(kat, tutar):
+        return Transaction(
+            id=kat, user_id="u1", direction="gider", tip="yatirim", kategori=kat,
+            aciklama="", tutar=tutar, para_birimi="TRY", tarih=date.today(), kaynak="test",
+        )
+
+    y = yatirim_ilerleme([tx("Altın/Döviz", 500), tx("Hisse Senedi", 1500)], 4000,
+                         {"Altın/Döviz": 1000, "Kripto Para": 500})
+    assert y["birikmis"] == 2000 and y["alt_toplam"] == 1500
+    assert y["kategoriler"][0] == {"kategori": "Altın/Döviz", "hedef": 1000, "birikmis": 500,
+                                   "kalan": 500, "oran": 50.0}
+    assert y["kategoriler"][1]["birikmis"] == 0

@@ -1,4 +1,4 @@
-"""/v1/budgets + /v1/goals — aylık bütçe limitleri ve yatırım hedefi."""
+"""/v1/budgets + /v1/goals — aylık bütçe limitleri ve yatırım hedefi (+ kategori alt hedefleri)."""
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, status
@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, status
 from api.deps import CurrentUser
 from api.schemas import ButceIstek, ButceModel, HedefIstek, HedefModel
 from core import repo
+from core.summary import ALT_HEDEF_ON, alt_hedefler, genel_hedef_senkron
 
 router = APIRouter(prefix="/v1", tags=["budgets"])
 
@@ -49,11 +50,47 @@ async def hedef_getir(user_id: CurrentUser) -> HedefModel | None:
 
 @router.put("/goals", response_model=HedefModel)
 async def hedef_ayarla(user_id: CurrentUser, istek: HedefIstek) -> HedefModel:
-    g = await repo.goal_upsert(user_id, istek.hedef_amount, istek.tip)
+    if not istek.kategori:
+        g = await repo.goal_upsert(user_id, istek.hedef_amount, istek.tip)
+        return HedefModel.from_g(g)
+    # Alt hedef: önce eski durum (genel + alt toplam), sonra yaz, sonra genel hedefi senkronla.
+    genel, eski_toplam = await _yatirim_durumu(user_id)
+    g = await repo.goal_upsert(user_id, istek.hedef_amount, ALT_HEDEF_ON + istek.kategori.strip())
+    _, yeni_toplam = await _yatirim_durumu(user_id)
+    await _genel_senkronla(user_id, genel, eski_toplam, yeni_toplam)
     return HedefModel.from_g(g)
 
 
 @router.delete("/goals")
-async def hedef_sil(user_id: CurrentUser) -> dict:
-    await repo.goal_delete(user_id, "yatirim")
+async def hedef_sil(user_id: CurrentUser, kategori: str | None = None) -> dict:
+    if not kategori:
+        await repo.goal_delete(user_id, "yatirim")
+        return {"silindi": True}
+    await alt_hedef_sil(user_id, kategori)
     return {"silindi": True}
+
+
+async def _yatirim_durumu(user_id: str) -> tuple[float | None, float]:
+    """(genel yatırım hedefi ya da None, alt hedeflerin toplamı)."""
+    goals = await repo.goals_list(user_id)
+    genel = next((x.hedef_amount for x in goals if x.tip == "yatirim"), None)
+    return genel, sum(alt_hedefler(goals).values())
+
+
+async def _genel_senkronla(user_id: str, genel: float | None, eski: float, yeni: float) -> None:
+    hedef = genel_hedef_senkron(genel, eski, yeni)
+    if hedef is None:
+        return
+    if hedef > 0:
+        await repo.goal_upsert(user_id, hedef, "yatirim")
+    elif genel is not None:
+        await repo.goal_delete(user_id, "yatirim")
+
+
+async def alt_hedef_sil(user_id: str, kategori: str) -> None:
+    """Bir yatırım kategorisinin alt hedefini siler, genel hedefi senkronlar (kategori silinince de)."""
+    genel, eski_toplam = await _yatirim_durumu(user_id)
+    if not await repo.goal_delete(user_id, ALT_HEDEF_ON + kategori.strip()):
+        return
+    _, yeni_toplam = await _yatirim_durumu(user_id)
+    await _genel_senkronla(user_id, genel, eski_toplam, yeni_toplam)

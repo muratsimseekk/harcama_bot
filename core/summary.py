@@ -171,13 +171,47 @@ def hedef_ilerleme(txs, budgets) -> list[HedefIlerleme]:
     return out
 
 
-def yatirim_ilerleme(txs, hedef_amount: float) -> dict:
-    """Dönemde 'yatirim' tipi giderlerin toplamı = birikmiş."""
-    birikmis = round(sum(t.tutar for t in txs if t.direction == "gider" and t.tip == "yatirim"), 2)
-    oran = round(birikmis / hedef_amount * 100, 1) if hedef_amount else 0.0
+ALT_HEDEF_ON = "yatirim:"  # goals.tip = "yatirim:<kategori adı>" → o kategorinin aylık hedefi
+
+
+def _ilerleme(birikmis: float, hedef: float) -> dict:
     return {
-        "hedef": round(hedef_amount, 2),
-        "birikmis": birikmis,
-        "kalan": round(max(0.0, hedef_amount - birikmis), 2),
-        "oran": oran,
+        "hedef": round(hedef, 2),
+        "birikmis": round(birikmis, 2),
+        "kalan": round(max(0.0, hedef - birikmis), 2),
+        "oran": round(birikmis / hedef * 100, 1) if hedef else 0.0,
     }
+
+
+def alt_hedefler(goals) -> dict[str, float]:
+    """goals listesinden {kategori: hedef} (yalnız yatırım alt hedefleri)."""
+    return {
+        g.tip[len(ALT_HEDEF_ON):]: g.hedef_amount
+        for g in goals if g.tip.startswith(ALT_HEDEF_ON) and g.tip[len(ALT_HEDEF_ON):]
+    }
+
+
+def yatirim_ilerleme(txs, hedef_amount: float, alt: dict[str, float] | None = None) -> dict:
+    """Dönemde 'yatirim' tipi giderlerin toplamı = birikmiş. `alt` verilirse her alt hedefin
+    ilerlemesi (kategori bazında birikmiş) ve alt hedeflerin toplamı da döner."""
+    yatirimlar = [t for t in txs if t.direction == "gider" and t.tip == "yatirim"]
+    out = _ilerleme(sum(t.tutar for t in yatirimlar), hedef_amount)
+    alt = alt or {}
+    out["kategoriler"] = [
+        {"kategori": k, **_ilerleme(sum(t.tutar for t in yatirimlar if t.kategori == k), h)}
+        for k, h in sorted(alt.items(), key=lambda kv: -kv[1])
+    ]
+    out["alt_toplam"] = round(sum(alt.values()), 2)
+    return out
+
+
+def genel_hedef_senkron(genel: float | None, eski_toplam: float, yeni_toplam: float) -> float | None:
+    """Bir alt hedef değişince genel yatırım hedefinin yeni değeri; None = dokunma.
+
+    Genel hedef alt hedeflerin toplamıyla uyumluysa (ya da hiç yoksa) yeni toplamı izler.
+    Kullanıcı genel hedefi bilerek farklı bir tutara koyduysa korunur — uygulama farkı
+    gösterip "toplama eşitle" önerir. 0 dönerse genel hedef silinmeli.
+    """
+    if genel is None or abs(genel - eski_toplam) < 0.01:
+        return round(yeni_toplam, 2)
+    return None

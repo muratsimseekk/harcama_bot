@@ -564,6 +564,24 @@ async def goal_delete(user_id: str, tip: str = "yatirim") -> bool:
     return await _call(_run)
 
 
+async def goals_list(user_id: str) -> list[Goal]:
+    """Kullanıcının tüm hedefleri — genel yatırım (`yatirim`) + alt hedefler (`yatirim:<kategori>`)."""
+    def _run() -> list[dict]:
+        return _db().table("goals").select("*").eq("user_id", user_id).execute().data or []
+
+    return [Goal.from_row(r) for r in await _call(_run)]
+
+
+async def goal_rename(user_id: str, eski_tip: str, yeni_tip: str) -> None:
+    def _run() -> None:
+        (
+            _db().table("goals").update({"tip": yeni_tip, "updated_at": now().isoformat()})
+            .eq("user_id", user_id).eq("tip", eski_tip).execute()
+        )
+
+    await _call(_run)
+
+
 # --------------------------------------------------------------------------- #
 # push_tokens & notifications_sent (bildirim altyapısı)
 # --------------------------------------------------------------------------- #

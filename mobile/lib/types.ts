@@ -136,11 +136,21 @@ export interface HedefIlerleme {
   durum: "iyi" | "yaklasti" | "asti";
 }
 
+export interface YatirimKategori {
+  kategori: string;
+  hedef: number;
+  birikmis: number;
+  kalan: number;
+  oran: number;
+}
+
 export interface YatirimIlerleme {
   hedef: number;
   birikmis: number;
   kalan: number;
   oran: number;
+  kategoriler?: YatirimKategori[]; // kategori alt hedefleri (eski sunucuda yok)
+  alt_toplam?: number;
 }
 
 export interface Ozet {

@@ -288,11 +288,22 @@ class HedefIlerlemeModel(BaseModel):
         return cls(**vars(h))
 
 
+class YatirimKategoriModel(BaseModel):
+    kategori: str
+    hedef: float
+    birikmis: float
+    kalan: float
+    oran: float
+
+
 class YatirimModel(BaseModel):
     hedef: float
     birikmis: float
     kalan: float
     oran: float
+    # Kategori bazında alt hedefler (Altın/Döviz, Hisse Senedi…) ve toplamları.
+    kategoriler: list[YatirimKategoriModel] = Field(default_factory=list)
+    alt_toplam: float = 0.0
 
 
 class OzetModel(BaseModel):
@@ -344,3 +355,5 @@ class HedefModel(BaseModel):
 class HedefIstek(BaseModel):
     hedef_amount: float = Field(gt=0)
     tip: str = "yatirim"
+    # Doluysa genel hedef değil, o yatırım kategorisinin alt hedefi ayarlanır.
+    kategori: str | None = Field(default=None, min_length=1, max_length=60)

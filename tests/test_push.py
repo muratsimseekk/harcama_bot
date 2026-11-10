@@ -98,17 +98,18 @@ def test_gunluk_mesaj_genel_butce_kalan():
         "Bugün 2 harcama, toplam 1.250 ₺.",
         "En çok: Kafe/Restoran (650 ₺)",
         "Bu ay bütçende 3.750 ₺ kaldı 💪",
+        "Eklemeyi unuttuğun bir harcama varsa şimdi ekleyebilirsin.",
     ]
 
 
 def test_gunluk_mesaj_butce_yok_tek_islem():
     _, govde = gunluk_mesaj([_g(90)], [_g(90), _g(1000)], [])
-    assert govde.splitlines() == ["Bugün 1 harcama, toplam 90 ₺.", "Bu ay toplam 1.090 ₺ harcadın."]
+    assert govde.splitlines()[:2] == ["Bugün 1 harcama, toplam 90 ₺.", "Bu ay toplam 1.090 ₺ harcadın."]
 
 
 def test_gunluk_mesaj_butce_asildi():
     _, govde = gunluk_mesaj([_g(500)], [_g(10500)], [_NS(kapsam="genel", limit_amount=10000)])
-    assert govde.splitlines()[-1] == "Aylık bütçeni 500 ₺ aştın ⚠️"
+    assert govde.splitlines()[-2] == "Aylık bütçeni 500 ₺ aştın ⚠️"
 
 
 def test_haftalik_mesaj_karsilastirma():
@@ -125,3 +126,62 @@ def test_haftalik_mesaj_karsilastirma():
 def test_haftalik_mesaj_gecen_hafta_yok():
     _, govde = haftalik_mesaj([_g(300)], [])
     assert "Geçen hafta" not in govde
+
+
+# ---- günlük hatırlatma / Pazar yönlendirmesi ------------------------------- #
+def _gunluk_kur(monkeypatch, islemler, bugun):
+    monkeypatch.setattr(rota.settings, "CRON_SECRET", "gizli")
+    monkeypatch.setattr(rota, "today", lambda: bugun)
+    gonderilen: list[tuple[str, str]] = []
+
+    async def tokens_all():
+        return [{"user_id": "u1", "token": "ExponentPushToken[x]", "platform": "android"}]
+
+    async def list_period(uid, bas, bit, **kw):
+        return [t for t in islemler if bas <= t.tarih <= bit]
+
+    async def bos(*a, **k):
+        return []
+
+    async def hayir(*a, **k):
+        return False
+
+    async def sahte_push(tokens, baslik, govde, veri=None):
+        gonderilen.append((baslik, govde))
+        return (1, 0, [])
+
+    monkeypatch.setattr(rota.repo, "push_tokens_all", tokens_all)
+    monkeypatch.setattr(rota.repo, "list_period", list_period)
+    monkeypatch.setattr(rota.repo, "budgets_list", bos)
+    monkeypatch.setattr(rota.repo, "bildirim_isaretle", bos)
+    monkeypatch.setattr(rota.repo, "bildirim_gonderildi_mi", hayir)
+    monkeypatch.setattr(rota.push, "expo_push_gonder", sahte_push)
+    return gonderilen
+
+
+def _tx(gun, tutar=100.0):
+    return Transaction(
+        id=str(gun), user_id="u1", direction="gider", tip="kisisel", kategori="Market",
+        aciklama="", tutar=tutar, para_birimi="TRY", tarih=gun, kaynak="test",
+    )
+
+
+def test_gunluk_kayit_yoksa_hatirlatir(client, monkeypatch):
+    sali = date(2026, 11, 10)
+    g = _gunluk_kur(monkeypatch, [_tx(date(2026, 11, 8))], sali)
+    r = client.post("/v1/push/run", json={"tur": "gunluk"}, headers={"X-Cron-Secret": "gizli"})
+    assert r.json()["tur"] == "gunluk" and g == [rota.HATIRLATMA]
+
+
+def test_gunluk_uzun_suredir_pasif_kullaniciya_gitmez(client, monkeypatch):
+    g = _gunluk_kur(monkeypatch, [_tx(date(2026, 10, 1))], date(2026, 11, 10))
+    client.post("/v1/push/run", json={"tur": "gunluk"}, headers={"X-Cron-Secret": "gizli"})
+    assert g == []
+
+
+def test_pazar_gunluk_cagrisi_haftalik_ozete_doner(client, monkeypatch):
+    pazar = date(2026, 11, 15)
+    g = _gunluk_kur(monkeypatch, [_tx(date(2026, 11, 12)), _tx(pazar)], pazar)
+    r = client.post("/v1/push/run", json={"tur": "gunluk"}, headers={"X-Cron-Secret": "gizli"})
+    assert r.json()["tur"] == "haftalik"
+    assert len(g) == 1 and g[0][0] == "📊 Haftan nasıl geçti?"

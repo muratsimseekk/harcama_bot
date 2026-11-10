@@ -7,6 +7,7 @@ import { EkranBasligi } from "@/components/EkranBasligi";
 import { HedefHalkasi } from "@/components/HedefHalkasi";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
+import { YatirimAltHedefler } from "@/components/YatirimAltHedefler";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { kategoriIkon } from "@/lib/kategoriIkon";
 import { useKategoriRenk } from "@/lib/kategoriRenk";
@@ -23,7 +24,8 @@ import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
 import { TIP_ETIKET, type Tip } from "@/lib/types";
 import { hataMesaji } from "@/lib/hata";
 
-const TIPLER: Tip[] = ["kisisel", "isletme", "yatirim"];
+// Yatırım kategorileri üst sınır (limit) değil hedef alır → "Yatırım hedeflerin" kartında.
+const TIPLER: Tip[] = ["kisisel", "isletme"];
 
 export default function Hedefler() {
   const renk = useRenkler();
@@ -100,6 +102,8 @@ export default function Hedefler() {
           </View>
         </View>
       </Kart>
+
+      <YatirimAltHedefler yatirim={yatirim} tutarSor={tutarSor} bekle={bekle} onHata={hataGoster.onError} />
 
       {/* Genel aylık harcama hedefi */}
       <Kart>

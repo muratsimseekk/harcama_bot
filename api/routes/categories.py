@@ -12,7 +12,9 @@ from api.schemas import (
     KategoriModel,
     KategoriOlusturIstek,
 )
+from api.routes.budgets import alt_hedef_sil
 from core import repo
+from core.summary import ALT_HEDEF_ON
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1/categories", tags=["categories"])
@@ -67,18 +69,32 @@ async def _sahiplik(cat_id: str, user_id: str):
 async def guncelle(
     user_id: CurrentUser, cat_id: str, istek: KategoriGuncelleIstek
 ) -> KategoriModel:
-    await _sahiplik(cat_id, user_id)
+    eski = await _sahiplik(cat_id, user_id)
     kolonlar = istek.kolonlar()
     if not kolonlar:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Değişecek alan yok")
     guncel = await repo.category_update(cat_id, kolonlar)
     if not guncel:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Kategori bulunamadı")
+    # Yatırım alt hedefi kategori adına bağlı: ad değişince hedef taşınsın, kategori
+    # başka bölüme geçince hedef silinsin (genel hedef de senkronlanır).
+    try:
+        if eski.tip == "yatirim" and guncel.tip != "yatirim":
+            await alt_hedef_sil(user_id, eski.name)
+        elif eski.tip == "yatirim" and guncel.name != eski.name:
+            await repo.goal_rename(user_id, ALT_HEDEF_ON + eski.name, ALT_HEDEF_ON + guncel.name)
+    except Exception as e:
+        logger.warning("alt hedef güncellenemedi: %s", e)
     return KategoriModel.from_cat(guncel)
 
 
 @router.delete("/{cat_id}")
 async def sil(user_id: CurrentUser, cat_id: str) -> dict:
-    await _sahiplik(cat_id, user_id)
+    cat = await _sahiplik(cat_id, user_id)
     await repo.category_delete(cat_id)
+    if cat.tip == "yatirim":
+        try:
+            await alt_hedef_sil(user_id, cat.name)
+        except Exception as e:
+            logger.warning("alt hedef silinemedi: %s", e)
     return {"silindi": True}

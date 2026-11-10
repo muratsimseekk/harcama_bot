@@ -1,33 +1,49 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Application from "expo-application";
-import { useEffect, useState } from "react";
-import { Linking, Modal, Platform, StyleSheet, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { AppState, Linking, Modal, Platform, StyleSheet, View } from "react-native";
 import { Buton } from "@/components/Buton";
 import { Metin as Text } from "@/components/Metin";
 import { api } from "@/lib/api";
 import { golge, R, SP, T, useRenkler } from "@/lib/theme";
 
 const PAKET = "com.paraizi.app";
+// Arka planda bu kadar kalıp dönen uygulama "yeniden açılmış" sayılır → bir kez daha sorulur.
+const YENIDEN_ACILIS_MS = 30 * 60 * 1000;
 
 /**
  * Açılışta mağazada daha yeni bir build varsa (sunucu `/v1/surum`) ekranın büyük kısmını
  * kaplayan "Yeni güncelleme var" penceresi. "Daha sonra" yalnız bu açılış için kapatır —
- * uygulama bir sonraki açılışında yine sorar. Sunucuya ulaşılamazsa sessizce gösterilmez.
+ * uygulama her yeni açılışta (soğuk başlangıç ya da 30 dk+ arka plandan dönüş) bir kez
+ * daha sorar. Sunucuya ulaşılamazsa sessizce gösterilmez.
  */
 export function GuncellemePenceresi() {
   const renk = useRenkler();
   const [acik, setAcik] = useState(false);
+  const arkaPlanaGecis = useRef<number | null>(null);
 
   useEffect(() => {
     const mevcut = Number(Application.nativeBuildVersion ?? 0);
     if (!mevcut || (Platform.OS !== "android" && Platform.OS !== "ios")) return;
-    api
-      .surum()
-      .then((s) => {
-        const son = Platform.OS === "android" ? s.android : s.ios;
-        if (son > mevcut) setAcik(true);
-      })
-      .catch(() => {});
+    const kontrol = () =>
+      api
+        .surum()
+        .then((s) => {
+          const son = Platform.OS === "android" ? s.android : s.ios;
+          if (son > mevcut) setAcik(true);
+        })
+        .catch(() => {});
+    kontrol();
+    const abone = AppState.addEventListener("change", (durum) => {
+      if (durum === "background") {
+        arkaPlanaGecis.current = Date.now();
+      } else if (durum === "active" && arkaPlanaGecis.current !== null) {
+        const sure = Date.now() - arkaPlanaGecis.current;
+        arkaPlanaGecis.current = null;
+        if (sure >= YENIDEN_ACILIS_MS) kontrol();
+      }
+    });
+    return () => abone.remove();
   }, []);
 
   async function guncelle() {

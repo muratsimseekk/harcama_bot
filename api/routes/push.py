@@ -56,19 +56,22 @@ async def calistir(istek: RunIstek, x_cron_secret: str = Header(default="")) -> 
         kullanici_token.setdefault(r["user_id"], []).append(r["token"])
 
     b = today()
+    # Tek cron (her gün 21:00) yeter: Pazar günü "gunluk" çağrısı haftalık özete döner.
+    # Ayrıca kurulu Pazar 21:05 "haftalik" işi tekrar göndermez (dedup anahtarı).
+    tur = "haftalik" if istek.tur == "gunluk" and b.weekday() == 6 else istek.tur
     gonderim = 0
     for uid, tokens in kullanici_token.items():
         try:
-            if istek.tur == "gunluk":
+            if tur == "gunluk":
                 gonderim += await _gunluk_ozet(uid, tokens, b)
-            elif istek.tur == "haftalik":
+            elif tur == "haftalik":
                 gonderim += await _haftalik_ozet(uid, tokens, b)
             else:
                 gonderim += await _butce_uyarilari(uid, tokens, b)
         except Exception as e:  # bir kullanıcının hatası diğerlerini durdurmasın
             logger.error("push kullanıcı %s hata: %s", uid, e, exc_info=True)
 
-    return {"tur": istek.tur, "kullanici": len(kullanici_token), "gonderim": gonderim}
+    return {"tur": tur, "kullanici": len(kullanici_token), "gonderim": gonderim}
 
 
 async def _butce_uyarilari(uid: str, tokens: list[str], b: date) -> int:
@@ -137,7 +140,17 @@ def gunluk_mesaj(bugun, ay_giderleri, butceler) -> tuple[str, str]:
         )
     else:
         satirlar.append(f"Bu ay toplam {_tl(ay_toplam)} ₺ harcadın.")
+    satirlar.append("Eklemeyi unuttuğun bir harcama varsa şimdi ekleyebilirsin.")
     return "🌙 Bugünün özeti", "\n".join(satirlar)
+
+
+HATIRLATMA = (
+    "📝 Bugünkü harcamalarını ekledin mi?",
+    "Bugün henüz bir kayıt girmedin. Unutmadan şimdi ekle, sesle söylemen yeterli 🎙️",
+)
+# Hatırlatma yalnız son bu kadar günde en az bir kayıt girmiş kullanıcılara gider —
+# uygulamayı bırakmış birine her akşam bildirim atıp rahatsız etmeyelim.
+HATIRLATMA_AKTIF_GUN = 14
 
 
 def haftalik_mesaj(bu_hafta, gecen_hafta) -> tuple[str, str]:
@@ -165,15 +178,20 @@ async def _gunluk_ozet(uid: str, tokens: list[str], b: date) -> int:
     if await repo.bildirim_gonderildi_mi(uid, anahtar):
         return 0
     ay_bas, _ = donem_araligi("month", b)
-    ay = [t for t in await repo.list_period(uid, ay_bas, b) if t.direction == "gider"]
+    aktif_bas = b - timedelta(days=HATIRLATMA_AKTIF_GUN)
+    tum = await repo.list_period(uid, min(ay_bas, aktif_bas), b)
+    ay = [t for t in tum if t.direction == "gider" and t.tarih >= ay_bas]
     bugun = [t for t in ay if t.tarih == b]
-    if not bugun:
+    if bugun:
+        try:
+            butceler = await repo.budgets_list(uid)
+        except Exception:
+            butceler = []
+        baslik, govde = gunluk_mesaj(bugun, ay, butceler)
+    elif not any(t.tarih == b for t in tum) and any(t.tarih >= aktif_bas for t in tum):
+        baslik, govde = HATIRLATMA  # bugün hiç kayıt yok, ama son 2 haftada aktif
+    else:
         return 0
-    try:
-        butceler = await repo.budgets_list(uid)
-    except Exception:
-        butceler = []
-    baslik, govde = gunluk_mesaj(bugun, ay, butceler)
     ok, _, olu = await push.expo_push_gonder(tokens, baslik, govde, {"tur": "gunluk"})
     await _olu_temizle(olu)
     if ok:

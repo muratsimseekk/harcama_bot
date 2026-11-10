@@ -251,8 +251,14 @@ export const api = {
     return jsonReq(`/v1/budgets/${id}`, "DELETE");
   },
 
-  setGoal(hedef_amount: number): Promise<Hedef> {
-    return jsonReq<Hedef>("/v1/goals", "PUT", { hedef_amount });
+  /** `kategori` verilirse o yatırım kategorisinin alt hedefi; yoksa genel yatırım hedefi. */
+  setGoal(hedef_amount: number, kategori?: string): Promise<Hedef> {
+    return jsonReq<Hedef>("/v1/goals", "PUT", kategori ? { hedef_amount, kategori } : { hedef_amount });
+  },
+
+  deleteGoal(kategori?: string): Promise<{ silindi: boolean }> {
+    const q = kategori ? `?kategori=${encodeURIComponent(kategori)}` : "";
+    return jsonReq(`/v1/goals${q}`, "DELETE");
   },
 
   notifications(): Promise<{ bildirimler: Bildirim[] }> {

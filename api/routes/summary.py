@@ -11,7 +11,7 @@ from api.deps import CurrentUser
 from api.schemas import HedefIlerlemeModel, MevcutModel, OzetGovde, OzetModel, YatirimModel
 from core import repo
 from core.dates import donem_araligi, donem_etiket, donem_kaydir, son_aylar_araligi, today
-from core.summary import hedef_ilerleme, ozetle, yatirim_ilerleme
+from core.summary import alt_hedefler, hedef_ilerleme, ozetle, yatirim_ilerleme
 
 router = APIRouter(prefix="/v1", tags=["summary"])
 
@@ -48,7 +48,7 @@ async def summary(
     ids, butceler, g = await asyncio.gather(
         deps.kapsam(user_id),
         repo.budgets_list(user_id),
-        repo.goal_get(user_id, "yatirim"),
+        repo.goals_list(user_id),
         return_exceptions=True,  # bütçe/hedef tabloları yoksa özet yine dönsün
     )
     if isinstance(ids, BaseException):
@@ -56,7 +56,7 @@ async def summary(
     if isinstance(butceler, BaseException):
         butceler = []
     if isinstance(g, BaseException):
-        g = None
+        g = []
 
     # Dalga 2: iki dönemin işlemleri (ids geldikten sonra, ikisi paralel)
     bu_txs, onceki_txs = await asyncio.gather(
@@ -67,9 +67,10 @@ async def summary(
     hedefler: list[HedefIlerlemeModel] = []
     if butceler:
         hedefler = [HedefIlerlemeModel.from_h(h) for h in hedef_ilerleme(bu_txs, butceler)]
-    hedef_tutar = g.hedef_amount if g else 0.0
+    genel_g = next((x for x in g if x.tip == "yatirim"), None)
+    hedef_tutar = genel_g.hedef_amount if genel_g else 0.0
     # yatırım kartı: hedef olmasa bile bu ay birikeni göster
-    yatirim = YatirimModel(**yatirim_ilerleme(bu_txs, hedef_tutar))
+    yatirim = YatirimModel(**yatirim_ilerleme(bu_txs, hedef_tutar, alt_hedefler(g)))
 
     return OzetModel(
         period=period,

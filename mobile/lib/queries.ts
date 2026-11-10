@@ -112,7 +112,19 @@ export function useDeleteBudget() {
 export function useSetGoal() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (tutar: number) => api.setGoal(tutar),
+    mutationFn: (v: number | { tutar: number; kategori?: string }) =>
+      typeof v === "number" ? api.setGoal(v) : api.setGoal(v.tutar, v.kategori),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["goal"] });
+      qc.invalidateQueries({ queryKey: ["summary"] });
+    },
+  });
+}
+
+export function useDeleteGoal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (kategori?: string) => api.deleteGoal(kategori),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["goal"] });
       qc.invalidateQueries({ queryKey: ["summary"] });
