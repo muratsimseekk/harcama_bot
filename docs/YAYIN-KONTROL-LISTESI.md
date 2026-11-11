@@ -149,6 +149,19 @@ HAZIR (istek tokeni + SSV doğrulama + kredi mantığı), AdMob hesabı/native m
 - [ ] Apple: App Store Connect'te uygulama kaydı, demo hesap, inceleme notları
 - [ ] Google: önce kapalı test (20 kişi/14 gün), sonra production
 
+## Her yeni Android sürümünde (güncelleme penceresi)
+
+Uygulama açılışta `/v1/surum`'daki build numarasını kendi build'iyle karşılaştırır; küçükse
+"Yeni güncelleme var" penceresini gösterir. Değer Render env'inde tutulur, tanımlı değilse 0 = kapalı.
+
+1. Yeni build Play'e yüklenir → incelemeden geçip **testçilere/kullanıcılara ulaşır**
+2. **Ancak o zaman** Render → harcama-api → Environment → `ANDROID_SON_SURUM` = yeni build no
+   (ilk kez: + Add Environment Variable). Save Changes → servis yeniden başlar
+3. Kontrol: https://harcama-api.onrender.com/v1/surum → `{"android": <build>, ...}`
+
+⚠️ Erken ayarlanırsa eski sürümdekiler pencereyi görür ama Play'de güncelleme bulamaz.
+Geçmiş: build 9 (11-10) ve 10 (11-11) — 10 onaylanınca `ANDROID_SON_SURUM=10`.
+
 ## En sık ilk-red sebepleri (kontrol et)
 
 1. Hesap silme yok/çalışmıyor → ✅ yapıldı, gerçek hesapla test kaldı
