@@ -2,17 +2,17 @@ name: Push bildirim cron
 
 # Repo Secrets gerekli: API_URL (ör. https://harcama-api.onrender.com), CRON_SECRET
 
-on:
-  schedule:
-    - cron: "0 18 * * *"   # 21:00 Türkiye — günlük özet
-    - cron: "5 18 * * 0"   # Pazar 21:05 Türkiye — haftalık özet
+# Yalnız elle tetikleme (test). Zamanlama cron-job.org'da: her gün 21:00 {"tur":"gunluk"}
+# (Pazar günü sunucu bunu haftalık özete çevirir). GitHub `schedule` kaldırıldı: zamanlanmış
+# işler saatlerce gecikiyordu (11-11 02:06'da gecikmeli çalışıp herkese hatırlatma attı;
+# haftalık özetler Pazartesi 00:56'da gidiyordu).
 # Bütçe uyarıları push DEĞİL — uygulama içinde gösterilir (mobile/components/ButceUyarici.tsx).
-# NOT: GitHub zamanlanmış işleri yalnız varsayılan dalda çalıştırır; canlıda cron-job.org kullanılıyor.
+on:
   workflow_dispatch:
     inputs:
       tur:
         description: "butce | gunluk | haftalik"
-        default: "butce"
+        default: "gunluk"
 
 jobs:
   tetikle:
@@ -21,18 +21,12 @@ jobs:
       - name: Tur seç
         id: tur
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tur=${{ github.event.inputs.tur }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event.schedule }}" = "5 18 * * 0" ]; then
-            echo "tur=haftalik" >> "$GITHUB_OUTPUT"
-          else
-            echo "tur=gunluk" >> "$GITHUB_OUTPUT"
-          fi
+          echo "tur=${{ github.event.inputs.tur }}" >> "$GITHUB_OUTPUT"
 
       - name: /v1/push/run çağır
         run: |
           curl -sS -X POST "${{ secrets.API_URL }}/v1/push/run" \
             -H "Content-Type: application/json" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}" \
-            -d "{\"tur\":\"${{ steps.tur.outputs.tur }}\"}" \
+            -d "{\"tur\":\"${{ steps.tur.outputs.tur }}\",\"zorla\":true}" \
             --fail-with-body

@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from api.deps import CurrentUser
 from core import push, repo
 from core.config import settings
-from core.dates import donem_araligi, hafta_araligi, today, turkce_tutar
+from core.dates import donem_araligi, hafta_araligi, now, today, turkce_tutar
 from core.summary import hedef_ilerleme
 
 router = APIRouter(prefix="/v1/push", tags=["push"])
@@ -43,12 +43,23 @@ async def token_sil(istek: TokenIstek) -> dict:
 
 class RunIstek(BaseModel):
     tur: str = "butce"  # butce | gunluk | haftalik
+    zorla: bool = False  # elle test: saat penceresini atla
+
+
+# Günlük/haftalık özet yalnız akşam gider. Geç tetiklenen bir cron (GitHub Actions
+# zamanlanmış işleri saatlerce gecikebiliyor — 11-11 02:06'da herkese "bugün kayıt
+# girmedin" gitti) gece yarısından sonra gelirse hiçbir şey göndermez.
+OZET_SAAT_ARALIGI = range(20, 24)  # 20:00–23:59 (Europe/Istanbul)
 
 
 @router.post("/run")
 async def calistir(istek: RunIstek, x_cron_secret: str = Header(default="")) -> dict:
     if not settings.CRON_SECRET or x_cron_secret != settings.CRON_SECRET:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Geçersiz cron sırrı")
+
+    if istek.tur in ("gunluk", "haftalik") and not istek.zorla and now().hour not in OZET_SAAT_ARALIGI:
+        logger.warning("push/run %s saat dışında (%s) — atlandı", istek.tur, now().strftime("%H:%M"))
+        return {"tur": istek.tur, "kullanici": 0, "gonderim": 0, "atlandi": "saat_disi"}
 
     kayitlar = await repo.push_tokens_all()
     kullanici_token: dict[str, list[str]] = {}

@@ -129,9 +129,12 @@ def test_haftalik_mesaj_gecen_hafta_yok():
 
 
 # ---- günlük hatırlatma / Pazar yönlendirmesi ------------------------------- #
-def _gunluk_kur(monkeypatch, islemler, bugun):
+def _gunluk_kur(monkeypatch, islemler, bugun, saat=21):
+    from datetime import datetime
+
     monkeypatch.setattr(rota.settings, "CRON_SECRET", "gizli")
     monkeypatch.setattr(rota, "today", lambda: bugun)
+    monkeypatch.setattr(rota, "now", lambda: datetime(bugun.year, bugun.month, bugun.day, saat, 0))
     gonderilen: list[tuple[str, str]] = []
 
     async def tokens_all():
@@ -185,3 +188,12 @@ def test_pazar_gunluk_cagrisi_haftalik_ozete_doner(client, monkeypatch):
     r = client.post("/v1/push/run", json={"tur": "gunluk"}, headers={"X-Cron-Secret": "gizli"})
     assert r.json()["tur"] == "haftalik"
     assert len(g) == 1 and g[0][0] == "📊 Haftan nasıl geçti?"
+
+
+def test_gece_yarisindan_sonra_gelen_cron_gondermez(client, monkeypatch):
+    # 11-11 02:06: GitHub Actions 5 saat gecikince herkese hatırlatma gitmişti.
+    g = _gunluk_kur(monkeypatch, [_tx(date(2026, 11, 10))], date(2026, 11, 11), saat=2)
+    r = client.post("/v1/push/run", json={"tur": "gunluk"}, headers={"X-Cron-Secret": "gizli"})
+    assert r.json()["atlandi"] == "saat_disi" and g == []
+    r = client.post("/v1/push/run", json={"tur": "gunluk", "zorla": True}, headers={"X-Cron-Secret": "gizli"})
+    assert len(g) == 1  # elle test için zorla

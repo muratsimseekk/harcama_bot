@@ -1,6 +1,7 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli, Yukleniyor } from "@/components/base";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { PastaGrafik } from "@/components/charts";
@@ -10,6 +11,7 @@ import { Metin as Text } from "@/components/Metin";
 import { AY_UZUN, katlaKategori, selamlama, turkceTutar } from "@/lib/format";
 import { useHane, useMevcut, useSummary, useTransactions } from "@/lib/queries";
 import { SP, T, useRenkler } from "@/lib/theme";
+import { useTutarGizle } from "@/lib/tutarGizle";
 import type { Granularity, Yon } from "@/lib/types";
 
 const GRAN: Granularity[] = ["week", "month", "year"];
@@ -49,6 +51,7 @@ export default function AnaSayfa() {
   const hane = useHane();
   const [mevcutDonem, setMevcutDonem] = useState<MevcutDonem>("3");
   const mevcut = useMevcut(Number(mevcutDonem));
+  const { gizli, degistir: gizliDegistir, goster } = useTutarGizle();
 
   const g = ozet.data?.bu_donem;
   const ay = ayOzet.data?.bu_donem;
@@ -87,9 +90,20 @@ export default function AnaSayfa() {
       }
     >
       <Kart style={{ backgroundColor: renk.aksan }}>
-        <Text style={[s.hcEtiket, { color: renk.aksanUstu }]}>Bu ay toplam harcama</Text>
+        <View style={s.hcUst}>
+          <Text style={[s.hcEtiket, { color: renk.aksanUstu }]}>Bu ay toplam harcama</Text>
+          <Pressable
+            onPress={gizliDegistir}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={gizli ? "Tutarları göster" : "Tutarları gizle"}
+            style={s.gozBtn}
+          >
+            <Ionicons name={gizli ? "eye-off-outline" : "eye-outline"} size={20} color={renk.aksanUstu} />
+          </Pressable>
+        </View>
         <Text style={[s.hcDeger, { color: renk.aksanUstu }]}>
-          {turkceTutar(ay?.toplam_gider ?? 0)} ₺
+          {goster(turkceTutar(ay?.toplam_gider ?? 0))} ₺
         </Text>
         <View style={[s.hcAyrac, { backgroundColor: "rgba(255,255,255,0.25)" }]} />
         <View style={s.hcAlt}>
@@ -99,7 +113,7 @@ export default function AnaSayfa() {
           </View>
           <View>
             <Text style={[s.miniEtiket, { color: renk.aksanUstu }]}>Günlük ortalama</Text>
-            <Text style={[s.miniDeger, { color: renk.aksanUstu }]}>{turkceTutar(gunlukOrt)} ₺</Text>
+            <Text style={[s.miniDeger, { color: renk.aksanUstu }]}>{goster(turkceTutar(gunlukOrt))} ₺</Text>
           </View>
         </View>
       </Kart>
@@ -118,18 +132,18 @@ export default function AnaSayfa() {
         />
         <View style={[s.mevcutSatir, { marginTop: SP.md }]}>
           <Text style={[s.mevcutEtiket, { color: renk.textMuted }]}>Gelir</Text>
-          <Text style={[s.mevcutTutar, { color: renk.success }]}>+{turkceTutar(mevcut.data?.gelir ?? 0)} ₺</Text>
+          <Text style={[s.mevcutTutar, { color: renk.success }]}>{gizli ? "" : "+"}{goster(turkceTutar(mevcut.data?.gelir ?? 0))} ₺</Text>
         </View>
         <View style={s.mevcutSatir}>
           <Text style={[s.mevcutEtiket, { color: renk.textMuted }]}>Gider</Text>
-          <Text style={[s.mevcutTutar, { color: renk.blue }]}>−{turkceTutar(mevcut.data?.gider ?? 0)} ₺</Text>
+          <Text style={[s.mevcutTutar, { color: renk.blue }]}>{gizli ? "" : "−"}{goster(turkceTutar(mevcut.data?.gider ?? 0))} ₺</Text>
         </View>
         <View style={[s.mevcutAyrac, { backgroundColor: renk.hairline }]} />
         <View style={s.mevcutSatir}>
           <Text style={[s.mevcutEtiket, { color: renk.text, fontWeight: "700" }]}>Mevcut</Text>
-          <Text style={[s.mevcutNet, { color: net < 0 ? renk.danger : renk.success }]}>
-            {net < 0 ? "−" : ""}
-            {turkceTutar(Math.abs(net))} ₺
+          <Text style={[s.mevcutNet, { color: gizli ? renk.text : net < 0 ? renk.danger : renk.success }]}>
+            {net < 0 && !gizli ? "−" : ""}
+            {goster(turkceTutar(Math.abs(net)))} ₺
           </Text>
         </View>
       </Kart>
@@ -186,6 +200,8 @@ export default function AnaSayfa() {
 const s = StyleSheet.create({
   selam: {},
   selamAlt: { fontSize: 13, fontWeight: "500", marginTop: -2 },
+  hcUst: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  gozBtn: { padding: 2, opacity: 0.9 },
   hcEtiket: { fontSize: 13, fontWeight: "600" },
   hcDeger: { fontSize: 30, fontWeight: "800", marginTop: 2, letterSpacing: -0.6 },
   hcAyrac: { height: 1, marginVertical: SP.md },
