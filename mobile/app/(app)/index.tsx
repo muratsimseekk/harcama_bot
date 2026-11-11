@@ -12,6 +12,7 @@ import { AY_UZUN, katlaKategori, selamlama, turkceTutar } from "@/lib/format";
 import { useHane, useMevcut, useSummary, useTransactions } from "@/lib/queries";
 import { SP, T, useRenkler } from "@/lib/theme";
 import { useTutarGizle } from "@/lib/tutarGizle";
+import { kurMetni, SEMBOL, usePara } from "@/lib/paraBirimi";
 import type { Granularity, Yon } from "@/lib/types";
 
 const GRAN: Granularity[] = ["week", "month", "year"];
@@ -52,6 +53,9 @@ export default function AnaSayfa() {
   const [mevcutDonem, setMevcutDonem] = useState<MevcutDonem>("3");
   const mevcut = useMevcut(Number(mevcutDonem));
   const { gizli, degistir: gizliDegistir, goster } = useTutarGizle();
+  const para = usePara();
+  const sb = SEMBOL[para];
+  const kur = ayOzet.data?.kur;
 
   const g = ozet.data?.bu_donem;
   const ay = ayOzet.data?.bu_donem;
@@ -77,6 +81,7 @@ export default function AnaSayfa() {
     <EkranBasligi
       baslik=""
       zil
+      paraSecici
       onRefresh={() => Promise.all([ozet.refetch(), ayOzet.refetch(), sonlar.refetch(), mevcut.refetch()])}
       ustAlan={
         <View style={s.selam}>
@@ -103,8 +108,13 @@ export default function AnaSayfa() {
           </Pressable>
         </View>
         <Text style={[s.hcDeger, { color: renk.aksanUstu }]}>
-          {goster(turkceTutar(ay?.toplam_gider ?? 0))} ₺
+          {goster(turkceTutar(ay?.toplam_gider ?? 0))} {sb}
         </Text>
+        {para !== "TRY" && kur && (
+          <Text style={[s.kurSatir, { color: renk.aksanUstu }]}>
+            Her kayıt kendi gününün kuruyla · bugün 1 {sb} = {kurMetni(kur.deger)} ₺
+          </Text>
+        )}
         <View style={[s.hcAyrac, { backgroundColor: "rgba(255,255,255,0.25)" }]} />
         <View style={s.hcAlt}>
           <View>
@@ -113,7 +123,7 @@ export default function AnaSayfa() {
           </View>
           <View>
             <Text style={[s.miniEtiket, { color: renk.aksanUstu }]}>Günlük ortalama</Text>
-            <Text style={[s.miniDeger, { color: renk.aksanUstu }]}>{goster(turkceTutar(gunlukOrt))} ₺</Text>
+            <Text style={[s.miniDeger, { color: renk.aksanUstu }]}>{goster(turkceTutar(gunlukOrt))} {sb}</Text>
           </View>
         </View>
       </Kart>
@@ -132,18 +142,18 @@ export default function AnaSayfa() {
         />
         <View style={[s.mevcutSatir, { marginTop: SP.md }]}>
           <Text style={[s.mevcutEtiket, { color: renk.textMuted }]}>Gelir</Text>
-          <Text style={[s.mevcutTutar, { color: renk.success }]}>{gizli ? "" : "+"}{goster(turkceTutar(mevcut.data?.gelir ?? 0))} ₺</Text>
+          <Text style={[s.mevcutTutar, { color: renk.success }]}>{gizli ? "" : "+"}{goster(turkceTutar(mevcut.data?.gelir ?? 0))} {sb}</Text>
         </View>
         <View style={s.mevcutSatir}>
           <Text style={[s.mevcutEtiket, { color: renk.textMuted }]}>Gider</Text>
-          <Text style={[s.mevcutTutar, { color: renk.blue }]}>{gizli ? "" : "−"}{goster(turkceTutar(mevcut.data?.gider ?? 0))} ₺</Text>
+          <Text style={[s.mevcutTutar, { color: renk.blue }]}>{gizli ? "" : "−"}{goster(turkceTutar(mevcut.data?.gider ?? 0))} {sb}</Text>
         </View>
         <View style={[s.mevcutAyrac, { backgroundColor: renk.hairline }]} />
         <View style={s.mevcutSatir}>
           <Text style={[s.mevcutEtiket, { color: renk.text, fontWeight: "700" }]}>Mevcut</Text>
           <Text style={[s.mevcutNet, { color: gizli ? renk.text : net < 0 ? renk.danger : renk.success }]}>
             {net < 0 && !gizli ? "−" : ""}
-            {goster(turkceTutar(Math.abs(net)))} ₺
+            {goster(turkceTutar(Math.abs(net)))} {sb}
           </Text>
         </View>
       </Kart>
@@ -200,6 +210,7 @@ export default function AnaSayfa() {
 const s = StyleSheet.create({
   selam: {},
   selamAlt: { fontSize: 13, fontWeight: "500", marginTop: -2 },
+  kurSatir: { fontSize: 11.5, fontWeight: "600", opacity: 0.85, marginTop: 2 },
   hcUst: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   gozBtn: { padding: 2, opacity: 0.9 },
   hcEtiket: { fontSize: 13, fontWeight: "600" },

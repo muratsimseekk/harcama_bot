@@ -55,7 +55,7 @@ def test_mevcut_varsayilan_son_3_ay(client, monkeypatch):
     assert r.status_code == 200
     assert r.json() == {
         "aylar": 3, "baslangic": "2026-09-01", "bitis": "2026-11-30",
-        "gelir": 5000.0, "gider": 7250.5, "net": -2250.5,
+        "gelir": 5000.0, "gider": 7250.5, "net": -2250.5, "para": "TRY", "kur": None,
     }
     assert yakalanan == {"bas": date(2026, 9, 1), "bit": date(2026, 11, 30)}
 

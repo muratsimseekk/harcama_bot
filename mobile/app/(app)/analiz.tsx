@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { IkiliCubukGrafik } from "@/components/charts";
+import { SEMBOL, usePara } from "@/lib/paraBirimi";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { IlerlemeCubugu } from "@/components/IlerlemeCubugu";
 import { IslemSatiri } from "@/components/IslemSatiri";
@@ -59,6 +60,7 @@ export default function Analiz() {
   const gran = granOf(sekme);
 
   const ozet = useSummary(gran);
+  const para = usePara();
   const g = ozet.data?.bu_donem;
   // Tarih aralığı özetten gelir: özet gelmeden sorgu atılırsa tarihsiz (başka dönemin) kayıtları görünür.
   const txQ = useTransactions(
@@ -118,6 +120,7 @@ export default function Analiz() {
   return (
     <EkranBasligi
       baslik="Analiz"
+      paraSecici
       onRefresh={() => Promise.all([ozet.refetch(), txQ.refetch()])}
       ustAlan={
         g ? (
@@ -125,12 +128,12 @@ export default function Analiz() {
             <View style={s.ggSatir}>
               <View>
                 <Text style={[s.ggEtiket, { color: renk.textMuted }]}>↗ Gelir</Text>
-                <Text style={[s.ggDeger, { color: renk.success }]}>{turkceTutar(g.toplam_gelir)} ₺</Text>
+                <Text style={[s.ggDeger, { color: renk.success }]}>{turkceTutar(g.toplam_gelir)} {SEMBOL[para]}</Text>
               </View>
               <View style={[s.ggAyrac, { backgroundColor: renk.hairline }]} />
               <View>
                 <Text style={[s.ggEtiket, { color: renk.textMuted }]}>↘ Harcama</Text>
-                <Text style={[s.ggDeger, { color: renk.blue }]}>-{turkceTutar(g.toplam_gider)} ₺</Text>
+                <Text style={[s.ggDeger, { color: renk.blue }]}>-{turkceTutar(g.toplam_gider)} {SEMBOL[para]}</Text>
               </View>
             </View>
             {genelHedef && <IlerlemeCubugu oran={genelHedef.oran} hedef={genelHedef.limit} />}

@@ -82,13 +82,20 @@ class IslemModel(BaseModel):
     kaynak: str
     created_at: datetime | None = None
     ekleyen: str | None = None  # hane havuzunda kaydı ekleyen başka üyenin adı
+    # ?para=USD|EUR istenince: işlemin kendi gününün kuruyla karşılığı ve o kur (TL).
+    cevrilmis: float | None = None
+    kur: float | None = None
 
     @classmethod
-    def from_tx(cls, t: Transaction, *, ekleyen: str | None = None) -> IslemModel:
+    def from_tx(
+        cls, t: Transaction, *, ekleyen: str | None = None,
+        cevrilmis: float | None = None, kur: float | None = None,
+    ) -> IslemModel:
         return cls(
             id=t.id, direction=t.direction, tip=t.tip, kategori=t.kategori,
             aciklama=t.aciklama, tutar=t.tutar, para_birimi=t.para_birimi,
             tarih=t.tarih, kaynak=t.kaynak, created_at=t.created_at, ekleyen=ekleyen,
+            cevrilmis=cevrilmis, kur=kur,
         )
 
 
@@ -263,6 +270,17 @@ class OzetGovde(BaseModel):
         )
 
 
+class KurModel(BaseModel):
+    """Gösterimde kullanılan güncel kur: 1 birim `para` = `deger` TL (TCMB döviz satış)."""
+    para: str
+    deger: float
+    tarih: date
+    kaynak: str = "tcmb"
+
+
+Para = Literal["TRY", "USD", "EUR"]
+
+
 class MevcutModel(BaseModel):
     """Gelir − gider = mevcut; ana sayfa kartı (son N takvim ayı)."""
     aylar: int
@@ -271,6 +289,8 @@ class MevcutModel(BaseModel):
     gelir: float
     gider: float
     net: float
+    para: str = "TRY"
+    kur: KurModel | None = None
 
 
 class HedefIlerlemeModel(BaseModel):
@@ -315,6 +335,10 @@ class OzetModel(BaseModel):
     onceki: OzetGovde
     hedefler: list[HedefIlerlemeModel] = Field(default_factory=list)
     yatirim: YatirimModel | None = None
+    # bu_donem/onceki `para` cinsinden (her işlem kendi gününün kuruyla); hedefler ve
+    # yatırım her zaman TL (limitler TL konur).
+    para: str = "TRY"
+    kur: KurModel | None = None
 
 
 # --------------------------------------------------------------------------- #

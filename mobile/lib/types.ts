@@ -36,6 +36,24 @@ export interface Islem {
   kaynak: string;
   created_at: string | null;
   ekleyen?: string | null; // hane havuzunda kaydı ekleyen başka üyenin adı
+  // Dolar/euro gösteriminde: işlemin kendi gününün kuruyla karşılığı ve o günün kuru (TL).
+  cevrilmis?: number | null;
+  kur?: number | null;
+}
+
+/** Gösterimde kullanılan güncel kur: 1 birim `para` = `deger` TL. */
+export interface KurBilgi {
+  para: string;
+  deger: number;
+  tarih: string;
+  kaynak: string;
+}
+
+export interface GuncelKur {
+  tarih: string | null;
+  USD: number | null;
+  EUR: number | null;
+  kaynak: string | null;
 }
 
 export type HaneRol = "owner" | "editor" | "viewer";
@@ -162,6 +180,8 @@ export interface Ozet {
   onceki: OzetGovde;
   hedefler: HedefIlerleme[];
   yatirim: YatirimIlerleme | null;
+  para?: string; // bu_donem/onceki bu cinsten; hedefler/yatırım TL
+  kur?: KurBilgi | null;
 }
 
 export interface Mevcut {
@@ -171,6 +191,8 @@ export interface Mevcut {
   gelir: number;
   gider: number;
   net: number;
+  para?: string;
+  kur?: KurBilgi | null;
 }
 
 export interface Butce {

@@ -32,7 +32,7 @@ export default function Hedefler() {
   const uyari = useUyari();
   const katRenk = useKategoriRenk();
   const router = useRouter();
-  const ozet = useSummary("month");
+  const ozet = useSummary("month", undefined, "TRY"); // limitler/hedefler TL
   const butceler = useBudgets();
   const kategoriler = useCategories();
   const setBudget = useSetBudget();

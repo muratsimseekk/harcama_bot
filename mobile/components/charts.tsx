@@ -4,6 +4,7 @@ import { BarChart, PieChart } from "react-native-gifted-charts";
 import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import { tutarKisa, yuzde } from "@/lib/format";
+import { SEMBOL, usePara } from "@/lib/paraBirimi";
 import { kategoriIkon } from "@/lib/kategoriIkon";
 import { DIGER_ADI, useDagilimRenkleri, useDigerRenk } from "@/lib/kategoriRenk";
 import { R, SP, T, useRenkler } from "@/lib/theme";
@@ -29,6 +30,7 @@ export function PastaGrafik<D extends Dilim>({
   const renk = useRenkler();
   const renkDizi = useDagilimRenkleri();
   const digerRenk = useDigerRenk();
+  const para = usePara();
   const dolu = dilimler.filter((d) => d.tutar > 0);
   const paleti = renkDizi(dolu.length);
   let hueIdx = 0;
@@ -94,7 +96,7 @@ export function PastaGrafik<D extends Dilim>({
                 TOPLAM
               </Text>
               <Text style={{ color: renk.text, fontSize: 17, fontWeight: "800", letterSpacing: -0.3 }}>
-                {tutarKisa(toplam)} ₺
+                {tutarKisa(toplam)} {SEMBOL[para]}
               </Text>
             </View>
           )}
@@ -136,7 +138,7 @@ export function PastaGrafik<D extends Dilim>({
                 </Text>
                 <Text style={[s.oran, { color: renk.textFaint }]}>{yuzde(d.oran)}</Text>
                 <Text style={[s.tutar, { color: renk.text }]} numberOfLines={1}>
-                  {tutarKisa(d.tutar)} ₺
+                  {tutarKisa(d.tutar)} {SEMBOL[para]}
                 </Text>
                 {onDilimSec && <Ionicons name="chevron-forward" size={15} color={renk.textFaint} />}
               </Pressable>

@@ -204,14 +204,16 @@ async def list_period(
 
 async def donem_toplamlari(
     user_id: str | list[str], baslangic: date, bitis: date,
+    cevir: Callable[[date, float], float] | None = None,
 ) -> tuple[float, float]:
     """Dönemin (gelir, gider) toplamı. Sayfalı: PostgREST tek yanıtta en çok 1000 satır döndürür,
-    uzun dönemde toplam sessizce eksik çıkmasın."""
+    uzun dönemde toplam sessizce eksik çıkmasın. `cevir(tarih, tutar)` verilirse her satır
+    önce çevrilir (döviz gösterimi: kendi gününün kuruyla)."""
     def _run() -> tuple[float, float]:
         gelir = gider = 0.0
         bas = 0
         while True:
-            q = _db().table("transactions").select("direction,amount")
+            q = _db().table("transactions").select("direction,amount,occurred_on")
             satirlar = (
                 _kullanici_filtresi(q, user_id)
                 .is_("deleted_at", "null")
@@ -224,6 +226,8 @@ async def donem_toplamlari(
             )
             for r in satirlar:
                 tutar = float(r.get("amount") or 0)
+                if cevir is not None:
+                    tutar = cevir(date.fromisoformat(r["occurred_on"]), tutar)
                 if r.get("direction") == "gelir":
                     gelir += tutar
                 else:
@@ -865,5 +869,37 @@ async def kullanici_sil(user_id: str) -> None:
             db.auth.admin.delete_user(user_id)
         except Exception as e:
             logger.warning("kullanici_sil auth: %s", e)
+
+    await _call(_run)
+
+
+# --------------------------------------------------------------------------- #
+# kurlar (TCMB günlük döviz kurları — core/kur.py)
+# --------------------------------------------------------------------------- #
+async def kurlar_aralik(bas: date, bit: date) -> list:
+    from core.kur import Kur
+
+    def _run() -> list[dict]:
+        return (
+            _db().table("kurlar").select("*")
+            .gte("tarih", bas.isoformat()).lte("tarih", bit.isoformat())
+            .order("tarih").execute().data or []
+        )
+
+    return [
+        Kur(tarih=date.fromisoformat(r["tarih"]), USD=float(r["usd"]), EUR=float(r["eur"]),
+            kaynak=r.get("kaynak") or "tcmb")
+        for r in await _call(_run)
+    ]
+
+
+async def kurlar_yaz(kurlar: list) -> None:
+    satirlar = [
+        {"tarih": k.tarih.isoformat(), "usd": round(k.USD, 6), "eur": round(k.EUR, 6), "kaynak": k.kaynak}
+        for k in kurlar
+    ]
+
+    def _run() -> None:
+        _db().table("kurlar").upsert(satirlar, on_conflict="tarih").execute()
 
     await _call(_run)

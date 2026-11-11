@@ -1,4 +1,5 @@
 import { durumMesaji, hataRaporla } from "./hata";
+import type { Para } from "./paraBirimi";
 import { supabase } from "./supabase";
 import type {
   Aday,
@@ -7,6 +8,7 @@ import type {
   Butce,
   CaptureYanit,
   Granularity,
+  GuncelKur,
   Hane,
   HaneRol,
   Hedef,
@@ -141,8 +143,9 @@ export const api = {
     return jsonReq<Islem[]>("/v1/transactions", "POST", { candidates });
   },
 
-  listTransactions(f: IslemFiltre = {}): Promise<Islem[]> {
+  listTransactions(f: IslemFiltre = {}, para: Para = "TRY"): Promise<Islem[]> {
     const q = new URLSearchParams();
+    if (para !== "TRY") q.set("para", para);
     if (f.limit) q.set("limit", String(f.limit));
     if (f.from) q.set("from", f.from);
     if (f.to) q.set("to", f.to);
@@ -204,14 +207,20 @@ export const api = {
     return jsonReq("/v1/hane", "DELETE");
   },
 
-  summary(period: Granularity, ref?: string): Promise<Ozet> {
+  summary(period: Granularity, ref?: string, para: Para = "TRY"): Promise<Ozet> {
     const q = new URLSearchParams({ period });
     if (ref) q.set("ref", ref);
+    if (para !== "TRY") q.set("para", para);
     return jsonReq<Ozet>(`/v1/summary?${q.toString()}`, "GET");
   },
 
-  mevcut(aylar: number): Promise<Mevcut> {
-    return jsonReq<Mevcut>(`/v1/summary/mevcut?aylar=${aylar}`, "GET");
+  mevcut(aylar: number, para: Para = "TRY"): Promise<Mevcut> {
+    return jsonReq<Mevcut>(`/v1/summary/mevcut?aylar=${aylar}${para !== "TRY" ? `&para=${para}` : ""}`, "GET");
+  },
+
+  /** Güncel TCMB kurları (1 USD / 1 EUR kaç TL). */
+  kur(): Promise<GuncelKur> {
+    return jsonReq<GuncelKur>("/v1/kur", "GET");
   },
 
   listCategories(): Promise<Kategori[]> {

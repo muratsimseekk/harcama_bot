@@ -10,6 +10,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ParaSecici } from "@/components/ParaSecici";
 import { Metin as Text } from "@/components/Metin";
 import { useNotifications } from "@/lib/queries";
 import { SP, T, useRenkler } from "@/lib/theme";
@@ -23,6 +24,7 @@ export function EkranBasligi({
   geri = false,
   onGeri,
   zil = true,
+  paraSecici = false,
   onZil,
   ustAlan,
   children,
@@ -35,6 +37,8 @@ export function EkranBasligi({
   /** Geri okuna basınca çalışır; verilmezse `router.back()`. */
   onGeri?: () => void;
   zil?: boolean;
+  /** Geri oku yoksa sol üstte ₺ / $ / € seçici. */
+  paraSecici?: boolean;
   onZil?: () => void;
   ustAlan?: React.ReactNode;
   children: React.ReactNode;
@@ -74,6 +78,8 @@ export function EkranBasligi({
               <Pressable onPress={onGeri ?? (() => router.back())} hitSlop={12}>
                 <Ionicons name="chevron-back" size={26} color={renk.text} />
               </Pressable>
+            ) : paraSecici ? (
+              <ParaSecici />
             ) : (
               <View style={{ width: 26 }} />
             )}

@@ -1,12 +1,15 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type IslemFiltre } from "./api";
+import { type Para, usePara } from "./paraBirimi";
 import type { Aday, Granularity, HaneRol, Kapsam, Kategori, KategoriTip } from "./types";
 
 export function useTransactions(filtre: IslemFiltre = { limit: 20 }, secenek?: { enabled?: boolean }) {
+  const para = usePara();
   return useQuery({
-    queryKey: ["transactions", filtre],
-    queryFn: () => api.listTransactions(filtre),
+    queryKey: ["transactions", filtre, para],
+    queryFn: () => api.listTransactions(filtre, para),
     enabled: secenek?.enabled,
+    placeholderData: keepPreviousData, // para birimi değişirken liste boşalmasın
   });
 }
 
@@ -14,18 +17,28 @@ export function useMe() {
   return useQuery({ queryKey: ["me"], queryFn: () => api.me() });
 }
 
-export function useSummary(period: Granularity, ref?: string) {
+/** `paraZorla`: bütçe/hedef ekranları gibi her zaman TL olması gereken yerler için. */
+export function useSummary(period: Granularity, ref?: string, paraZorla?: Para) {
+  const secili = usePara();
+  const para = paraZorla ?? secili;
   return useQuery({
-    queryKey: ["summary", period, ref ?? "now"],
-    queryFn: () => api.summary(period, ref),
+    queryKey: ["summary", period, ref ?? "now", para],
+    queryFn: () => api.summary(period, ref, para),
+    placeholderData: keepPreviousData,
   });
+}
+
+/** Güncel TCMB kuru — para birimi seçicide gösterilir. */
+export function useKur() {
+  return useQuery({ queryKey: ["kur"], queryFn: () => api.kur(), staleTime: 30 * 60 * 1000 });
 }
 
 /** "summary" altında: işlem değişince özetle birlikte tazelenir. */
 export function useMevcut(aylar: number) {
+  const para = usePara();
   return useQuery({
-    queryKey: ["summary", "mevcut", aylar],
-    queryFn: () => api.mevcut(aylar),
+    queryKey: ["summary", "mevcut", aylar, para],
+    queryFn: () => api.mevcut(aylar, para),
     placeholderData: keepPreviousData, // dönem değişirken kart boşalıp zıplamasın
   });
 }

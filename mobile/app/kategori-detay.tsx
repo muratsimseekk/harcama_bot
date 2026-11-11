@@ -6,6 +6,7 @@ import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { tarihEtiket, turkceTutar } from "@/lib/format";
+import { islemTutari, paraMetni, usePara } from "@/lib/paraBirimi";
 import { useSummary, useTransactions } from "@/lib/queries";
 import { SP, T, useRenkler } from "@/lib/theme";
 import type { Granularity, Islem, Yon } from "@/lib/types";
@@ -29,8 +30,11 @@ export default function KategoriDetay() {
     { enabled: !!ozet.data },
   );
 
+  const para = usePara();
   const kayitlar = liste.data ?? [];
-  const toplam = kayitlar.reduce((t, x) => t + x.tutar, 0);
+  // Döviz modunda her kayıt kendi gününün kuruyla (çevrilemeyen olursa toplam TL kalır)
+  const dovizli = para !== "TRY" && kayitlar.every((x) => x.cevrilmis != null);
+  const toplam = kayitlar.reduce((t, x) => t + (dovizli ? islemTutari(x, para).deger : x.tutar), 0);
   const bolumler = useMemo(() => {
     const map = new Map<string, Islem[]>();
     for (const t of liste.data ?? []) {
@@ -58,7 +62,7 @@ export default function KategoriDetay() {
           {DONEM[gran]} · {yon === "gelir" ? "toplam gelir" : "toplam harcama"}
         </Text>
         <Text style={[s.toplam, { color: yon === "gelir" ? renk.success : renk.text }]}>
-          {turkceTutar(toplam)} ₺
+          {paraMetni(toplam, dovizli ? para : "TRY")}
         </Text>
         <Text style={[s.adet, { color: renk.textFaint }]}>{kayitlar.length} kayıt</Text>
       </Kart>

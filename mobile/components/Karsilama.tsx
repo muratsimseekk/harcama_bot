@@ -20,7 +20,7 @@ import { golge, PALET, R, SP, T, useRenkler } from "@/lib/theme";
 const LOGO = require("../assets/icon.png");
 
 /**
- * İlk açılış karşılaması — 4 canlı sahne (görsel dosyası yok, hepsi kodla çizilir:
+ * İlk açılış karşılaması — 5 canlı sahne (görsel dosyası yok, hepsi kodla çizilir:
  * koyu modda kendiliğinden uyum sağlar, her ekranda keskin). Her sahnenin animasyonu
  * o sayfaya gelindiğinde baştan oynar. Vurgu: sesli yapay zeka kaydı (2. sahne).
  */
@@ -47,6 +47,13 @@ const SLAYTLAR: {
     metin:
       "Aylık ve kategori bütçeleri belirle; sınıra yaklaşınca seni uyaralım. Birikim hedefini adım adım takip et.",
     Sahne: SahneButce,
+  },
+  {
+    etiket: "TCMB KURUYLA DOLAR & EURO",
+    baslik: "Her kayıt kendi gününün kuruyla",
+    metin:
+      "Tek dokunuşla tüm uygulamayı dolar ya da euroya çevir. Her harcama yapıldığı günün TCMB kuruyla hesaplanır; enflasyondan arınmış gerçek tabloyu gör.",
+    Sahne: SahneDoviz,
   },
   {
     baslik: "Paranın izini sür",
@@ -468,7 +475,101 @@ function SahneButce({ aktif }: { aktif: boolean }) {
 }
 
 // ---------------------------------------------------------------------------
-// 4) Analiz grafiği + akşam özeti bildirimi
+// 4) Döviz — aynı 1.000 ₺, iki ayrı günün kuruyla (gerçek TCMB kurları)
+// ---------------------------------------------------------------------------
+
+const DOVIZ_ORNEK = [
+  { gun: "5 Ocak 2026", kur: 43.04, gecikme: 450 },
+  { gun: "11 Kasım 2026", kur: 50.23, gecikme: 800 },
+];
+
+function SahneDoviz({ aktif }: { aktif: boolean }) {
+  const renk = useRenkler();
+  const secici = useGiris(aktif, 0);
+  const sec = useGiris(aktif, 250, 500, false);
+  const cip = useGiris(aktif, 1250);
+  const yazi = (x: number) => x.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  return (
+    <View style={s.sahneIc}>
+      <Animated.View style={[s.paraSecici, { backgroundColor: renk.cardAlt }, belir(secici)]}>
+        {(["₺", "$", "€"] as const).map((sb) => {
+          const dolar = sb === "$";
+          return (
+            <Animated.View
+              key={sb}
+              style={[
+                s.paraSecenek,
+                dolar && {
+                  backgroundColor: sec.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["rgba(0,0,0,0)", renk.aksan],
+                  }),
+                },
+              ]}
+            >
+              <Text style={{ color: dolar ? renk.text : renk.textMuted, fontSize: 17, fontWeight: "800" }}>{sb}</Text>
+            </Animated.View>
+          );
+        })}
+      </Animated.View>
+
+      {DOVIZ_ORNEK.map((o) => (
+        <DovizKart key={o.gun} gun={o.gun} kur={o.kur} gecikme={o.gecikme} aktif={aktif} yazi={yazi} />
+      ))}
+
+      <Animated.View style={[s.aiCip, { backgroundColor: renk.aksanSoft }, belir(cip, 6)]}>
+        <Ionicons name="sparkles" size={14} color={renk.aksan} />
+        <Text style={{ color: renk.aksan, fontSize: 12.5, fontWeight: "800" }}>
+          Aynı 1.000 ₺ · farklı gün · farklı dolar
+        </Text>
+      </Animated.View>
+    </View>
+  );
+}
+
+function DovizKart({
+  gun,
+  kur,
+  gecikme,
+  aktif,
+  yazi,
+}: {
+  gun: string;
+  kur: number;
+  gecikme: number;
+  aktif: boolean;
+  yazi: (x: number) => string;
+}) {
+  const renk = useRenkler();
+  const v = useGiris(aktif, gecikme);
+  return (
+    <Animated.View style={[{ alignSelf: "stretch" }, belir(v)]}>
+      <Kart style={{ paddingVertical: SP.md }}>
+        <View style={s.satirUst}>
+          <View style={s.kartBaslik}>
+            <View style={[s.islemIkon, { backgroundColor: renk.warnSoft }]}>
+              <Ionicons name="cart-outline" size={17} color={renk.warn} />
+            </View>
+            <View>
+              <Text style={{ color: renk.text, fontSize: 15, fontWeight: "700" }}>Market</Text>
+              <Text style={{ color: renk.textFaint, fontSize: 12, fontWeight: "600" }}>{gun}</Text>
+            </View>
+          </View>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={{ color: renk.blue, fontSize: 16, fontWeight: "800" }}>-{yazi(1000 / kur)} $</Text>
+            <Text style={{ color: renk.textFaint, fontSize: 11.5, fontWeight: "600" }}>
+              1.000 ₺ · 1 $ = {yazi(kur)} ₺
+            </Text>
+          </View>
+        </View>
+      </Kart>
+    </Animated.View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 5) Analiz grafiği + akşam özeti bildirimi
 // ---------------------------------------------------------------------------
 
 const GUNLER = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
@@ -618,6 +719,9 @@ const s = StyleSheet.create({
     paddingVertical: 6,
     marginTop: SP.md,
   },
+
+  paraSecici: { flexDirection: "row", borderRadius: R.pill, padding: 4, gap: 4 },
+  paraSecenek: { width: 52, height: 38, borderRadius: R.pill, alignItems: "center", justifyContent: "center" },
 
   bildirim: { flexDirection: "row", gap: SP.md, alignItems: "flex-start", padding: SP.md },
   bildirimLogo: { width: 34, height: 34, borderRadius: 9 },

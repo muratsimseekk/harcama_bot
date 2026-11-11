@@ -7,7 +7,8 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from api import deps, usage
 from api.deps import CurrentUser
-from api.schemas import IslemGuncelleIstek, IslemModel, IslemOlusturIstek
+from api.schemas import IslemGuncelleIstek, IslemModel, IslemOlusturIstek, Para
+from core import kur as kurlar
 from core import repo
 from core.config import settings
 
@@ -47,6 +48,7 @@ async def listele(
     tip: str | None = Query(default=None),
     direction: str | None = Query(default=None),
     kategori: list[str] | None = Query(default=None),
+    para: Para = Query(default="TRY"),
 ) -> list[IslemModel]:
     uyelik = await deps.hane_uyeligi(user_id)
     ids = [user_id] if uyelik is None else await repo.hane_uye_idleri(uyelik.household_id)
@@ -71,10 +73,17 @@ async def listele(
     ad_map: dict[str, str] = {}
     if uyelik is not None:
         ad_map = {u.user_id: u.ad for u in await repo.hane_uyeleri(uyelik.household_id)}
-    return [
-        IslemModel.from_tx(t, ekleyen=ad_map.get(t.user_id) if t.user_id != user_id else None)
-        for t in txs
-    ]
+    tablo = await kurlar.kurlar(min(t.tarih for t in txs), max(t.tarih for t in txs)) if para != "TRY" and txs else {}
+
+    def model(t):
+        ekleyen = ad_map.get(t.user_id) if t.user_id != user_id else None
+        k = tablo.get(t.tarih)
+        if k is None:
+            return IslemModel.from_tx(t, ekleyen=ekleyen)
+        deger = k.deger(para)
+        return IslemModel.from_tx(t, ekleyen=ekleyen, cevrilmis=round(t.tutar / deger, 2), kur=round(deger, 4))
+
+    return [model(t) for t in txs]
 
 
 async def _sahiplik(tx_id: str, user_id: str):

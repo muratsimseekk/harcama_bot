@@ -19,7 +19,7 @@ import type { HedefIlerleme } from "@/lib/types";
 export function ButceUyarici() {
   const { session } = useAuth();
   const uid = session?.user?.id;
-  const ozet = useSummary("month");
+  const ozet = useSummary("month", undefined, "TRY");
   const uyari = useUyari();
   const calisiyor = useRef(false);
 

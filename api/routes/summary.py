@@ -8,7 +8,8 @@ from fastapi import APIRouter, Query
 
 from api import deps
 from api.deps import CurrentUser
-from api.schemas import HedefIlerlemeModel, MevcutModel, OzetGovde, OzetModel, YatirimModel
+from api.schemas import HedefIlerlemeModel, KurModel, MevcutModel, OzetGovde, OzetModel, Para, YatirimModel
+from core import kur as kurlar
 from core import repo
 from core.dates import donem_araligi, donem_etiket, donem_kaydir, son_aylar_araligi, today
 from core.summary import alt_hedefler, hedef_ilerleme, ozetle, yatirim_ilerleme
@@ -16,18 +17,46 @@ from core.summary import alt_hedefler, hedef_ilerleme, ozetle, yatirim_ilerleme
 router = APIRouter(prefix="/v1", tags=["summary"])
 
 
+async def kur_modeli(para: str) -> KurModel | None:
+    """Gösterilen güncel kur (bugün ya da son iş günü)."""
+    if para == "TRY":
+        return None
+    k = await kurlar.guncel_kur()
+    return KurModel(para=para, deger=round(k.deger(para), 4), tarih=k.tarih, kaynak=k.kaynak) if k else None
+
+
+@router.get("/kur")
+async def guncel_kur() -> dict:
+    """Güncel TCMB döviz satış kurları (herkese açık): 1 USD / 1 EUR kaç TL."""
+    k = await kurlar.guncel_kur()
+    if not k:
+        return {"tarih": None, "USD": None, "EUR": None, "kaynak": None}
+    return {"tarih": k.tarih, "USD": round(k.USD, 4), "EUR": round(k.EUR, 4), "kaynak": k.kaynak}
+
+
 @router.get("/summary/mevcut", response_model=MevcutModel)
 async def mevcut(
     user_id: CurrentUser,
     aylar: int = Query(default=3, ge=1, le=12),
+    para: Para = Query(default="TRY"),
 ) -> MevcutModel:
     """Son `aylar` takvim ayının (içinde bulunulan ay dahil) gelir − gider durumu."""
     bas, bit = son_aylar_araligi(aylar, today())
     ids = await deps.kapsam(user_id)
-    gelir, gider = await repo.donem_toplamlari(ids, bas, bit)
+    if para == "TRY":
+        gelir, gider = await repo.donem_toplamlari(ids, bas, bit)
+    else:
+        tablo = await kurlar.kurlar(bas, bit)
+
+        def cevir(g: date, tutar: float) -> float:
+            k = tablo.get(g)
+            return tutar / k.deger(para) if k else tutar
+
+        gelir, gider = await repo.donem_toplamlari(ids, bas, bit, cevir)
     return MevcutModel(
         aylar=aylar, baslangic=bas, bitis=bit,
         gelir=gelir, gider=gider, net=round(gelir - gider, 2),
+        para=para, kur=await kur_modeli(para),
     )
 
 
@@ -36,6 +65,7 @@ async def summary(
     user_id: CurrentUser,
     period: str = Query(default="month", pattern="^(week|month|year)$"),
     ref: date | None = Query(default=None),
+    para: Para = Query(default="TRY"),
 ) -> OzetModel:
     ref = ref or today()
     bas, bit = donem_araligi(period, ref)  # type: ignore[arg-type]
@@ -72,13 +102,21 @@ async def summary(
     # yatırım kartı: hedef olmasa bile bu ay birikeni göster
     yatirim = YatirimModel(**yatirim_ilerleme(bu_txs, hedef_tutar, alt_hedefler(g)))
 
+    # Gösterim para birimi: her işlem kendi gününün kuruyla (hedef/yatırım TL kalır).
+    gbu, gonceki = bu_txs, onceki_txs
+    if para != "TRY":
+        tablo = await kurlar.kurlar(min(bas, obas), max(bit, obit))
+        gbu, gonceki = kurlar.cevir(bu_txs, para, tablo), kurlar.cevir(onceki_txs, para, tablo)
+
     return OzetModel(
         period=period,
         baslangic=bas,
         bitis=bit,
         etiket=donem_etiket(period, ref),  # type: ignore[arg-type]
-        bu_donem=OzetGovde.from_ozet(ozetle(bu_txs)),
-        onceki=OzetGovde.from_ozet(ozetle(onceki_txs)),
+        bu_donem=OzetGovde.from_ozet(ozetle(gbu)),
+        onceki=OzetGovde.from_ozet(ozetle(gonceki)),
         hedefler=hedefler,
         yatirim=yatirim,
+        para=para,
+        kur=await kur_modeli(para),
     )

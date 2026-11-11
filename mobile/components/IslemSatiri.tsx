@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from "react-native";
 import { Metin as Text } from "@/components/Metin";
 import { turkceTutar } from "@/lib/format";
+import { islemTutari, SEMBOL, usePara } from "@/lib/paraBirimi";
 import { kategoriIkon } from "@/lib/kategoriIkon";
 import { useKategoriRenk } from "@/lib/kategoriRenk";
 import { R, SP, useRenkler } from "@/lib/theme";
@@ -18,6 +19,9 @@ export function IslemSatiri({ islem, onPress }: { islem: Islem; onPress?: () => 
   const renk = useRenkler();
   const katRenk = useKategoriRenk();
   const gelir = islem.direction === "gelir";
+  const para = usePara();
+  const g = islemTutari(islem, para);
+  const doviz = g.para !== "TRY";
   return (
     <Pressable
       onPress={onPress}
@@ -38,10 +42,19 @@ export function IslemSatiri({ islem, onPress }: { islem: Islem; onPress?: () => 
         {islem.kategori}
       </Text>
       <View style={[s.ayrac, { backgroundColor: renk.hairline }]} />
-      <Text style={[s.tutar, { color: gelir ? renk.text : renk.blue }]} numberOfLines={1}>
-        {gelir ? "" : "-"}
-        {turkceTutar(islem.tutar)}
-      </Text>
+      <View style={s.tutarKutu}>
+        <Text style={[s.tutar, { color: gelir ? renk.text : renk.blue }]} numberOfLines={1}>
+          {gelir ? "" : "-"}
+          {turkceTutar(g.deger)}
+          {doviz ? ` ${SEMBOL[g.para]}` : ""}
+        </Text>
+        {doviz && (
+          // O günün kuruyla çevrildiği görünsün: asıl TL tutarı altta
+          <Text style={[s.tutarAlt, { color: renk.textFaint }]} numberOfLines={1}>
+            {turkceTutar(islem.tutar)} ₺
+          </Text>
+        )}
+      </View>
     </Pressable>
   );
 }
@@ -53,6 +66,8 @@ const s = StyleSheet.create({
   tarih: { fontSize: 11.5, fontWeight: "600", marginTop: 2 },
   ayrac: { width: StyleSheet.hairlineWidth, alignSelf: "stretch", marginVertical: 4 },
   kategori: { flex: 1, fontSize: 12.5, fontWeight: "500", textAlign: "center" },
-  tutar: { width: 78, textAlign: "right", fontSize: 14, fontWeight: "700" },
+  tutarKutu: { width: 78, alignItems: "flex-end" },
+  tutar: { textAlign: "right", fontSize: 14, fontWeight: "700" },
+  tutarAlt: { textAlign: "right", fontSize: 10.5, fontWeight: "600", marginTop: 1 },
   _r: { borderRadius: R.sm },
 });

@@ -6,6 +6,7 @@ import { Cip } from "@/components/base";
 import { Buton } from "@/components/Buton";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
+import { islemTutari, paraMetni, usePara } from "@/lib/paraBirimi";
 import { api } from "@/lib/api";
 import { tarihEtiket, turkceTutar } from "@/lib/format";
 import { useCategories } from "@/lib/queries";
@@ -97,17 +98,23 @@ export default function Ara() {
   });
   const [bit, setBit] = useState(() => iso(new Date()));
   const [sonuc, setSonuc] = useState<Islem[] | null>(null);
+  const para = usePara();
+  // Toplam yalnız tüm sonuçlar çevrilebildiyse dövizde gösterilir
+  const aramaPara = para !== "TRY" && (sonuc ?? []).every((t) => t.cevrilmis != null) ? para : "TRY";
   const [yukleniyor, setYukleniyor] = useState(false);
 
   async function ara() {
     setYukleniyor(true);
     try {
       const tarih = aralikTarihleri(aralik, bas, bit);
-      const hepsi = await api.listTransactions({
-        limit: tarih ? 500 : 400,
-        direction: yon ?? undefined,
-        ...(tarih ? { from: tarih[0], to: tarih[1] } : {}),
-      });
+      const hepsi = await api.listTransactions(
+        {
+          limit: tarih ? 500 : 400,
+          direction: yon ?? undefined,
+          ...(tarih ? { from: tarih[0], to: tarih[1] } : {}),
+        },
+        para,
+      );
       const s = q.trim().toLocaleLowerCase("tr");
       setSonuc(
         hepsi.filter(
@@ -180,9 +187,9 @@ export default function Ara() {
             <Text style={[T.label, { color: renk.textMuted, marginBottom: SP.sm }]}>
               {sonuc.length} sonuç
               {sonuc.some((t) => t.direction === "gider") &&
-                ` · Harcama ₺${turkceTutar(sonuc.filter((t) => t.direction === "gider").reduce((a, t) => a + t.tutar, 0))}`}
+                ` · Harcama ${paraMetni(sonuc.filter((t) => t.direction === "gider").reduce((a, t) => a + islemTutari(t, aramaPara).deger, 0), aramaPara)}`}
               {sonuc.some((t) => t.direction === "gelir") &&
-                ` · Gelir ₺${turkceTutar(sonuc.filter((t) => t.direction === "gelir").reduce((a, t) => a + t.tutar, 0))}`}
+                ` · Gelir ${paraMetni(sonuc.filter((t) => t.direction === "gelir").reduce((a, t) => a + islemTutari(t, aramaPara).deger, 0), aramaPara)}`}
             </Text>
             {sonuc.map((t) => (
               <IslemSatiri key={t.id} islem={t} />
