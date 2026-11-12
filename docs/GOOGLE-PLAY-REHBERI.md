@@ -136,9 +136,14 @@ edebilir: **Evet** (uygulama içi + 2.2'deki web sayfası URL'si)
 | Ses → Ses kayıtları | ✓ | ✗ | **Evet (geçici işleniyor)** | İsteğe bağlı | Uygulama işlevi |
 | Uygulama etkinliği → Diğer kullanıcı içeriği (yazılı girdi) | ✓ | ✗ | Hayır | İsteğe bağlı | Uygulama işlevi |
 | Uygulama bilgisi ve performans → Kilitlenme günlükleri + Tanılama | ✓ | ✗ | Hayır | Zorunlu | Analiz |
+| Uygulama etkinliği → **Uygulama etkileşimleri** (PostHog olayları, build 11+) | ✓ | ✗ | Hayır | **İsteğe bağlı** (Ayarlar'dan kapatılabilir) | Analiz |
+| Cihaz veya diğer kimlikler → (PostHog kullanıcı uuid'si — Supabase id) | mevcut satıra dahil | ✗ | Hayır | İsteğe bağlı | Analiz |
 | Cihaz veya diğer kimlikler (reklam kimliği, push jetonu) | ✓ | ✓ (AdMob) | Hayır | Zorunlu | Reklam, Uygulama işlevi |
 
-> Not: Groq/Supabase/Render/Sentry "hizmet sağlayıcı" sayılır → Google'ın tanımında
+> Build 11 ile formu güncelle: "Uygulama etkileşimleri" eklendi (yukarıda). PostHog AB
+> sunucusu, GeoIP kapalı, oturum kaydı kapalı.
+>
+> Not: Groq/Supabase/Render/Sentry/PostHog "hizmet sağlayıcı" sayılır → Google'ın tanımında
 > "paylaşım" değildir. Yalnız AdMob reklam için paylaşım olarak işaretlenir.
 
 ### 3.4 👤 Mağaza girişi (Grow → Store presence → Main store listing)

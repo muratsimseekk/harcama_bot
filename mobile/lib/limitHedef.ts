@@ -7,6 +7,7 @@ import {
   useSetGoal,
   useSummary,
 } from "./queries";
+import { olay } from "./analitik";
 import type { LimitTur, Yon } from "./types";
 
 export interface MevcutLimitHedef {
@@ -51,6 +52,7 @@ export function useLimitHedef(kategori: string, yon: Yon) {
   }
 
   async function kaydet(n: number, tur: LimitTur) {
+    olay("budget_rule_saved", { tur, yon, yatirim: yatirimMi, yeni: !mevcut });
     if (tur === "hedef" && yatirimMi) {
       await setGoal.mutateAsync({ tutar: n, kategori });
       if (butce) await delBudget.mutateAsync(butce.id);

@@ -110,7 +110,7 @@ function Hanesiz({ pro, uyeAdi }: { pro: boolean; uyeAdi: string }) {
               </Text>
             </View>
             <View style={{ height: SP.sm }} />
-            <Buton yazi="Pro'ya Geç" onPress={() => router.push("/uyelik")} />
+            <Buton yazi="Pro'ya Geç" onPress={() => router.push({ pathname: "/uyelik", params: { neden: "hane" } })} />
           </>
         )}
       </Kart>

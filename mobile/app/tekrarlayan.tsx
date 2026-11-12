@@ -31,7 +31,7 @@ export default function TekrarlayanEkrani() {
     if (e instanceof ApiError && e.status === 402) {
       uyari("Pro gerekli", "Free planda en çok 3 tekrarlayan kayıt açık olabilir. Pro'da sınır yok.", [
         { yazi: "Tamam", stil: "vazgec" },
-        { yazi: "Pro'ya bak", onPress: () => router.push("/uyelik") },
+        { yazi: "Pro'ya bak", onPress: () => router.push({ pathname: "/uyelik", params: { neden: "tekrarlayan" } }) },
       ]);
     } else {
       uyari("İşlem yapılamadı", hataMesaji(e, undefined, { ekran: "tekrarlayan" }));

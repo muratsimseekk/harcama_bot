@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Metin as Text } from "@/components/Metin";
+import { olay } from "@/lib/analitik";
 import { AY_UZUN, tutarKisa } from "@/lib/format";
 import { golge, PALET, R, SP, T, useRenkler } from "@/lib/theme";
 
@@ -64,7 +65,16 @@ const SLAYTLAR: {
 ];
 
 /** `onBitir`: "Atla" ya da son sayfadaki "Hemen Başla". */
-export function Karsilama({ onBitir, bitirYazi = "Hemen Başla" }: { onBitir: () => void; bitirYazi?: string }) {
+export function Karsilama({
+  onBitir,
+  bitirYazi = "Hemen Başla",
+  olcum = false,
+}: {
+  onBitir: () => void;
+  bitirYazi?: string;
+  /** İlk açılış karşılamasında true: slayt/bitiş olayları gönderilir (Ayarlar'daki tekrar izleme sayılmaz). */
+  olcum?: boolean;
+}) {
   const renk = useRenkler();
   const { width, height } = useWindowDimensions();
   // Kısa ekranlarda sahne küçülsün, yazılar ve düğme ekranda kalsın
@@ -73,7 +83,14 @@ export function Karsilama({ onBitir, bitirYazi = "Hemen Başla" }: { onBitir: ()
   const [i, setI] = useState(0);
   const son = i === SLAYTLAR.length - 1;
 
-  const bitir = onBitir;
+  useEffect(() => {
+    if (olcum) olay("onboarding_slide_viewed", { slayt: i + 1 });
+  }, [i, olcum]);
+
+  const bitir = () => {
+    if (olcum) olay("onboarding_finished", { atlandi: !son, slayt: i + 1, toplam: SLAYTLAR.length });
+    onBitir();
+  };
 
   function ileri() {
     if (son) return bitir();

@@ -6,6 +6,8 @@ import { useState } from "react";
 import { kisaTarih } from "@/components/TarihAraligi";
 import { useUyari } from "@/components/Uyari";
 import { api, type DisaAktarFiltre } from "./api";
+import { olay } from "./analitik";
+import { degerlendirmeIste } from "./degerlendirme";
 import { hataMesaji } from "./hata";
 import { useMe } from "./queries";
 
@@ -70,6 +72,9 @@ export function useDisaAktar(ekran: string) {
     setAktariliyor(true);
     try {
       await disaAktar(bicim, bas, bit, filtre);
+      olay("export_completed", { bicim, kategori: !!filtre, ekran });
+      // Olumlu an: döküm paylaşım penceresi kapandıktan sonra
+      setTimeout(() => degerlendirmeIste("disa_aktar"), 1200);
     } catch (e) {
       uyari("Dışa aktarılamadı", hataMesaji(e, undefined, { ekran }));
     } finally {
@@ -84,15 +89,8 @@ export function useDisaAktar(ekran: string) {
   ) {
     if (!bas || !bit) return;
     if (me.data?.plan !== "pro") {
-      uyari(
-        "Excel ve PDF dökümü Pro'da",
-        "İstediğin tarih aralığındaki kayıtları — tümünü ya da tek bir kategoriyi — Excel ya da PDF olarak indirip paylaşabilirsin.",
-        [
-          { yazi: "Vazgeç", stil: "vazgec" },
-          { yazi: "Pro'ya bak", onPress: () => router.push("/uyelik") },
-        ],
-        { ikon: "document-text-outline" },
-      );
+      // Ara uyarı yok: Pro ekranı bu bağlamda "Excel ve PDF dökümü Pro'da" başlığıyla açılır
+      router.push({ pathname: "/uyelik", params: { neden: "disa-aktar" } });
       return;
     }
     const kapsam = secenek.baslik ?? "Tüm kayıtlar";

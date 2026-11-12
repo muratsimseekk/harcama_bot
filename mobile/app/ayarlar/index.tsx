@@ -3,7 +3,10 @@ import { Linking, ScrollView, StyleSheet, View } from "react-native";
 import { AyarGrup, AyarSatir } from "@/components/base";
 import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
 import { useUyari } from "@/components/Uyari";
+import { analitikTercih, analitikVar, useAnalitikAcik } from "@/lib/analitik";
 import { api } from "@/lib/api";
+import { bildirimAc, useBildirimDurumu } from "@/lib/bildirimIzni";
+import { bildirimSoruldu } from "@/lib/kayitSonrasi";
 import { supabase } from "@/lib/supabase";
 import { useTemaMod } from "@/lib/tema";
 import { SP, useRenkler } from "@/lib/theme";
@@ -12,6 +15,7 @@ import { hataMesaji } from "@/lib/hata";
 import { DESTEK_EPOSTA } from "@/lib/yasal";
 
 const TEMA = { system: "Sistem", light: "Açık", dark: "Koyu" } as const;
+const BILDIRIM = { granted: "Açık", denied: "Kapalı", undetermined: "Kapalı", yok: "Desteklenmiyor" } as const;
 
 export default function Ayarlar() {
   const renk = useRenkler();
@@ -19,6 +23,44 @@ export default function Ayarlar() {
   const router = useRouter();
   const { mod } = useTemaMod();
   const katman = useIslemKatmani();
+  const [bildirim, bildirimYenile] = useBildirimDurumu();
+  const analitikAcik = useAnalitikAcik();
+
+  async function bildirimDokun() {
+    if (bildirim === "undetermined") {
+      await bildirimSoruldu();
+      await bildirimAc("ayarlar");
+      bildirimYenile();
+      return;
+    }
+    if (bildirim === "yok") return;
+    // Verilmiş ya da reddedilmiş izni yalnız sistem ayarları değiştirebilir
+    uyari(
+      bildirim === "granted" ? "Bildirimler açık" : "Bildirimler kapalı",
+      bildirim === "granted"
+        ? "Günlük özet, bütçe uyarıları ve hatırlatmalar geliyor. Kapatmak için telefon ayarlarına git."
+        : "Günlük özet ve bütçe uyarıları için telefon ayarlarından Paraİzi'ye bildirim izni ver.",
+      [
+        { yazi: "Vazgeç", stil: "vazgec" },
+        { yazi: "Ayarları Aç", onPress: () => Linking.openSettings() },
+      ],
+      { ikon: "notifications-outline" },
+    );
+  }
+
+  const analitikDokun = () =>
+    uyari(
+      "Kullanım istatistikleri",
+      "Hangi ekranların kullanıldığını anonim sayılarla ölçüp uygulamayı geliştiriyoruz. Tutar, açıklama, " +
+        "kategori adı ya da e-posta gönderilmez; konum toplanmaz.",
+      [
+        { yazi: "Vazgeç", stil: "vazgec" },
+        analitikAcik
+          ? { yazi: "Kapat", stil: "tehlike", onPress: () => void analitikTercih(false) }
+          : { yazi: "Aç", onPress: () => void analitikTercih(true) },
+      ],
+      { ikon: "stats-chart-outline" },
+    );
 
   async function hesabiSil() {
     try {
@@ -70,11 +112,26 @@ export default function Ayarlar() {
             onPress={() => router.navigate("/ayarlar/gorunum")}
           />
           <AyarSatir
+            ikon="notifications-outline"
+            baslik="Bildirimler"
+            deger={bildirim ? BILDIRIM[bildirim] : ""}
+            onPress={bildirim === "yok" ? undefined : bildirimDokun}
+          />
+          <AyarSatir
             ikon="sparkles-outline"
             baslik="Uygulama Tanıtımı"
-            son
+            son={!analitikVar()}
             onPress={() => router.navigate("/tanitim")}
           />
+          {analitikVar() && (
+            <AyarSatir
+              ikon="stats-chart-outline"
+              baslik="Kullanım istatistikleri"
+              deger={analitikAcik ? "Açık" : "Kapalı"}
+              son
+              onPress={analitikDokun}
+            />
+          )}
         </AyarGrup>
 
         <AyarGrup baslik="DESTEK">

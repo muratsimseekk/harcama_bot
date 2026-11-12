@@ -14,6 +14,7 @@ export default function Onboard() {
 
   return (
     <Karsilama
+      olcum
       onBitir={() =>
         onboardTamamla()
           .catch(() => {})

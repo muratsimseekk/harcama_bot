@@ -8,7 +8,7 @@ import {
   useAudioRecorderState,
 } from "expo-audio";
 import * as Haptics from "expo-haptics";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -26,6 +26,7 @@ import { EnerjiRozeti, EnerjiSheet, type EnerjiSheetDurum } from "@/components/E
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
+import { olay } from "@/lib/analitik";
 import { api } from "@/lib/api";
 import { cevrimdisi } from "@/lib/baglanti";
 import { tutarKisa } from "@/lib/format";
@@ -42,7 +43,9 @@ import { hataMesaji } from "@/lib/hata";
 type Durum = "bos" | "hazirlaniyor" | "kayit" | "gonderiliyor";
 const MIN_KAYIT_MS = 700;
 const KAYIT_AYARI = { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true };
-const ORNEKLER = ["market 250, dün benzin 600", "kahve 90", "maaş geldi 45000", "3 mayıs kira 15000"];
+// İlk örnek tek kayıt: Free planda günde 3 hak var, ilk denemede hepsi bitmesin. Çoklu cümle
+// örneği (2 kayıt) yeteneği göstermek için ikinci sırada.
+const ORNEKLER = ["kahve 90", "market 250, benzin 600", "maaş geldi 45000", "3 mayıs kira 15000"];
 
 export default function Ekle() {
   const renk = useRenkler();
@@ -64,6 +67,15 @@ export default function Ekle() {
   const kapaniyorRef = useRef(false);
   const inputRef = useRef<TextInput>(null);
   const halka = useRef(new Animated.Value(0)).current;
+  // Ana sayfadaki "İlk harcamanı söyle" kartı: ?basla=ses&t=… ile gelince mikrofonu bir kez aç
+  const { basla, t } = useLocalSearchParams<{ basla?: string; t?: string }>();
+  const baslaIslendi = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (basla !== "ses" || !t || baslaIslendi.current === t) return;
+    baslaIslendi.current = t;
+    mikTikla();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- yalnız yeni t ile
+  }, [basla, t]);
 
   // Kullanıcı susunca kendiliğinden bitir: "tekrar dokun" yazısını görmeyen kişi mikrofonu
   // açık bırakıp bekliyordu. Hiç konuşmadıysa ses sunucuya gitmez.
@@ -97,15 +109,16 @@ export default function Ekle() {
     }
   }, [durum, halka]);
 
-  function sonuc(y: CaptureYanit) {
+  function sonuc(y: CaptureYanit, girdi: "ses" | "yazi") {
     if (y.candidates.length === 0) {
+      olay("voice_parse_failed", { girdi, metin_var: !!y.transcript });
       uyari(
         "Anlaşılamadı",
         y.transcript ? `Duyduğum: "${y.transcript}"\n\nKayıt çıkaramadım.` : "Daha açık dene.",
       );
       return;
     }
-    router.push({ pathname: "/confirm", params: { data: JSON.stringify(y) } });
+    router.push({ pathname: "/confirm", params: { data: JSON.stringify(y), girdi } });
   }
 
   function hata(e: unknown) {
@@ -115,10 +128,11 @@ export default function Ekle() {
   async function metinGonder() {
     if (!metin.trim() || durum !== "bos") return;
     setDurum("gonderiliyor");
+    olay("record_input_started", { girdi: "yazi", yer: "ekle" });
     try {
       const y = await api.captureText(metin.trim());
       setMetin("");
-      sonuc(y);
+      sonuc(y, "yazi");
     } catch (e) {
       hata(e);
     } finally {
@@ -165,6 +179,7 @@ export default function Ekle() {
       algilayiciRef.current = sessizlikAlgilayici(basladiRef.current);
       kapaniyorRef.current = false;
       setDurum("kayit");
+      olay("record_input_started", { girdi: "ses", yer: basla === "ses" ? "ilk_kayit_karti" : "ekle" });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (e) {
       hata(e);
@@ -206,7 +221,7 @@ export default function Ekle() {
       await setAudioModeAsync({ allowsRecording: false });
       const uri = recorder.uri;
       if (!uri) throw new Error("Kayıt alınamadı");
-      sonuc(await api.captureAudio(uri));
+      sonuc(await api.captureAudio(uri), "ses");
     } catch (e) {
       hata(e);
     } finally {
@@ -365,7 +380,7 @@ export default function Ekle() {
         onReklamIzle={() => reklamIzleProaktif(qc, uyari, setSheetDurum)}
         onProGec={() => {
           setSheetAcik(false);
-          router.push("/uyelik");
+          router.push({ pathname: "/uyelik", params: { neden: "limit" } });
         }}
       />
     </EkranBasligi>

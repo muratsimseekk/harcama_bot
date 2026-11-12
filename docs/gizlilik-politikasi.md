@@ -1,6 +1,6 @@
 # Gizlilik Politikası
 
-**Son güncelleme:** 2026-10-09
+**Son güncelleme:** 2026-11-12
 **Uygulama:** Paraİzi (bütçe ve harcama takip uygulaması)
 **Geliştirici:** nimustudio
 **Veri sorumlusu:** Murat Şimşek (nimustudio), Şehitkamil / Gaziantep, Türkiye — e-posta: info@nimustudio.com
@@ -24,6 +24,7 @@ kullanıcılar için — GDPR kapsamında yürütülür.
 | **Cihaz bildirim jetonu (push token)** | Bildirim izni verirseniz | Bütçe/hedef bildirimleri göndermek |
 | **Reklam kimliği (Advertising ID) ve genel cihaz bilgisi** | Free (reklamlı) katmanda ödüllü reklam izlediğinizde | Google AdMob'un reklam sunması ve ödülü doğrulaması (bkz. Madde 4) |
 | **Teknik/hata kayıtları** (çökme raporu, hata anındaki cihaz modeli/işletim sistemi/uygulama sürümü) | Uygulama çalışırken | Hataları teşhis etmek, kötüye kullanımı önlemek (kısa süreli tutulur) |
+| **Kullanım istatistikleri** (hangi ekranın açıldığı, bir özelliğin kullanılıp kullanılmadığı gibi adlandırılmış olaylar; hesap kimliği olarak yalnız rastgele kullanıcı numarası) | Uygulamayı kullandıkça — Ayarlar → "Kullanım istatistikleri"nden kapatabilirsiniz | Uygulamayı geliştirmek: hangi adımda zorlanıldığını anlamak. **Tutar, açıklama, kategori adı, e-posta, ad ve konum gönderilmez**; oturum kaydı/ekran kaydı yapılmaz |
 
 **Toplamadıklarımız:** Konum, kişi listesi, banka/kart bilgisi. Uygulama herhangi bir
 banka veya ödeme sistemine bağlanmaz; işlem kayıtları sizin elle veya sesle
@@ -48,6 +49,7 @@ sağlayıcıları (veri işleyenler) kullanıyoruz:
 | **Render Inc.** | Uygulama sunucusu (API barındırma) | ABD | render.com/privacy |
 | **Expo (EAS)** | Push bildirim iletimi | ABD | expo.dev/privacy |
 | **Functional Software, Inc. (Sentry)** | Hata/çökme raporlama | AB (Almanya) | sentry.io/privacy |
+| **PostHog Inc.** | Kullanım istatistikleri (anonim olay sayıları) | AB (Almanya) | posthog.com/privacy |
 | **Google (Google ile Giriş)** | Google hesabınızla giriş yaparsanız kimlik doğrulama (ad, e-posta) | ABD | policies.google.com/privacy |
 | **Google AdMob** | Free katmanda ödüllü reklam gösterimi + ödül doğrulama | ABD | policies.google.com/privacy |
 | **Apple / Google** | Uygulama dağıtımı, satın alma (abonelik) | — | apple.com/legal/privacy · policies.google.com/privacy |

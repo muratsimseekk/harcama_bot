@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { Metin as Text } from "@/components/Metin";
@@ -9,7 +9,9 @@ import { hakMetni } from "@/components/EnerjiSheet";
 import { useUyari } from "@/components/Uyari";
 import { PlanRozeti } from "@/components/PlanRozeti";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
+import { olay } from "@/lib/analitik";
 import { api } from "@/lib/api";
+import { degerlendirmeIste } from "@/lib/degerlendirme";
 import { useMe } from "@/lib/queries";
 import { reklamAktif, reklamGoster } from "@/lib/reklam";
 import {
@@ -29,11 +31,72 @@ type Period = "aylik" | "yillik";
 
 function ozellikler(gunlukEnerji: number): { ad: string; free: Hucre; pro: Hucre }[] {
   return [
-    { ad: "Günlük kayıt hakkı (elle + AI)", free: `${gunlukEnerji}/gün + reklamla`, pro: "Sınırsız" },
-    { ad: "Bütçe, hedef, özet & analiz", free: true, pro: true },
+    { ad: "Sesli / yazılı / elle kayıt", free: `${gunlukEnerji}/gün + reklamla`, pro: "Sınırsız" },
+    { ad: "Tekrarlayan kayıt (kira, fatura)", free: "3 adet", pro: "Sınırsız" },
+    { ad: "Excel / PDF dökümü", free: false, pro: true },
     { ad: "Hane / aile paylaşımı", free: false, pro: true },
     { ad: "Reklam", free: "Ödüllü video (isteğe bağlı)", pro: "Yok" },
+    { ad: "Analiz, limit ve hedefler", free: true, pro: true },
   ];
+}
+
+/** Pro ekranına nereden gelindi — başlık o anki ihtiyacı söyler (docs/BUYUME-ANALIZI.md §2). */
+type Neden = "limit" | "disa-aktar" | "tekrarlayan" | "hane";
+function nedenBaslik(
+  neden: string | undefined,
+  gunlukEnerji: number,
+): { ikon: keyof typeof Ionicons.glyphMap; baslik: string; alt: string } {
+  switch (neden as Neden | undefined) {
+    case "limit":
+      return {
+        ikon: "flash-outline",
+        baslik: `Bugünkü ${gunlukEnerji} kayıt hakkın doldu`,
+        alt: "Pro ile her gün sınırsız kayıt. İstersen reklam izleyip bugün devam edebilirsin.",
+      };
+    case "disa-aktar":
+      return {
+        ikon: "document-text-outline",
+        baslik: "Excel ve PDF dökümü Pro'da",
+        alt: "Seçtiğin tarih aralığındaki tüm kayıtlarını tek dokunuşla indir, paylaş, sakla.",
+      };
+    case "tekrarlayan":
+      return {
+        ikon: "repeat-outline",
+        baslik: "Sınırsız tekrarlayan kayıt Pro'da",
+        alt: "Free planda 3 tekrarlayan kural var. Pro'da kira, fatura, abonelik… hepsi kendiliğinden eklensin.",
+      };
+    case "hane":
+      return {
+        ikon: "people-outline",
+        baslik: "Aile paylaşımı Pro'da",
+        alt: "Eşin ya da ailenle ortak bütçe: herkes kendi telefonundan ekler, toplam tek yerde görünür.",
+      };
+    default:
+      return {
+        ikon: "sparkles-outline",
+        baslik: "Paraİzi Pro",
+        alt: "Sınırsız kayıt, aile paylaşımı, Excel/PDF dökümü ve reklamsız kullanım.",
+      };
+  }
+}
+
+/** "₺399,99" → "₺33,33" (yıllık fiyatın aylık karşılığı). Biçim çözülemezse null. */
+export function aylikKarsilik(fiyat: string): string | null {
+  const m = fiyat.match(/\d[\d.,]*/);
+  if (!m) return null;
+  let sayi = m[0];
+  const son = Math.max(sayi.lastIndexOf(","), sayi.lastIndexOf("."));
+  // Son ayraçtan sonra 1-2 hane varsa ondalık, yoksa binlik ayracı
+  if (son >= 0 && sayi.length - son - 1 <= 2) {
+    sayi = sayi.slice(0, son).replace(/[.,]/g, "") + "." + sayi.slice(son + 1);
+  } else {
+    sayi = sayi.replace(/[.,]/g, "");
+  }
+  const n = Number(sayi);
+  if (!(n > 0)) return null;
+  const aylik = Math.floor((n / 12) * 100) / 100;
+  const ondalik = fiyat.includes(",") ? "," : ".";
+  return fiyat.replace(m[0], aylik.toFixed(2).replace(".", ondalik));
 }
 
 // Mağazadan teklif gelmezse gösterilecek referans (STATIK_FIYAT'tan türetilir)
@@ -48,6 +111,7 @@ export default function Uyelik() {
   const router = useRouter();
   const qc = useQueryClient();
   const me = useMe();
+  const { neden } = useLocalSearchParams<{ neden?: string }>();
   const gunlukEnerji = me.data?.gunluk_enerji ?? 3;
   const OZELLIKLER = ozellikler(gunlukEnerji);
   const mevcutPro = me.data?.plan === "pro";
@@ -57,6 +121,13 @@ export default function Uyelik() {
   const [yukleniyor, setYukleniyor] = useState(satinalmaAktif());
   const [islemde, setIslemde] = useState<string | null>(null);
   const [reklamIslemde, setReklamIslemde] = useState(false);
+  const goruldu = useRef(false);
+
+  useEffect(() => {
+    if (goruldu.current || !me.data) return;
+    goruldu.current = true;
+    olay("paywall_viewed", { yer: neden ?? "dogrudan", pro: me.data.plan === "pro" });
+  }, [me.data, neden]);
 
   useEffect(() => {
     if (!satinalmaAktif()) return;
@@ -78,6 +149,7 @@ export default function Uyelik() {
     const guncel = await me.refetch();
     if (guncel.data?.plan === "pro") {
       uyari("Pro üyesin 🎉", mesaj);
+      setTimeout(() => degerlendirmeIste("pro"), 1500);
     } else {
       uyari("İşleniyor", "Ödemen alındı, üyeliğin birkaç dakika içinde etkinleşecek.");
     }
@@ -99,6 +171,7 @@ export default function Uyelik() {
     setIslemde(p.id);
     try {
       const sonuc = await satinAl(p);
+      olay(sonuc ? "purchase_completed" : "purchase_cancelled", { period: p.period, yer: neden ?? "dogrudan" });
       await planaGuncelle(sonuc, "Üyeliğin güncellendi.");
     } catch (e) {
       uyari("Tamamlanamadı", hataMesaji(e, "Satın alma tamamlanamadı. Lütfen tekrar dene.", { ekran: "uyelik" }));
@@ -131,6 +204,7 @@ export default function Uyelik() {
         // Sunucu onayladıysa beklemeye gerek yok; onaylamadıysa SSV yedeğine kısa süre tanı.
         if (!onaylandi) await new Promise((r) => setTimeout(r, 2000));
         await qc.invalidateQueries({ queryKey: ["me"] });
+        olay("rewarded_ad_completed", { yer: "uyelik" });
         uyari("Teşekkürler", "Kayıt hakkın eklendi.");
       }
     } finally {
@@ -142,9 +216,19 @@ export default function Uyelik() {
   const gunKayit = me.data?.gun_kayit ?? 0;
   const gunlukLimit = me.data?.gunluk_limit ?? gunlukEnerji;
   const limiteYakin = !mevcutPro && gunKayit >= gunlukLimit;
+  const ust = nedenBaslik(neden, gunlukEnerji);
 
   return (
     <ScrollView style={{ backgroundColor: renk.bg }} contentContainerStyle={s.icerik}>
+      {!mevcutPro && (
+        <View style={{ alignItems: "center", gap: SP.sm }}>
+          <View style={[s.ustIkon, { backgroundColor: renk.aksanSoft }]}>
+            <Ionicons name={ust.ikon} size={28} color={renk.aksan} />
+          </View>
+          <Text style={[T.title, { color: renk.text, textAlign: "center" }]}>{ust.baslik}</Text>
+          <Text style={{ color: renk.textMuted, fontSize: 14, lineHeight: 20, textAlign: "center" }}>{ust.alt}</Text>
+        </View>
+      )}
       <View style={{ alignItems: "center", gap: SP.sm }}>
         <PlanRozeti ben={me.data} />
         {mevcutPro && (
@@ -193,6 +277,29 @@ export default function Uyelik() {
             />
           )}
         </>
+      )}
+
+      {mevcutPro && (
+        <Kart>
+          <Text style={[T.heading, { color: renk.text, marginBottom: SP.sm }]}>Pro ile neler yapabilirsin</Text>
+          {(
+            [
+              { ikon: "people-outline", ad: "Haneni kur, ailenle ortak bütçe tut", yol: "/hane" },
+              { ikon: "document-text-outline", ad: "Analiz'den Excel / PDF dökümü al", yol: "/(app)/analiz" },
+              { ikon: "repeat-outline", ad: "Sabit giderlerini tekrarlat (sınırsız)", yol: "/tekrarlayan" },
+            ] as const
+          ).map((k) => (
+            <Pressable
+              key={k.yol}
+              onPress={() => router.push(k.yol)}
+              style={({ pressed }) => [s.kisayol, pressed && { opacity: 0.6 }]}
+            >
+              <Ionicons name={k.ikon} size={20} color={renk.aksan} />
+              <Text style={{ flex: 1, color: renk.text, fontSize: 14.5, fontWeight: "600" }}>{k.ad}</Text>
+              <Ionicons name="chevron-forward" size={16} color={renk.textFaint} />
+            </Pressable>
+          ))}
+        </Kart>
       )}
 
       <Kart>
@@ -264,7 +371,7 @@ function PlanKart({
           </View>
         </View>
         <Text style={{ color: renk.textMuted, fontSize: 12.5, marginTop: 2 }}>
-          Sınırsız kayıt + hane paylaşımı, reklamsız
+          Sınırsız kayıt, aile paylaşımı, Excel/PDF, reklamsız
         </Text>
         <Text style={{ color: renk.text, fontSize: 20, fontWeight: "800", marginTop: 8 }}>
           {paket.fiyat}
@@ -272,6 +379,11 @@ function PlanKart({
             {yillikMi ? " / yıl" : " / ay"}
           </Text>
         </Text>
+        {yillikMi && aylikKarsilik(paket.fiyat) && (
+          <Text style={{ color: renk.success, fontSize: 12.5, fontWeight: "700", marginTop: 2 }}>
+            Ayda yalnız {aylikKarsilik(paket.fiyat)}
+          </Text>
+        )}
       </View>
 
       <Pressable
@@ -322,6 +434,8 @@ const s = StyleSheet.create({
   },
   rozet: { borderRadius: R.pill, paddingHorizontal: 7, paddingVertical: 2 },
   secBtn: { borderRadius: R.pill, paddingHorizontal: 22, paddingVertical: 10, minWidth: 76, alignItems: "center" },
+  ustIkon: { width: 60, height: 60, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  kisayol: { flexDirection: "row", alignItems: "center", gap: SP.md, paddingVertical: 10 },
   reklamBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4 },
   tablo: { gap: 2 },
   satir: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },

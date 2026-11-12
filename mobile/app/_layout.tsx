@@ -24,11 +24,13 @@ import { Giris } from "@/components/Giris";
 import { GuncellemePenceresi } from "@/components/GuncellemePenceresi";
 import { HataSiniri } from "@/components/HataSiniri";
 import { AltBildirim } from "@/components/AltBildirim";
+import { IlkAdimPenceresi } from "@/components/IlkAdimPenceresi";
 import { TekrarlayanIsleyici } from "@/components/TekrarlayanIsleyici";
 import { UyariProvider, useUyari } from "@/components/Uyari";
+import { analitikBaslat, kimlik, olay } from "@/lib/analitik";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { izinVeToken, platformAdi } from "@/lib/bildirim";
+import { tokenSessizKaydet } from "@/lib/bildirimIzni";
 import { mevcutPlan, baslat as rcBaslat } from "@/lib/satinalma";
 import { koduOturumaCevir, supabase } from "@/lib/supabase";
 import { TemaProvider, useEtkinSema } from "@/lib/tema";
@@ -38,6 +40,8 @@ const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
 if (SENTRY_DSN) {
   Sentry.init({ dsn: SENTRY_DSN, tracesSampleRate: 0.1, sendDefaultPii: false });
 }
+
+analitikBaslat();
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 // Ne olursa olsun splash'i 3 sn içinde kaldır (beyaz ekranda kalma).
@@ -144,20 +148,29 @@ function Kapi() {
     return () => sub.remove();
   }, []);
 
-  // Push token'ı kaydet (oturum açıkken ya da yönetici modunda)
+  // Push token'ı kaydet — yalnız izin ZATEN verildiyse. İzin artık girişte istenmiyor;
+  // ilk kayıttan sonra bağlamlı soruluyor (lib/kayitSonrasi, IlkAdimPenceresi).
   useEffect(() => {
     if (!DEV_NOAUTH && !session) return;
-    (async () => {
-      const token = await izinVeToken();
-      if (token) {
-        try {
-          await api.pushTokenKaydet(token, platformAdi);
-        } catch {
-          /* sessiz */
-        }
-      }
-    })();
+    tokenSessizKaydet().catch(() => {});
   }, [session]);
+
+  // Analitik kimliği: yalnız uuid (bkz lib/analitik)
+  useEffect(() => {
+    if (yukleniyor) return;
+    const u = session?.user;
+    kimlik(u?.id);
+    // Yeni hesap (e-posta ya da Google): hesap son 10 dk içinde açıldıysa bir kez "signup_completed"
+    if (!u?.created_at || Date.now() - new Date(u.created_at).getTime() > 10 * 60_000) return;
+    const anahtar = `analitik.kayit.${u.id}`;
+    AsyncStorage.getItem(anahtar)
+      .then((v) => {
+        if (v) return;
+        olay("signup_completed", { yontem: String(u.app_metadata?.provider ?? "email") });
+        return AsyncStorage.setItem(anahtar, "1");
+      })
+      .catch(() => {});
+  }, [session?.user?.id, yukleniyor]);
 
   // RevenueCat'i kullanıcı kimliğiyle başlat (dev build'de aktif, Expo Go'da no-op).
   // Mağazada aktif Pro var ama sunucu henüz bilmiyorsa (webhook gecikti) senkronla.
@@ -262,6 +275,7 @@ function RootLayout() {
                   <GuncellemePenceresi />
                   <TekrarlayanIsleyici />
                   <AltBildirim />
+                  <IlkAdimPenceresi />
                 </UyariProvider>
               </AuthProvider>
             </QueryClientProvider>

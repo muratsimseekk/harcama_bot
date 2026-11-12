@@ -3,14 +3,16 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli, Yukleniyor } from "@/components/base";
+import { BaslangicListesi } from "@/components/BaslangicListesi";
 import { IcgoruKarti } from "@/components/IcgoruKarti";
+import { IlkKayitKarti } from "@/components/IlkKayitKarti";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { PastaGrafik } from "@/components/charts";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
 import { AY_UZUN, katlaKategori, selamlama, turkceTutar } from "@/lib/format";
-import { useHane, useMevcut, useSummary, useTransactions } from "@/lib/queries";
+import { useHane, useMe, useMevcut, useSummary, useTransactions } from "@/lib/queries";
 import { SP, T, useRenkler } from "@/lib/theme";
 import { useIslemSil } from "@/lib/islemSil";
 import { useTutarGizle } from "@/lib/tutarGizle";
@@ -53,6 +55,9 @@ export default function AnaSayfa() {
   const ayOzet = useSummary("month");
   const sonlar = useTransactions({ limit: 5 });
   const hane = useHane();
+  const me = useMe();
+  // Hiç kaydı yok: ilk eylem kartı en üstte (bkz components/IlkKayitKarti)
+  const yeniHesap = me.data?.toplam_kayit === 0;
   const [mevcutDonem, setMevcutDonem] = useState<MevcutDonem>("3");
   const mevcut = useMevcut(Number(mevcutDonem));
   const { gizli, degistir: gizliDegistir, goster } = useTutarGizle();
@@ -92,11 +97,14 @@ export default function AnaSayfa() {
           <Text style={[s.selamAlt, { color: renk.textMuted }]}>
             {hane.data
               ? `${hane.data.ad} · ${hane.data.uyeler.length} kişi · ortak görünüm`
-              : "Tekrar hoş geldin"}
+              : yeniHesap
+                ? "Hoş geldin"
+                : "Tekrar hoş geldin"}
           </Text>
         </View>
       }
     >
+      {yeniHesap && <IlkKayitKarti />}
       <Kart style={{ backgroundColor: renk.aksan }}>
         <View style={s.hcUst}>
           <Text style={[s.hcEtiket, { color: renk.aksanUstu }]}>Bu ay toplam harcama</Text>
@@ -130,6 +138,7 @@ export default function AnaSayfa() {
           </View>
         </View>
       </Kart>
+      <BaslangicListesi />
 
       <Kart>
         <Text style={[T.heading, { color: renk.text }]}>Mevcut durum</Text>
@@ -204,7 +213,7 @@ export default function AnaSayfa() {
           ))}
           {(sonlar.data ?? []).length === 0 && (
             <Text style={{ color: renk.textFaint, textAlign: "center", paddingVertical: SP.xl }}>
-              Henüz kayıt yok. Ekle sekmesinden başla.
+              Kayıtların burada görünecek. Yukarıdaki mikrofona dokunup "kahve 90" demen yeter.
             </Text>
           )}
         </View>

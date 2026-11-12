@@ -9,6 +9,7 @@ import { IslemFormu } from "@/components/IslemFormu";
 import { Metin as Text } from "@/components/Metin";
 import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
 import { useUyari } from "@/components/Uyari";
+import { olay } from "@/lib/analitik";
 import { api, ApiError } from "@/lib/api";
 import { turkceTutar } from "@/lib/format";
 import { gerekenReklam, reklamIzleVeTekrarDene } from "@/lib/kullanim402";
@@ -17,12 +18,13 @@ import { reklamAktif, reklamOnYukle } from "@/lib/reklam";
 import { golge, R, SP, useRenkler } from "@/lib/theme";
 import type { Aday, CaptureYanit } from "@/lib/types";
 import { hataMesaji } from "@/lib/hata";
+import { type Girdi, kayitSonrasi } from "@/lib/kayitSonrasi";
 
 export default function Confirm() {
   const renk = useRenkler();
   const router = useRouter();
   const qc = useQueryClient();
-  const { data } = useLocalSearchParams<{ data: string }>();
+  const { data, girdi } = useLocalSearchParams<{ data: string; girdi?: string }>();
 
   const yanit = useMemo<CaptureYanit>(() => JSON.parse(String(data)), [data]);
   const [adaylar, setAdaylar] = useState<Aday[]>(yanit.candidates);
@@ -98,6 +100,8 @@ export default function Confirm() {
         return;
       }
     }
+    // Kayıttan ÖNCEKİ toplam: invalidate sonrası /me yenilenir, değeri şimdiden al
+    const oncekiToplam = me.data?.toplam_kayit;
     try {
       await katman.calistir({
         bekleyen: "Kaydediliyor",
@@ -108,8 +112,10 @@ export default function Confirm() {
         },
         sonra: () => router.back(),
       });
+      kayitSonrasi({ adet: adaylar.length, girdi: (girdi === "ses" ? "ses" : "yazi") as Girdi, oncekiToplam });
     } catch (e) {
       if (e instanceof ApiError && e.status === 402) {
+        olay("daily_limit_reached", { bekleyen: adaylar.length, yer: "onay" });
         await qc.invalidateQueries({ queryKey: ["me"] });
         setReklamAdet(gerekenReklam(e.detail, adaylar.length));
         setSheetAcik(true);
@@ -246,7 +252,7 @@ export default function Confirm() {
         bekleyenKayit={adaylar.length}
         onProGec={() => {
           setSheetAcik(false);
-          router.push("/uyelik");
+          router.push({ pathname: "/uyelik", params: { neden: "limit" } });
         }}
       />
     </SafeAreaView>

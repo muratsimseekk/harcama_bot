@@ -9,10 +9,12 @@ import { IslemFormu, type IslemAlanlari } from "@/components/IslemFormu";
 import { IslemKatmani, useIslemKatmani } from "@/components/IslemKatmani";
 import { Metin as Text } from "@/components/Metin";
 import { useUyari } from "@/components/Uyari";
+import { olay } from "@/lib/analitik";
 import { ApiError, api } from "@/lib/api";
 import { useIslemSil } from "@/lib/islemSil";
+import { kayitSonrasi } from "@/lib/kayitSonrasi";
 import { reklamIzleVeTekrarDene } from "@/lib/kullanim402";
-import { useMe, usePatchTransaction, useSaveTransactions } from "@/lib/queries";
+import { useMe, usePatchTransaction, useSaveTransactions, useTekrarlayanlar } from "@/lib/queries";
 import { reklamAktif } from "@/lib/reklam";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 import type { Islem, Tip, Yon } from "@/lib/types";
@@ -52,12 +54,18 @@ export default function IslemForm() {
   const me = useMe();
   const [sheetAcik, setSheetAcik] = useState(false);
   const [sheetDurum, setSheetDurum] = useState<EnerjiSheetDurum>(null);
+  // Free planda en çok 3 aktif tekrarlayan (api/routes/tekrarlayan.py) — sınırı baştan göster
+  const tekrarlayanlar = useTekrarlayanlar();
+  const FREE_TEKRAR = 3;
+  const aktifTekrar = (tekrarlayanlar.data ?? []).filter((k) => k.aktif).length;
+  const tekrarSiniri = !!me.data && me.data.plan !== "pro" && !!tekrarlayanlar.data;
 
   const guncelle = (yama: Partial<IslemAlanlari>) => setAlan((e) => ({ ...e, ...yama }));
 
   async function kaydet() {
     if (!(alan.tutar > 0)) return uyari("Geçersiz tutar", "Tutar 0'dan büyük olmalı.");
     if (!alan.aciklama.trim()) return uyari("Başlık gerekli");
+    const oncekiToplam = me.data?.toplam_kayit;
     try {
       await katman.calistir({
         bekleyen: mevcut ? "Güncelleniyor" : "Kaydediliyor",
@@ -81,6 +89,7 @@ export default function IslemForm() {
                 son_eklenen: alan.tarih,
               });
               qc.invalidateQueries({ queryKey: ["tekrarlayan"] });
+              olay("recurring_created", { yer: "elle_ekle" });
             } catch (e) {
               tekrarHata.current = e;
             }
@@ -93,15 +102,17 @@ export default function IslemForm() {
           if (e instanceof ApiError && e.status === 402) {
             uyari("Kayıt eklendi, tekrar kurulmadı", "Free planda en çok 3 tekrarlayan kayıt olabilir. Pro'da sınır yok.", [
               { yazi: "Tamam", stil: "vazgec" },
-              { yazi: "Pro'ya bak", onPress: () => router.push("/uyelik") },
+              { yazi: "Pro'ya bak", onPress: () => router.push({ pathname: "/uyelik", params: { neden: "tekrarlayan" } }) },
             ]);
           } else {
             uyari("Kayıt eklendi, tekrar kurulmadı", hataMesaji(e, undefined, { ekran: "islem-form" }));
           }
         },
       });
+      if (!mevcut) kayitSonrasi({ adet: 1, girdi: sablon ? "hizli" : "elle", oncekiToplam });
     } catch (e) {
       if (e instanceof ApiError && e.status === 402) {
+        olay("daily_limit_reached", { bekleyen: 1, yer: "elle_ekle" });
         await qc.invalidateQueries({ queryKey: ["me"] });
         setSheetAcik(true);
         return;
@@ -169,6 +180,20 @@ export default function IslemForm() {
                     ? `Her ayın ${Number(alan.tarih.slice(8, 10))}. günü otomatik eklenir`
                     : "Kira, fatura, abonelik, maaş gibi her ay aynı olanlar için"}
                 </Text>
+                {tekrarSiniri && (
+                  <Text
+                    style={{
+                      color: aktifTekrar >= FREE_TEKRAR ? renk.danger : renk.textFaint,
+                      fontSize: 12,
+                      marginTop: 4,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {aktifTekrar >= FREE_TEKRAR
+                      ? `Free planda ${FREE_TEKRAR} tekrarlayan hakkın doldu · Pro'da sınırsız`
+                      : `${aktifTekrar}/${FREE_TEKRAR} tekrarlayan kullanıldı (Free)`}
+                  </Text>
+                )}
               </View>
               <Switch
                 value={tekrar}
@@ -197,7 +222,7 @@ export default function IslemForm() {
         onReklamIzle={reklamIzle}
         onProGec={() => {
           setSheetAcik(false);
-          router.push("/uyelik");
+          router.push({ pathname: "/uyelik", params: { neden: "limit" } });
         }}
       />
     </SafeAreaView>

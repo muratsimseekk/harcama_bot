@@ -35,17 +35,34 @@ async function kanalKur() {
   }
 }
 
-/** İzin ister ve Expo push token'ı döndürür. Expo Go / emülatörde null. */
-export async function izinVeToken(): Promise<string | null> {
+export type BildirimDurumu = "granted" | "denied" | "undetermined" | "yok";
+
+/** İzin durumu; bildirim modülü yoksa (Expo Go Android) "yok". Asla izin penceresi açmaz. */
+export async function bildirimDurumu(): Promise<BildirimDurumu> {
+  if (!Notifications) return "yok";
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    return status === "granted" || status === "denied" ? status : "undetermined";
+  } catch {
+    return "yok";
+  }
+}
+
+/**
+ * Expo push token'ı döndürür. `sor` = true ise izin yoksa sistem penceresini açar; false ise
+ * yalnız zaten verilmiş izinle çalışır. Expo Go / emülatörde null.
+ */
+export async function izinVeToken(sor = true): Promise<string | null> {
   if (!Notifications) return null;
   await kanalKur();
-  if (!Device.isDevice) return null;
 
   const mevcut = await Notifications.getPermissionsAsync();
   let durum = mevcut.status;
-  if (durum !== "granted") {
+  if (durum !== "granted" && sor) {
     durum = (await Notifications.requestPermissionsAsync()).status;
   }
+  // İzin istenebilsin diye cihaz kontrolü izinden sonra (emülatörde pencere yine çıkar)
+  if (!Device.isDevice) return null;
   if (durum !== "granted") return null;
 
   const projectId =

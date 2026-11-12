@@ -4,6 +4,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { EnerjiSheetDurum } from "@/components/EnerjiSheet";
 import type { UyariGoster } from "@/components/Uyari";
+import { olay } from "@/lib/analitik";
 import { api } from "@/lib/api";
 import { reklamGoster } from "@/lib/reklam";
 
@@ -34,6 +35,7 @@ async function reklamIzleVeBekle(
     if (sonuc === "hata") uyari("Reklam yüklenemedi", "Birazdan tekrar dene.");
     return false;
   }
+  olay("rewarded_ad_completed", { yer: "enerji", onaylandi });
   const once = await onceP;
   if (!onaylandi) {
     beklet({ tip: "yukleniyor", yazi: "Kayıt hakkın ekleniyor" });

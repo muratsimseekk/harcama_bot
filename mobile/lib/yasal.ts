@@ -11,7 +11,7 @@ export const YASAL_URL = {
 export const DESTEK_EPOSTA = "info@nimustudio.com";
 
 export const GIZLILIK_METNI = `GİZLİLİK POLİTİKASI
-Son güncelleme: 2026-10-09
+Son güncelleme: 2026-11-12
 Geliştirici: nimustudio · Veri sorumlusu: Murat Şimşek, Şehitkamil / Gaziantep
 
 Bu politika, "Paraİzi" uygulamasını kullandığında hangi kişisel verilerini, neden ve nasıl
@@ -31,6 +31,10 @@ AB'deki kullanıcılar için — GDPR kapsamında yürütülür.
   AdMob'un reklam sunması ve ödülü doğrulaması için.
 • Kısa süreli teknik/hata kayıtları (çökme raporu, cihaz modeli, işletim sistemi, uygulama
   sürümü) — hata teşhisi ve kötüye kullanımı önlemek için.
+• Kullanım istatistikleri — hangi ekranın açıldığı, bir özelliğin kullanılıp kullanılmadığı
+  gibi adlandırılmış olaylar; kimlik olarak yalnız rastgele kullanıcı numaran. Tutar, açıklama,
+  kategori adı, e-posta, ad ve konum GÖNDERİLMEZ; ekran kaydı yapılmaz. Ayarlar → "Kullanım
+  istatistikleri"nden kapatabilirsin.
 
 TOPLAMADIKLARIMIZ: Konum, kişi listesi, banka/kart bilgisi. Uygulama hiçbir bankaya veya
 ödeme sistemine bağlanmaz. Verini satmıyoruz.
@@ -47,6 +51,7 @@ Verini üçüncü kişilere satmayız. Uygulamanın çalışması için:
 • Render Inc. (ABD) — uygulama sunucusu.
 • Expo/EAS (ABD) — push bildirim iletimi.
 • Functional Software, Inc. / Sentry (AB) — hata/çökme raporlama.
+• PostHog Inc. (AB) — kullanım istatistikleri.
 • Google (ABD) — Google ile giriş ve AdMob reklamları.
 • Apple / Google — uygulama dağıtımı ve abonelik ödemeleri.
 Yurt dışına (ABD) aktarım, hizmetin sağlanması için gereklidir ve kayıt olurken açık

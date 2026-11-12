@@ -78,6 +78,71 @@ Paraİzi bir bankacılık ya da yatırım danışmanlığı hizmeti değildir; s
 Soru ve önerilerin için: info@nimustudio.com
 ```
 
+### Build 11 yayına girince — v2 metinler (ŞİMDİ KOYMA: olmayan özelliği vaat etmek politika ihlali)
+
+**Kısa açıklama v2** (77/80) — "gelir gider" arama kalıbı eklendi:
+```
+Harcamanı söyle, yapay zeka kaydetsin. Gelir gider ve bütçe takibi tek yerde.
+```
+
+**Tam açıklama v2** (2907 karakter) — ilk örnek 2 kayıt: Free'de günde 3 hak var, mağazadaki
+örnek tek denemede hakkın hepsini bitirmesin. Yeni: limit/hedef seçimi, kategori kıyası,
+tekrarlayan, döviz, Excel/PDF, "Günde 3 kayıt". Kaynak: docs/BUYUME-ANALIZI.md §1.4.
+```
+Harcamanı söyle, Paraİzi kaydetsin. "Market 850, dün benzin 1200" demen yeterli: yapay zeka tutarı, kategoriyi ve tarihi kendisi bulur, sen tek dokunuşla onaylarsın. Gelir gider ve harcama takibi hiç bu kadar hızlı olmamıştı.
+
+Paraİzi; bütçe planlama, gider takibi ve gelir-gider analizini tek bir sade uygulamada toplayan kişisel finans asistanıdır. Tablo doldurmak, form açmak, her fişi tek tek girmek yok.
+
+Sesli ve yazılı kayıt
+• Sesli söyle ya da yaz; yapay zeka harcamanı saniyeler içinde kayda dönüştürür
+• Tek cümlede birden fazla harcama: market ve benzini aynı anda kaydet
+• "Dün", "3 Mayıs" gibi tarihleri anlar; gelirleri de aynı kolaylıkla ekle
+• Kaydetmeden önce her şeyi gör, istediğini düzelt
+• Sık girdiğin harcamalar tek dokunuşla: hızlı ekle
+• İstersen klasik formla elle de ekleyebilirsin
+
+Bütçe, limit ve hedefler
+• Her kategoriye ister limit ister hedef koy: harcamada üst sınır, birikimde ulaşmak istediğin tutar
+• Aylık harcama sınırı; sınıra yaklaşınca ve aşınca uyarı
+• Hedefine ulaştığında haber verir
+• Aylık yatırım ve birikim hedefini belirle, ilerlemeni izle
+
+Analiz ve özetler
+• Günlük, haftalık, aylık, yıllık ya da istediğin tarih aralığında gelir-gider grafikleri
+• Kategori kıyası: her kategoride geçen döneme göre yüzde kaç arttı ya da azaldı
+• Bir kategoriye dokun: o kategorideki tüm harcamalar ve son 6 ayın trendi
+• Her akşam günlük, her pazar haftalık özet bildirimi
+• Geçmiş işlemlerinde arama; tarih aralığı, kategori ve türe göre filtre
+
+Kira, fatura, abonelik otomatik
+• Tekrarlayan kayıtlar: her ay aynı gün kendiliğinden eklenir, bir daha girmezsin
+
+Dolar ve euro
+• Toplamları ₺, $ ya da € olarak gör; her kayıt kendi gününün TCMB kuruyla çevrilir
+
+Kişisel, işletme ve yatırım ayrı
+Kendi işin varsa işletme giderlerini ve masraflarını kişisel harcamalarından ayrı tut. Yatırım hareketlerini ayrı bir başlıkta izle. Kategorileri dilediğin gibi düzenle.
+
+Aile bütçesi (Pro)
+Eşin ya da ailenle ortak bir hane oluştur; ev giderlerini ve aile bütçesini birlikte takip edin.
+
+Excel ve PDF dökümü (Pro)
+Tüm kayıtlarını ya da tek bir kategoriyi, seçtiğin tarih aralığıyla Excel veya PDF olarak indir ve paylaş.
+
+Ücretsiz ve Pro
+• Ücretsiz: Günde 3 kayıt, analiz, limit ve hedefler, 3 tekrarlayan kayıt. Hakkın bitince isteğe bağlı kısa bir ödüllü video izleyerek ek hak kazanırsın.
+• Pro: Sınırsız kayıt, reklamsız kullanım, aile paylaşımı, Excel/PDF dökümü ve sınırsız tekrarlayan kayıt. Aylık ya da yıllık abonelik; Google Play hesabından istediğin zaman iptal edebilirsin.
+
+Gizlilik önce gelir
+• Bankana ya da kartına bağlanmaz; kart veya hesap bilgisi istemez
+• Sesli kayıtların yalnızca metne çevrilmek için işlenir, saklanmaz
+• Verilerini satmayız. Hesabını ve tüm verilerini uygulama içinden silebilirsin
+
+Paraİzi bir bankacılık ya da yatırım danışmanlığı hizmeti değildir; sunduğu özetler bilgilendirme amaçlıdır.
+
+Soru ve önerilerin için: info@nimustudio.com
+```
+
 **Kategori:** Finans · **Etiketler:** Bütçe, Harcama takibi, Kişisel finans (Play'in listesinden en yakınları)
 
 **Görseller:** ikon 512×512 · feature graphic 1024×500 · telefon ekran görüntüleri 4-6 adet
