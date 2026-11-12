@@ -111,7 +111,7 @@ export default function AnaSayfa() {
           {goster(turkceTutar(ay?.toplam_gider ?? 0))} {sb}
         </Text>
         {para !== "TRY" && kur && (
-          <Text style={[s.kurSatir, { color: renk.aksanUstu }]}>
+          <Text style={[s.kurSatir, { color: renk.aksanUstu }]} gizlenmez>
             Her kayıt kendi gününün kuruyla · bugün 1 {sb} = {kurMetni(kur.deger)} ₺
           </Text>
         )}

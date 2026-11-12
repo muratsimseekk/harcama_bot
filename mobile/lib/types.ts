@@ -237,3 +237,45 @@ export const TIP_EMOJI: Record<Tip, string> = {
   isletme: "🏭",
   yatirim: "💹",
 };
+
+/** Analiz → kategoriler: bir kategorinin seçilen aralık + kıyas dönemindeki toplamı. */
+export interface KategoriKiyas {
+  kategori: string;
+  tip: Tip;
+  tutar: number;
+  adet: number;
+  oran: number;
+  onceki_tutar: number;
+  degisim: number | null; // % ; null = önceki dönemde yoktu
+}
+
+export interface YonKiyas {
+  toplam: number;
+  onceki_toplam: number;
+  degisim: number | null;
+  kategoriler: KategoriKiyas[];
+}
+
+export interface KategoriKiyasYanit {
+  baslangic: string;
+  bitis: string;
+  onceki_baslangic: string;
+  onceki_bitis: string;
+  gider: YonKiyas;
+  gelir: YonKiyas;
+  para: string;
+}
+
+export interface AyNokta {
+  ay: string; // "2026-11"
+  tutar: number;
+  adet: number;
+  degisim: number | null; // bir önceki aya göre %
+}
+
+export interface KategoriTrend {
+  kategoriler: string[];
+  yon: Yon;
+  aylar: AyNokta[];
+  para: string;
+}

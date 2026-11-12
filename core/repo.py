@@ -428,6 +428,8 @@ async def categories_seed(user_id: str, tipler: list[str] | None = None) -> int:
             satirlar.append({
                 "user_id": user_id, "name": ad, "type": tip,
                 "color": PALET[len(satirlar) % len(PALET)], "sort_order": 50,
+                # toplu insert'te eksik kolon NULL gider (varsayılan değil) → NOT NULL ihlali
+                "keywords": [],
             })
 
         if not satirlar:

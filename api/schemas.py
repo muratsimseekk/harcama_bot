@@ -326,6 +326,48 @@ class YatirimModel(BaseModel):
     alt_toplam: float = 0.0
 
 
+class KategoriKiyasModel(BaseModel):
+    kategori: str
+    tip: str
+    tutar: float
+    adet: int
+    oran: float
+    onceki_tutar: float
+    degisim: float | None = None  # % ; None = önceki dönemde yoktu
+
+
+class YonKiyasModel(BaseModel):
+    toplam: float
+    onceki_toplam: float
+    degisim: float | None = None
+    kategoriler: list[KategoriKiyasModel]
+
+
+class KategoriKiyasYanit(BaseModel):
+    """Analiz → kategoriler: seçilen tarih aralığı + kıyas dönemi (önceki eşdeğer aralık)."""
+    baslangic: date
+    bitis: date
+    onceki_baslangic: date
+    onceki_bitis: date
+    gider: YonKiyasModel
+    gelir: YonKiyasModel
+    para: str = "TRY"
+
+
+class AyNoktaModel(BaseModel):
+    ay: str  # "2026-11"
+    tutar: float
+    adet: int
+    degisim: float | None = None  # bir önceki aya göre %
+
+
+class KategoriTrendYanit(BaseModel):
+    kategoriler: list[str]
+    yon: str
+    aylar: list[AyNoktaModel]
+    para: str = "TRY"
+
+
 class OzetModel(BaseModel):
     period: str
     baslangic: date

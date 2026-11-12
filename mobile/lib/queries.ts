@@ -28,6 +28,27 @@ export function useSummary(period: Granularity, ref?: string, paraZorla?: Para) 
   });
 }
 
+/** "summary" altında: işlem değişince tazelenir. */
+export function useKategoriKiyas(bas?: string, bit?: string) {
+  const para = usePara();
+  return useQuery({
+    queryKey: ["summary", "kategoriler", bas, bit, para],
+    queryFn: () => api.kategoriKiyas(bas!, bit!, para),
+    enabled: !!bas && !!bit && bas <= bit,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useKategoriTrend(kategoriler: string[], yon: string, aylar = 6) {
+  const para = usePara();
+  return useQuery({
+    queryKey: ["summary", "kategori-trend", kategoriler, yon, aylar, para],
+    queryFn: () => api.kategoriTrend(kategoriler, yon, aylar, para),
+    enabled: kategoriler.length > 0,
+    placeholderData: keepPreviousData,
+  });
+}
+
 /** Güncel TCMB kuru — para birimi seçicide gösterilir. */
 export function useKur() {
   return useQuery({ queryKey: ["kur"], queryFn: () => api.kur(), staleTime: 30 * 60 * 1000 });

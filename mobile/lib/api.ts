@@ -19,6 +19,8 @@ import type {
   Mevcut,
   Ozet,
   Tip,
+  KategoriKiyasYanit,
+  KategoriTrend,
 } from "./types";
 
 export interface IslemFiltre {
@@ -216,6 +218,21 @@ export const api = {
 
   mevcut(aylar: number, para: Para = "TRY"): Promise<Mevcut> {
     return jsonReq<Mevcut>(`/v1/summary/mevcut?aylar=${aylar}${para !== "TRY" ? `&para=${para}` : ""}`, "GET");
+  },
+
+  /** Tarih aralığında kategori toplamları + önceki eşdeğer döneme göre % değişim. */
+  kategoriKiyas(bas: string, bit: string, para: Para = "TRY"): Promise<KategoriKiyasYanit> {
+    const q = new URLSearchParams({ bas, bit });
+    if (para !== "TRY") q.set("para", para);
+    return jsonReq<KategoriKiyasYanit>(`/v1/summary/kategoriler?${q.toString()}`, "GET");
+  },
+
+  /** Kategori(ler)in son `aylar` aylık toplamı + aydan aya % değişim. */
+  kategoriTrend(kategoriler: string[], yon: string, aylar = 6, para: Para = "TRY"): Promise<KategoriTrend> {
+    const q = new URLSearchParams({ yon, aylar: String(aylar) });
+    for (const k of kategoriler) q.append("kategori", k);
+    if (para !== "TRY") q.set("para", para);
+    return jsonReq<KategoriTrend>(`/v1/summary/kategori-trend?${q.toString()}`, "GET");
   },
 
   /** Güncel TCMB kurları (1 USD / 1 EUR kaç TL). */

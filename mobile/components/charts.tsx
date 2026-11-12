@@ -8,6 +8,7 @@ import { SEMBOL, usePara } from "@/lib/paraBirimi";
 import { kategoriIkon } from "@/lib/kategoriIkon";
 import { DIGER_ADI, useDagilimRenkleri, useDigerRenk } from "@/lib/kategoriRenk";
 import { R, SP, T, useRenkler } from "@/lib/theme";
+import { useGizli } from "@/lib/tutarGizle";
 
 export interface Dilim {
   ad: string;
@@ -182,6 +183,7 @@ export function IkiliCubukGrafik({
   gider: number[];
 }) {
   const renk = useRenkler();
+  const gizli = useGizli(); // tutar gizlemede eksen değerleri de görünmesin
   const [genislik, setGenislik] = useState(0);
   const hepsi = [...gelir, ...gider];
   if (hepsi.length === 0 || hepsi.every((v) => v === 0)) {
@@ -245,7 +247,7 @@ export function IkiliCubukGrafik({
           xAxisColor={renk.border}
           xAxisLabelTextStyle={{ color: renk.textMuted, fontSize: 9 }}
           yAxisTextStyle={{ color: renk.textFaint, fontSize: 9 }}
-          formatYLabel={(l: string) => eksenEtiketi(Number(l))}
+          formatYLabel={(l: string) => (gizli ? "" : eksenEtiketi(Number(l)))}
           rulesType="dashed"
           rulesColor={renk.hairline}
           dashWidth={3}

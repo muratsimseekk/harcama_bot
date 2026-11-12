@@ -1,22 +1,24 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { IkiliCubukGrafik } from "@/components/charts";
-import { SEMBOL, usePara } from "@/lib/paraBirimi";
+import { DegisimRozeti, KategoriKiyasListesi } from "@/components/KategoriKiyas";
+import { type Aralik, kisaTarih, TarihAraligi, varsayilanAralik } from "@/components/TarihAraligi";
+import { islemTutari, SEMBOL, usePara } from "@/lib/paraBirimi";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { IlerlemeCubugu } from "@/components/IlerlemeCubugu";
 import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { turkceTutar } from "@/lib/format";
-import { useSummary, useTransactions } from "@/lib/queries";
+import { useKategoriKiyas, useSummary, useTransactions } from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
-import type { Granularity, Islem } from "@/lib/types";
+import type { Granularity, Islem, Yon } from "@/lib/types";
 
-type Sekme = "day" | "week" | "month" | "year";
-const ETIKET: Record<Sekme, string> = { day: "Günlük", week: "Haftalık", month: "Aylık", year: "Yıllık" };
+type Sekme = "day" | "week" | "month" | "year" | "ozel";
+const ETIKET: Record<Sekme, string> = { day: "Günlük", week: "Haftalık", month: "Aylık", year: "Yıllık", ozel: "Özel" };
 const AYLAR = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
 const AY_UZUN = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -24,6 +26,7 @@ const AY_UZUN = [
 ];
 
 const GUNLER = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+const SAYFA = 50; // işlem listesi parça büyüklüğü
 
 function tarihUzun(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -37,6 +40,7 @@ function gunAdi(iso: string): string {
 }
 
 function granOf(s: Sekme): Granularity {
+  if (s === "ozel") return "month"; // özel aralıkta özet yalnız hedef kartı için (bu ay)
   return s === "day" ? "week" : (s as Granularity);
 }
 
@@ -57,19 +61,58 @@ export default function Analiz() {
   const renk = useRenkler();
   const router = useRouter();
   const [sekme, setSekme] = useState<Sekme>("month");
+  const [aralik, setAralik] = useState<Aralik>(varsayilanAralik);
+  const [katYon, setKatYon] = useState<Yon>("gider");
+  const ozel = sekme === "ozel";
   const gran = granOf(sekme);
 
   const ozet = useSummary(gran);
   const para = usePara();
   const g = ozet.data?.bu_donem;
-  // Tarih aralığı özetten gelir: özet gelmeden sorgu atılırsa tarihsiz (başka dönemin) kayıtları görünür.
-  const txQ = useTransactions(
-    { limit: 300, from: ozet.data?.baslangic, to: ozet.data?.bitis },
-    { enabled: !!ozet.data },
-  );
-  const islemlerYukleniyor = ozet.isLoading || txQ.isLoading;
+  // Gösterilen aralık: özelde seçilen tarihler, değilse özetin dönemi.
+  const bas = ozel ? aralik.bas : ozet.data?.baslangic;
+  const bit = ozel ? aralik.bit : ozet.data?.bitis;
+  // Tarih aralığı belli olmadan sorgu atılırsa tarihsiz (başka dönemin) kayıtları görünür.
+  const txQ = useTransactions({ limit: 500, from: bas, to: bit }, { enabled: !!bas && !!bit });
+  const kiyas = useKategoriKiyas(bas, bit);
+  // Dönem/aralık değişince eski veri yer tutucu olarak kalır: o sırada da spinner göster.
+  const txYenileniyor = txQ.isFetching && txQ.isPlaceholderData;
+  const kiyasYenileniyor = !kiyas.data || (kiyas.isFetching && kiyas.isPlaceholderData);
+  const ozetYenileniyor = !ozel && ozet.isFetching && ozet.isPlaceholderData;
+  const islemlerYukleniyor = (!ozel && ozet.isLoading) || txQ.isLoading || txYenileniyor;
+  // Çok kayıtta (yıllık ~500) hepsini birden çizmek ekranı donduruyordu: parça parça göster.
+  const [gosterilen, setGosterilen] = useState(SAYFA);
+  useEffect(() => setGosterilen(SAYFA), [bas, bit]);
+
+  const toplamGelir = ozel ? kiyas.data?.gelir.toplam : g?.toplam_gelir;
+  const toplamGider = ozel ? kiyas.data?.gider.toplam : g?.toplam_gider;
 
   const grafik = useMemo(() => {
+    if (ozel) {
+      // Özel aralık: grafiği kayıtlardan kur (≤ 62 gün günlük, daha uzunsa aylık çubuk).
+      const gunler = gunAraligi(aralik.bas, aralik.bit);
+      const aylik = gunler.length > 62;
+      const anahtar = (t: string) => (aylik ? t.slice(0, 7) : t);
+      const kovalar = [...new Set(gunler.map(anahtar))];
+      const sira = new Map(kovalar.map((k, i) => [k, i]));
+      const gelir: number[] = Array(kovalar.length).fill(0);
+      const gider: number[] = Array(kovalar.length).fill(0);
+      for (const t of txQ.data ?? []) {
+        const i = sira.get(anahtar(t.tarih));
+        if (i == null) continue;
+        const v = islemTutari(t, para).deger;
+        if (t.direction === "gelir") gelir[i] += v;
+        else gider[i] += v;
+      }
+      const etiketler = aylik
+        ? kovalar.map((k) => AYLAR[Number(k.slice(5, 7)) - 1])
+        : kovalar.map((k, i) => {
+            const gun = Number(k.slice(8, 10));
+            if (kovalar.length <= 7) return gunAdi(k);
+            return i === 0 || gun === 1 || gun % 5 === 0 ? String(gun) : "";
+          });
+      return { etiketler, gelir, gider };
+    }
     if (!g) return { etiketler: [] as string[], gelir: [] as number[], gider: [] as number[] };
     if (gran === "year") {
       const gg = Array(12).fill(0);
@@ -100,16 +143,20 @@ export default function Analiz() {
       gelir,
       gider,
     };
-  }, [g, gran, ozet.data?.baslangic, ozet.data?.bitis]);
+  }, [g, gran, ozet.data?.baslangic, ozet.data?.bitis, ozel, aralik, txQ.data, para]);
 
+  const tumIslemler = useMemo(
+    () => [...(txQ.data ?? [])].sort((a, b) => (a.tarih < b.tarih ? 1 : a.tarih > b.tarih ? -1 : 0)),
+    [txQ.data],
+  );
   const bolumler = useMemo(() => {
     const map = new Map<string, Islem[]>();
-    for (const t of txQ.data ?? []) {
+    for (const t of tumIslemler.slice(0, gosterilen)) {
       if (!map.has(t.tarih)) map.set(t.tarih, []);
       map.get(t.tarih)!.push(t);
     }
     return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  }, [txQ.data]);
+  }, [tumIslemler, gosterilen]);
 
   const genelHedef = ozet.data?.hedefler.find((h) => h.kapsam === "genel");
   const katHedefler = (ozet.data?.hedefler ?? []).filter((h) => h.kapsam !== "genel");
@@ -121,36 +168,46 @@ export default function Analiz() {
     <EkranBasligi
       baslik="Analiz"
       paraSecici
-      onRefresh={() => Promise.all([ozet.refetch(), txQ.refetch()])}
+      onRefresh={() => Promise.all([ozet.refetch(), txQ.refetch(), kiyas.refetch()])}
       ustAlan={
-        g ? (
+        toplamGelir != null && toplamGider != null ? (
           <View style={{ gap: SP.md }}>
             <View style={s.ggSatir}>
               <View>
                 <Text style={[s.ggEtiket, { color: renk.textMuted }]}>↗ Gelir</Text>
-                <Text style={[s.ggDeger, { color: renk.success }]}>{turkceTutar(g.toplam_gelir)} {SEMBOL[para]}</Text>
+                <Text style={[s.ggDeger, { color: renk.success }]}>{turkceTutar(toplamGelir)} {SEMBOL[para]}</Text>
               </View>
               <View style={[s.ggAyrac, { backgroundColor: renk.hairline }]} />
               <View>
                 <Text style={[s.ggEtiket, { color: renk.textMuted }]}>↘ Harcama</Text>
-                <Text style={[s.ggDeger, { color: renk.blue }]}>-{turkceTutar(g.toplam_gider)} {SEMBOL[para]}</Text>
+                <Text style={[s.ggDeger, { color: renk.blue }]}>-{turkceTutar(toplamGider)} {SEMBOL[para]}</Text>
               </View>
             </View>
-            {genelHedef && <IlerlemeCubugu oran={genelHedef.oran} hedef={genelHedef.limit} />}
+            {!ozel && genelHedef && <IlerlemeCubugu oran={genelHedef.oran} hedef={genelHedef.limit} />}
           </View>
         ) : undefined
       }
     >
       <Sekmeli
-        secenekler={["day", "week", "month", "year"] as const}
+        secenekler={["day", "week", "month", "year", "ozel"] as const}
         etiket={(x) => ETIKET[x]}
         secili={sekme}
         onSec={setSekme}
+        kucuk
       />
+
+      {ozel && (
+        <Kart>
+          <TarihAraligi deger={aralik} onChange={setAralik} />
+        </Kart>
+      )}
 
       <Kart style={{ backgroundColor: renk.aksanSoft }}>
         <View style={s.grafikBaslik}>
-          <Text style={[T.heading, { color: renk.text }]}>Gelir & Gider</Text>
+          <View style={s.baslikSol}>
+            <Text style={[T.heading, { color: renk.text }]}>Gelir & Gider</Text>
+            {(ozetYenileniyor || (ozel && txYenileniyor)) && <ActivityIndicator size="small" color={renk.aksan} />}
+          </View>
           <Pressable
             onPress={() => router.navigate("/ara")}
             style={[s.yesilBtn, { backgroundColor: renk.aksan }]}
@@ -159,6 +216,72 @@ export default function Analiz() {
           </Pressable>
         </View>
         <IkiliCubukGrafik etiketler={grafik.etiketler} gelir={grafik.gelir} gider={grafik.gider} />
+      </Kart>
+
+      <Kart>
+        <View style={s.grafikBaslik}>
+          <View style={{ flex: 1 }}>
+            <Text style={[T.heading, { color: renk.text }]}>Kategoriler</Text>
+            {kiyas.data && (
+              <Text style={{ color: renk.textFaint, fontSize: 12, marginTop: 2 }}>
+                Kıyas: {kisaTarih(kiyas.data.onceki_baslangic)} – {kisaTarih(kiyas.data.onceki_bitis)}
+              </Text>
+            )}
+          </View>
+          <View style={{ width: 140 }}>
+            <Sekmeli
+              secenekler={["gider", "gelir"] as const}
+              etiket={(x) => (x === "gider" ? "Gider" : "Gelir")}
+              secili={katYon}
+              onSec={setKatYon}
+              kucuk
+            />
+          </View>
+        </View>
+        {kiyasYenileniyor ? (
+          kiyas.isError ? (
+            <Text style={{ color: renk.textFaint, textAlign: "center", paddingVertical: SP.lg }}>
+              Kategoriler yüklenemedi. Yenilemek için aşağı çek.
+            </Text>
+          ) : (
+            <YuklemeHalkasi boyut={40} yukseklik={100} yazi="Kategoriler hesaplanıyor" />
+          )
+        ) : (
+          <View style={{ gap: SP.sm }}>
+            <View style={[s.kiyasOzet, { backgroundColor: renk.cardAlt }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: renk.textMuted, fontSize: 12, fontWeight: "600" }}>
+                  Toplam {katYon === "gider" ? "harcama" : "gelir"} / önceki dönem
+                </Text>
+                <Text style={{ color: renk.text, fontSize: 15, fontWeight: "800", marginTop: 2 }}>
+                  {turkceTutar(kiyas.data![katYon].toplam)} {SEMBOL[para]}
+                  <Text style={{ color: renk.textFaint, fontSize: 13, fontWeight: "600" }}>
+                    {"  / "}
+                    {turkceTutar(kiyas.data![katYon].onceki_toplam)} {SEMBOL[para]}
+                  </Text>
+                </Text>
+              </View>
+              <DegisimRozeti degisim={kiyas.data![katYon].degisim} yon={katYon} buyuk />
+            </View>
+            <KategoriKiyasListesi
+              veri={kiyas.data![katYon]}
+              yon={katYon}
+              para={para}
+              onSec={(k) =>
+                router.push({
+                  pathname: "/kategori-detay",
+                  params: {
+                    ad: k.kategori,
+                    kategoriler: JSON.stringify([k.kategori]),
+                    yon: katYon,
+                    bas: kiyas.data!.baslangic,
+                    bit: kiyas.data!.bitis,
+                  },
+                })
+              }
+            />
+          </View>
+        )}
       </Kart>
 
       {katHedefler.length > 0 ? (
@@ -219,6 +342,16 @@ export default function Analiz() {
               ))}
             </View>
           ))}
+          {tumIslemler.length > gosterilen && (
+            <Pressable
+              onPress={() => setGosterilen((n) => n + SAYFA)}
+              style={[s.dahaFazla, { borderColor: renk.border, backgroundColor: renk.card }]}
+            >
+              <Text style={{ color: renk.text, fontWeight: "700" }}>
+                Daha fazla göster ({tumIslemler.length - gosterilen} kayıt daha)
+              </Text>
+            </Pressable>
+          )}
           {bolumler.length === 0 && (
             <Text style={{ color: renk.textFaint, textAlign: "center", paddingVertical: SP.xl }}>
               {ozet.isError || txQ.isError
@@ -246,5 +379,14 @@ const s = StyleSheet.create({
   yesilBtn: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   hedefUst: { flexDirection: "row", justifyContent: "space-between" },
   hedefRay: { height: 8, borderRadius: R.pill, overflow: "hidden" },
+  baslikSol: { flexDirection: "row", alignItems: "center", gap: SP.sm },
+  dahaFazla: {
+    marginTop: SP.md,
+    borderWidth: 1,
+    borderRadius: R.pill,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  kiyasOzet: { flexDirection: "row", alignItems: "center", gap: SP.md, borderRadius: R.md, padding: SP.md },
   gunBaslik: { fontSize: 13, fontWeight: "700", marginTop: SP.lg, marginBottom: 2 },
 });

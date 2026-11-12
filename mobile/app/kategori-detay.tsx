@@ -1,74 +1,210 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { IslemSatiri } from "@/components/IslemSatiri";
+import { DegisimRozeti } from "@/components/KategoriKiyas";
 import { Metin as Text } from "@/components/Metin";
+import { type Aralik, kisaTarih, TarihAraligi, varsayilanAralik } from "@/components/TarihAraligi";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
-import { tarihEtiket, turkceTutar } from "@/lib/format";
+import { tarihEtiket, tutarKisa } from "@/lib/format";
 import { islemTutari, paraMetni, usePara } from "@/lib/paraBirimi";
-import { useSummary, useTransactions } from "@/lib/queries";
-import { SP, T, useRenkler } from "@/lib/theme";
+import { useKategoriKiyas, useKategoriTrend, useSummary, useTransactions } from "@/lib/queries";
+import { R, SP, T, useRenkler } from "@/lib/theme";
+import { MASKE, useGizli } from "@/lib/tutarGizle";
 import type { Granularity, Islem, Yon } from "@/lib/types";
 
-const GRAN: Granularity[] = ["week", "month", "year"];
-const ETIKET: Record<Granularity, string> = { week: "Haftalık", month: "Aylık", year: "Yıllık" };
-const DONEM: Record<Granularity, string> = { week: "Bu hafta", month: "Bu ay", year: "Bu yıl" };
+type Sekme = Granularity | "ozel";
+const SEKMELER: Sekme[] = ["week", "month", "year", "ozel"];
+const ETIKET: Record<Sekme, string> = { week: "Haftalık", month: "Aylık", year: "Yıllık", ozel: "Özel" };
+const SAYFA = 50; // işlem listesi parça büyüklüğü
+const AYLAR = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
 
-/** Bir kategorinin (ya da katlanmış "Diğer"in) seçilen dönemdeki kayıtları. */
+/**
+ * Bir kategorinin (ya da katlanmış "Diğer"in) seçilen dönemdeki kayıtları + önceki döneme
+ * göre değişim + son 6 ayın trendi. Analiz'den tarih aralığıyla (bas/bit), ana sayfadan
+ * dönemle (gran) açılır.
+ */
 export default function KategoriDetay() {
   const renk = useRenkler();
   const router = useRouter();
-  const p = useLocalSearchParams<{ ad: string; kategoriler: string; yon: Yon; gran: Granularity }>();
+  const p = useLocalSearchParams<{
+    ad: string;
+    kategoriler: string;
+    yon: Yon;
+    gran?: Granularity;
+    bas?: string;
+    bit?: string;
+  }>();
   const kategoriler = useMemo<string[]>(() => JSON.parse(String(p.kategoriler)), [p.kategoriler]);
   const yon: Yon = p.yon === "gelir" ? "gelir" : "gider";
-  const [gran, setGran] = useState<Granularity>(p.gran ?? "month");
-
-  const ozet = useSummary(gran);
-  const liste = useTransactions(
-    { limit: 500, from: ozet.data?.baslangic, to: ozet.data?.bitis, direction: yon, kategoriler },
-    { enabled: !!ozet.data },
+  const [sekme, setSekme] = useState<Sekme>(p.bas && p.bit ? "ozel" : (p.gran ?? "month"));
+  const [aralik, setAralik] = useState<Aralik>(() =>
+    p.bas && p.bit ? { bas: String(p.bas), bit: String(p.bit) } : varsayilanAralik(),
   );
+  const ozel = sekme === "ozel";
+
+  const ozet = useSummary(ozel ? "month" : sekme);
+  const bas = ozel ? aralik.bas : ozet.data?.baslangic;
+  const bit = ozel ? aralik.bit : ozet.data?.bitis;
+
+  const liste = useTransactions(
+    { limit: 500, from: bas, to: bit, direction: yon, kategoriler },
+    { enabled: !!bas && !!bit },
+  );
+  const kiyas = useKategoriKiyas(bas, bit);
+  const trend = useKategoriTrend(kategoriler, yon, 6);
 
   const para = usePara();
+  const gizli = useGizli(); // trenddeki kısa tutarlar ("450") sembolsüz: elle maskele
   const kayitlar = liste.data ?? [];
-  // Döviz modunda her kayıt kendi gününün kuruyla (çevrilemeyen olursa toplam TL kalır)
+
+  // Toplam ve önceki dönem: sunucudaki kıyastan (tam toplam, kendi günü kuruyla çevrilmiş).
+  const kiyasOzet = useMemo(() => {
+    const d = kiyas.data;
+    if (!d) return null;
+    const satirlar = d[yon].kategoriler.filter((k) => kategoriler.includes(k.kategori));
+    const tutar = satirlar.reduce((t, k) => t + k.tutar, 0);
+    const onceki = satirlar.reduce((t, k) => t + k.onceki_tutar, 0);
+    const adet = satirlar.reduce((t, k) => t + k.adet, 0);
+    const degisim = onceki > 0 ? ((tutar - onceki) / onceki) * 100 : null;
+    return { tutar, onceki, adet, degisim, obas: d.onceki_baslangic, obit: d.onceki_bitis };
+  }, [kiyas.data, kategoriler, yon]);
+
+  // Kıyas gelmeden: listedeki kayıtlardan (döviz modunda çevrilemeyen varsa TL)
   const dovizli = para !== "TRY" && kayitlar.every((x) => x.cevrilmis != null);
-  const toplam = kayitlar.reduce((t, x) => t + (dovizli ? islemTutari(x, para).deger : x.tutar), 0);
+  const yedekToplam = kayitlar.reduce((t, x) => t + (dovizli ? islemTutari(x, para).deger : x.tutar), 0);
+  const toplam = kiyasOzet?.tutar ?? yedekToplam;
+  const toplamPara = kiyasOzet ? para : dovizli ? para : "TRY";
+
+  const [gosterilen, setGosterilen] = useState(SAYFA);
+  useEffect(() => setGosterilen(SAYFA), [bas, bit]);
+  const tumIslemler = useMemo(
+    () => [...(liste.data ?? [])].sort((a, b) => (a.tarih < b.tarih ? 1 : a.tarih > b.tarih ? -1 : 0)),
+    [liste.data],
+  );
   const bolumler = useMemo(() => {
     const map = new Map<string, Islem[]>();
-    for (const t of liste.data ?? []) {
+    for (const t of tumIslemler.slice(0, gosterilen)) {
       if (!map.has(t.tarih)) map.set(t.tarih, []);
       map.get(t.tarih)!.push(t);
     }
     return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  }, [liste.data]);
+  }, [tumIslemler, gosterilen]);
 
-  const yukleniyor = ozet.isLoading || liste.isLoading;
+  // Dönem/aralık değişince eski veri yer tutucu kalır: o sırada da spinner göster.
+  const listeYenileniyor = liste.isFetching && liste.isPlaceholderData;
+  const kiyasYenileniyor = kiyas.isFetching && kiyas.isPlaceholderData;
+  const yukleniyor = (!ozel && ozet.isLoading) || liste.isLoading || listeYenileniyor;
+  const aylar = trend.data?.aylar ?? [];
+  const enBuyuk = Math.max(1, ...aylar.map((a) => a.tutar));
+  const vurgu = yon === "gelir" ? renk.success : renk.aksan;
 
   return (
     <ScrollView
       style={{ backgroundColor: renk.bg }}
       contentContainerStyle={s.icerik}
       refreshControl={
-        <RefreshControl refreshing={liste.isRefetching} onRefresh={() => liste.refetch()} tintColor={renk.aksan} />
+        <RefreshControl
+          refreshing={liste.isRefetching}
+          onRefresh={() => Promise.all([liste.refetch(), kiyas.refetch(), trend.refetch()])}
+          tintColor={renk.aksan}
+        />
       }
     >
       <Stack.Screen options={{ title: String(p.ad) }} />
-      <Sekmeli secenekler={GRAN} etiket={(x) => ETIKET[x]} secili={gran} onSec={setGran} />
+      <Sekmeli secenekler={SEKMELER} etiket={(x) => ETIKET[x]} secili={sekme} onSec={setSekme} kucuk />
+
+      {ozel && (
+        <Kart>
+          <TarihAraligi deger={aralik} onChange={setAralik} />
+        </Kart>
+      )}
 
       <Kart>
+        {(kiyasYenileniyor || listeYenileniyor) && (
+          <ActivityIndicator style={s.koseSpinner} size="small" color={renk.aksan} />
+        )}
         <Text style={[s.etiket, { color: renk.textMuted }]}>
-          {DONEM[gran]} · {yon === "gelir" ? "toplam gelir" : "toplam harcama"}
+          {bas && bit ? `${kisaTarih(bas)} – ${kisaTarih(bit)}` : "…"} ·{" "}
+          {yon === "gelir" ? "toplam gelir" : "toplam harcama"}
         </Text>
         <Text style={[s.toplam, { color: yon === "gelir" ? renk.success : renk.text }]}>
-          {paraMetni(toplam, dovizli ? para : "TRY")}
+          {paraMetni(toplam, toplamPara)}
         </Text>
-        <Text style={[s.adet, { color: renk.textFaint }]}>{kayitlar.length} kayıt</Text>
+        <Text style={[s.adet, { color: renk.textFaint }]}>{kiyasOzet?.adet ?? kayitlar.length} kayıt</Text>
+        {kiyasOzet && (
+          <View style={[s.kiyas, { borderTopColor: renk.hairline }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>Önceki dönem</Text>
+              <Text style={{ color: renk.textFaint, fontSize: 12 }}>
+                {kisaTarih(kiyasOzet.obas)} – {kisaTarih(kiyasOzet.obit)}
+              </Text>
+              <Text style={{ color: renk.text, fontSize: 15, fontWeight: "700", marginTop: 2 }}>
+                {paraMetni(kiyasOzet.onceki, para)}
+              </Text>
+            </View>
+            <DegisimRozeti degisim={kiyasOzet.degisim} yon={yon} buyuk />
+          </View>
+        )}
+      </Kart>
+
+      <Kart>
+        <Text style={[T.heading, { color: renk.text }]}>Son 6 ay</Text>
+        <Text style={{ color: renk.textFaint, fontSize: 12, marginTop: 2, marginBottom: SP.md }}>
+          Her ay bir önceki aya göre değişim
+        </Text>
+        {!trend.data ? (
+          <YuklemeHalkasi boyut={40} yukseklik={150} />
+        ) : (
+          <View style={s.trend}>
+            {aylar.map((a, i) => {
+              const son = i === aylar.length - 1;
+              const ay = Number(a.ay.slice(5, 7)) - 1;
+              const artis = a.degisim != null && a.degisim > 0;
+              const iyi = yon === "gider" ? !artis : artis;
+              return (
+                <View key={a.ay} style={s.trendSutun}>
+                  <Text style={[s.trendTutar, { color: son ? renk.text : renk.textMuted }]} numberOfLines={1}>
+                    {a.tutar > 0 ? (gizli ? MASKE : tutarKisa(a.tutar)) : "–"}
+                  </Text>
+                  <View style={s.trendAlan}>
+                    <View
+                      style={{
+                        height: `${Math.max(a.tutar > 0 ? 4 : 0, (a.tutar / enBuyuk) * 100)}%`,
+                        width: "70%",
+                        borderRadius: 8,
+                        backgroundColor: son ? vurgu : renk.textFaint,
+                        opacity: son ? 1 : 0.45,
+                      }}
+                    />
+                  </View>
+                  <Text style={{ color: son ? renk.text : renk.textMuted, fontSize: 12, fontWeight: "700" }}>
+                    {AYLAR[ay]}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 11.5,
+                      fontWeight: "800",
+                      color:
+                        a.degisim == null || Math.round(a.degisim) === 0
+                          ? renk.textFaint
+                          : iyi
+                            ? renk.success
+                            : renk.danger,
+                    }}
+                  >
+                    {a.degisim == null ? "·" : `${a.degisim > 0 ? "↑" : a.degisim < 0 ? "↓" : ""}%${Math.round(Math.abs(a.degisim))}`}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
       </Kart>
 
       {yukleniyor ? (
-        <YuklemeHalkasi boyut={64} yukseklik={190} />
+        <YuklemeHalkasi boyut={64} yukseklik={190} yazi="Kayıtlar yükleniyor" />
       ) : (
         <View>
           {bolumler.map(([tarih, gunluk]) => (
@@ -83,6 +219,16 @@ export default function KategoriDetay() {
               ))}
             </View>
           ))}
+          {tumIslemler.length > gosterilen && (
+            <Pressable
+              onPress={() => setGosterilen((n) => n + SAYFA)}
+              style={[s.dahaFazla, { borderColor: renk.border, backgroundColor: renk.card }]}
+            >
+              <Text style={{ color: renk.text, fontWeight: "700" }}>
+                Daha fazla göster ({tumIslemler.length - gosterilen} kayıt daha)
+              </Text>
+            </Pressable>
+          )}
           {bolumler.length === 0 && (
             <Text style={[T.body, { color: renk.textFaint, textAlign: "center", paddingVertical: SP.xl }]}>
               Bu dönemde kayıt yok.
@@ -99,5 +245,19 @@ const s = StyleSheet.create({
   etiket: { fontSize: 13, fontWeight: "600" },
   toplam: { fontSize: 28, fontWeight: "800", marginTop: 2, letterSpacing: -0.5 },
   adet: { fontSize: 13, fontWeight: "500", marginTop: 2 },
+  kiyas: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SP.md,
+    marginTop: SP.md,
+    paddingTop: SP.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  trend: { flexDirection: "row", alignItems: "flex-end", gap: 4 },
+  trendSutun: { flex: 1, alignItems: "center", gap: 4 },
+  trendTutar: { fontSize: 10.5, fontWeight: "700" },
+  trendAlan: { height: 110, width: "100%", justifyContent: "flex-end", alignItems: "center", borderRadius: R.sm },
   gunBaslik: { fontSize: 13, fontWeight: "700", marginTop: SP.md, marginBottom: 2 },
+  koseSpinner: { position: "absolute", top: SP.md, right: SP.md },
+  dahaFazla: { marginTop: SP.md, borderWidth: 1, borderRadius: R.pill, paddingVertical: 11, alignItems: "center" },
 });

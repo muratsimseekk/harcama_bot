@@ -215,3 +215,90 @@ def genel_hedef_senkron(genel: float | None, eski_toplam: float, yeni_toplam: fl
     if genel is None or abs(genel - eski_toplam) < 0.01:
         return round(yeni_toplam, 2)
     return None
+
+
+# --------------------------------------------------------------------------- #
+# Kategori karşılaştırması (Analiz → kategoriler) ve aylık trend
+# --------------------------------------------------------------------------- #
+def _ay_sonu(d: date) -> date:
+    sonraki = date(d.year + (d.month == 12), d.month % 12 + 1, 1)
+    return date.fromordinal(sonraki.toordinal() - 1)
+
+
+def _ay_ekle(d: date, n: int) -> date:
+    """Ayın 1'ine göre n ay kaydırır (gün 1 kabul edilir)."""
+    m = d.year * 12 + (d.month - 1) + n
+    return date(m // 12, m % 12 + 1, 1)
+
+
+def onceki_aralik(bas: date, bit: date) -> tuple[date, date]:
+    """Kıyas dönemi. Tam takvim ay(lar)ı ise bir önceki aynı sayıda ay (Kasım → Ekim,
+    Q3 → Q2, yıl → önceki yıl); değilse hemen önceki aynı uzunlukta pencere."""
+    if bas.day == 1 and bit == _ay_sonu(bit):
+        ay = (bit.year - bas.year) * 12 + bit.month - bas.month + 1
+        obas = _ay_ekle(bas, -ay)
+        return obas, _ay_sonu(_ay_ekle(bas, -1))
+    gun = (bit - bas).days + 1
+    obit = date.fromordinal(bas.toordinal() - 1)
+    return date.fromordinal(obit.toordinal() - gun + 1), obit
+
+
+def degisim(bu: float, onceki: float) -> float | None:
+    """Yüzde değişim; önceki 0 ise tanımsız (None → istemci 'yeni' der)."""
+    if onceki <= 0:
+        return None
+    return round((bu - onceki) / onceki * 100, 1)
+
+
+def kategori_karsilastir(bu: list[Transaction], onceki: list[Transaction], yon: str) -> dict:
+    """Seçilen yönde (gider/gelir) her kategorinin bu ve önceki dönem toplamı + % değişim.
+    Önceki dönemde olup bu dönem hiç olmayan kategoriler de (0 ile) listelenir."""
+    bu = [t for t in bu if t.direction == yon]
+    onceki = [t for t in onceki if t.direction == yon]
+    toplam = round(sum(t.tutar for t in bu), 2)
+    otoplam = round(sum(t.tutar for t in onceki), 2)
+    # Ada göre gruplanır (aynı ad farklı bölümde olabilir: kişisel "Diğer" + işletme "Diğer");
+    # liste/detay da ada göre süzdüğü için iki satır olsa önceki dönem iki kez sayılırdı.
+    oharita: dict[str, float] = {}
+    for t in onceki:
+        k = t.kategori or "Diğer"
+        oharita[k] = oharita.get(k, 0.0) + t.tutar
+    bharita: dict[str, list] = {}  # ad -> [tutar, adet, tip]
+    for t in bu:
+        acc = bharita.setdefault(t.kategori or "Diğer", [0.0, 0, t.tip])
+        acc[0] += t.tutar
+        acc[1] += 1
+    satirlar = []
+    gorulen = set()
+    for ad, (tut, adet, tip) in sorted(bharita.items(), key=lambda kv: kv[1][0], reverse=True):
+        tut = round(tut, 2)
+        o = round(oharita.get(ad, 0.0), 2)
+        gorulen.add(ad)
+        satirlar.append({"kategori": ad, "tip": tip, "tutar": tut, "adet": adet,
+                         "oran": _oran(tut, toplam), "onceki_tutar": o, "degisim": degisim(tut, o)})
+    tipler = {t.kategori or "Diğer": t.tip for t in onceki}
+    for kat, o in sorted(oharita.items(), key=lambda kv: kv[1], reverse=True):
+        if kat not in gorulen:
+            satirlar.append({"kategori": kat, "tip": tipler[kat], "tutar": 0.0, "adet": 0,
+                             "oran": 0.0, "onceki_tutar": round(o, 2), "degisim": -100.0})
+    return {"toplam": toplam, "onceki_toplam": otoplam, "degisim": degisim(toplam, otoplam),
+            "kategoriler": satirlar}
+
+
+def aylik_trend(txs: list[Transaction], son_ay: date, aylar: int) -> list[dict]:
+    """`son_ay` dahil geriye `aylar` takvim ayının toplamı + bir önceki aya göre % değişim."""
+    ilk = _ay_ekle(date(son_ay.year, son_ay.month, 1), -(aylar - 1))
+    sepet: dict[tuple[int, int], list[float]] = {}
+    for t in txs:
+        acc = sepet.setdefault((t.tarih.year, t.tarih.month), [0.0, 0])
+        acc[0] += t.tutar
+        acc[1] += 1
+    sonuc: list[dict] = []
+    for i in range(aylar):
+        a = _ay_ekle(ilk, i)
+        tut, adet = sepet.get((a.year, a.month), [0.0, 0])
+        tut = round(tut, 2)
+        onceki = sonuc[-1]["tutar"] if sonuc else None
+        sonuc.append({"ay": f"{a.year}-{a.month:02d}", "tutar": tut, "adet": int(adet),
+                      "degisim": degisim(tut, onceki) if onceki is not None else None})
+    return sonuc

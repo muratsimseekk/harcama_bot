@@ -64,7 +64,7 @@ export function ParaSecici() {
                     <View style={{ flex: 1 }}>
                       <Text style={{ color: renk.text, fontWeight: "700", fontSize: 15 }}>{PARA_AD[p]}</Text>
                       {deger ? (
-                        <Text style={{ color: renk.textMuted, fontSize: 12.5, marginTop: 1 }}>
+                        <Text style={{ color: renk.textMuted, fontSize: 12.5, marginTop: 1 }} gizlenmez>
                           1 {SEMBOL[p]} = {kurMetni(deger)} ₺
                         </Text>
                       ) : p !== "TRY" ? (
