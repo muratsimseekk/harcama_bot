@@ -13,6 +13,7 @@ from api.routes import (
     budgets,
     capture,
     categories,
+    disa_aktar,
     hane,
     me,
     notifications,
@@ -21,6 +22,7 @@ from api.routes import (
     sayfalar,
     summary,
     surum,
+    tekrarlayan,
     transactions,
     uyelik,
 )
@@ -83,6 +85,8 @@ app.include_router(uyelik.router)
 app.include_router(reklam.router)
 app.include_router(sayfalar.router)
 app.include_router(surum.router)
+app.include_router(tekrarlayan.router)
+app.include_router(disa_aktar.router)
 
 
 # HEAD: UptimeRobot vb. izleyiciler varsayılan olarak HEAD atar (yalnız GET → 405 → "down")

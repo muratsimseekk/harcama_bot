@@ -28,6 +28,9 @@ import { useUyari } from "@/components/Uyari";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { api } from "@/lib/api";
 import { cevrimdisi } from "@/lib/baglanti";
+import { tutarKisa } from "@/lib/format";
+import { useHizliSablonlar } from "@/lib/hizliEkle";
+import { kategoriIkon } from "@/lib/kategoriIkon";
 import { reklamIzleProaktif } from "@/lib/kullanim402";
 import { useMe } from "@/lib/queries";
 import { reklamAktif } from "@/lib/reklam";
@@ -49,6 +52,7 @@ export default function Ekle() {
   const recorder = useAudioRecorder(KAYIT_AYARI);
   const rState = useAudioRecorderState(recorder, OLCUM_ARALIGI_MS);
   const me = useMe();
+  const sablonlar = useHizliSablonlar();
   const [sheetAcik, setSheetAcik] = useState(false);
   const [sheetDurum, setSheetDurum] = useState<EnerjiSheetDurum>(null);
   const [metin, setMetin] = useState("");
@@ -284,6 +288,29 @@ export default function Ekle() {
 
           {durum === "bos" && !yaziyor && (
             <>
+              {sablonlar.length > 0 ? (
+                // Sık girilen kayıtlar: dokun → form dolu açılır (tarih bugün), tek dokunuşla "Ekle"
+                <View style={{ alignSelf: "stretch", alignItems: "center", marginTop: SP.lg, gap: SP.sm }}>
+                  <Text style={[s.hizliBaslik, { color: renk.textFaint }]}>HIZLI EKLE</Text>
+                  <View style={[s.ornekler, { marginTop: 0 }]}>
+                    {sablonlar.map((h) => (
+                      <Pressable
+                        key={`${h.aciklama}|${h.kategori}|${h.direction}`}
+                        onPress={() => router.push({ pathname: "/islem-form", params: { sablon: JSON.stringify(h) } })}
+                        style={[s.hizli, { backgroundColor: renk.aksanSoft }]}
+                      >
+                        <Ionicons name={kategoriIkon(h.kategori)} size={14} color={renk.aksan} />
+                        <Text style={{ color: renk.text, fontSize: 13, fontWeight: "600", maxWidth: 130 }} numberOfLines={1}>
+                          {h.aciklama}
+                        </Text>
+                        <Text style={{ color: renk.textMuted, fontSize: 12.5, fontWeight: "700" }}>
+                          {tutarKisa(h.tutar)} ₺
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              ) : (
               <View style={s.ornekler}>
                 {ORNEKLER.map((o) => (
                   <Pressable
@@ -295,6 +322,7 @@ export default function Ekle() {
                   </Pressable>
                 ))}
               </View>
+              )}
               <Pressable onPress={() => router.push("/islem-form")} style={s.elle} hitSlop={8}>
                 <Ionicons name="create-outline" size={16} color={renk.aksan} />
                 <Text style={{ color: renk.aksan, fontSize: 13.5, fontWeight: "700" }}>Elle gir</Text>
@@ -353,6 +381,15 @@ const s = StyleSheet.create({
   ipucu: { fontSize: 13, textAlign: "center", maxWidth: 280 },
   ornekler: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: SP.sm, marginTop: SP.lg },
   ornek: { borderRadius: R.pill, paddingHorizontal: 12, paddingVertical: 7 },
+  hizliBaslik: { fontSize: 11.5, fontWeight: "800", letterSpacing: 0.6 },
+  hizli: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: R.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
   vazgec: {
     flexDirection: "row",
     alignItems: "center",

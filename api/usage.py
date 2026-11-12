@@ -73,6 +73,8 @@ def _gun_kayit_sayisi(user_id: str) -> int:
         .select("id", count="exact")
         .eq("user_id", user_id)
         .gte("created_at", _gun_basi_iso())
+        # Tekrarlayan kayıtlar (kira, abonelik …) sistemce eklenir — kullanıcının günlük hakkından düşmez
+        .or_("source.is.null,source.neq.tekrarlayan")  # neq tek başına NULL kaynakları da dışlardı
         .execute()
     )
     return res.count or 0

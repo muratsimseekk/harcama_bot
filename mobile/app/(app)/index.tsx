@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli, Yukleniyor } from "@/components/base";
+import { IcgoruKarti } from "@/components/IcgoruKarti";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { PastaGrafik } from "@/components/charts";
 import { EkranBasligi } from "@/components/EkranBasligi";
@@ -11,6 +12,7 @@ import { Metin as Text } from "@/components/Metin";
 import { AY_UZUN, katlaKategori, selamlama, turkceTutar } from "@/lib/format";
 import { useHane, useMevcut, useSummary, useTransactions } from "@/lib/queries";
 import { SP, T, useRenkler } from "@/lib/theme";
+import { useIslemSil } from "@/lib/islemSil";
 import { useTutarGizle } from "@/lib/tutarGizle";
 import { kurMetni, SEMBOL, usePara } from "@/lib/paraBirimi";
 import type { Granularity, Yon } from "@/lib/types";
@@ -45,6 +47,7 @@ function dagilimBaslik(gran: Granularity, yon: Yon, baslangic?: string): string 
 export default function AnaSayfa() {
   const renk = useRenkler();
   const router = useRouter();
+  const islemSil = useIslemSil();
   const [gran, setGran] = useState<Granularity>("month");
   const ozet = useSummary(gran);
   const ayOzet = useSummary("month");
@@ -158,6 +161,8 @@ export default function AnaSayfa() {
         </View>
       </Kart>
 
+      <IcgoruKarti />
+
       <Sekmeli secenekler={GRAN} etiket={(x) => ETIKET[x]} secili={gran} onSec={setGran} />
 
       <Kart>
@@ -194,6 +199,7 @@ export default function AnaSayfa() {
               key={t.id}
               islem={t}
               onPress={() => router.push({ pathname: "/islem-form", params: { islem: JSON.stringify(t) } })}
+              onSil={() => islemSil(t, "ana-sayfa")}
             />
           ))}
           {(sonlar.data ?? []).length === 0 && (

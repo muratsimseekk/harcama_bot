@@ -113,6 +113,28 @@ async def guncelle(user_id: CurrentUser, tx_id: str, istek: IslemGuncelleIstek) 
     return IslemModel.from_tx(guncel)
 
 
+@router.post("/{tx_id}/geri-al", response_model=IslemModel)
+async def geri_al(user_id: CurrentUser, tx_id: str) -> IslemModel:
+    """Silinen kaydı geri getirir ("Kayıt silindi · Geri al")."""
+    bulunan = await repo.get_silinen_dahil(tx_id)
+    if not bulunan:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Kayıt bulunamadı")
+    tx, silinmis = bulunan
+    if tx.user_id != user_id:
+        # hane düzenleyicisi başkasının kaydını sildiyse o da geri alabilsin
+        uyelik = await deps.hane_uyeligi(user_id)
+        sahip = await deps.hane_uyeligi(tx.user_id)
+        if not (uyelik and uyelik.rol in ("owner", "editor") and sahip
+                and sahip.household_id == uyelik.household_id):
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Kayıt bulunamadı")
+    if not silinmis:
+        return IslemModel.from_tx(tx)
+    geri = await repo.geri_al(tx_id)
+    if not geri:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Kayıt bulunamadı")
+    return IslemModel.from_tx(geri)
+
+
 @router.delete("/{tx_id}")
 async def sil(user_id: CurrentUser, tx_id: str) -> dict:
     await _sahiplik(tx_id, user_id)

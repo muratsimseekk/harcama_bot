@@ -273,6 +273,32 @@ export interface AyNokta {
   degisim: number | null; // bir önceki aya göre %
 }
 
+/** Her ay `gun` günü otomatik eklenen kayıt (kira, fatura, abonelik, maaş …). */
+export interface Tekrarlayan {
+  id: string;
+  aciklama: string;
+  tutar: number;
+  kategori: string;
+  tip: Tip;
+  direction: Yon;
+  gun: number;
+  aktif: boolean;
+  baslangic: string;
+  son_eklenen: string | null;
+  sonraki: string;
+}
+
+export interface TekrarlayanIstek {
+  aciklama: string;
+  tutar: number;
+  kategori: string;
+  tip: Tip;
+  direction: Yon;
+  gun: number;
+  baslangic?: string;
+  son_eklenen?: string;
+}
+
 export interface KategoriTrend {
   kategoriler: string[];
   yon: Yon;

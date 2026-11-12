@@ -1,4 +1,8 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Haptics from "expo-haptics";
+import { useRef } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import ReanimatedSwipeable, { type SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { Metin as Text } from "@/components/Metin";
 import { turkceTutar } from "@/lib/format";
 import { islemTutari, SEMBOL, usePara } from "@/lib/paraBirimi";
@@ -15,7 +19,79 @@ function tarihEt(iso: string): string {
   return `${d} ${AY_KISA[m - 1]}`;
 }
 
-export function IslemSatiri({ islem, onPress }: { islem: Islem; onPress?: () => void }) {
+/**
+ * İşlem satırı. `onSil` verilirse sola kaydırınca Düzenle / Sil çıkar (Sil anında yapılır,
+ * altta "Geri al" gösterilir — bkz lib/islemSil.ts).
+ */
+export function IslemSatiri({
+  islem,
+  onPress,
+  onSil,
+}: {
+  islem: Islem;
+  onPress?: () => void;
+  onSil?: () => void;
+}) {
+  const satir = <SatirIcerik islem={islem} onPress={onPress} />;
+  if (!onSil) return satir;
+  return <KaydirilabilirSatir onDuzenle={onPress} onSil={onSil}>{satir}</KaydirilabilirSatir>;
+}
+
+const EYLEM_GENISLIK = 76;
+
+function KaydirilabilirSatir({
+  children,
+  onDuzenle,
+  onSil,
+}: {
+  children: React.ReactNode;
+  onDuzenle?: () => void;
+  onSil: () => void;
+}) {
+  const renk = useRenkler();
+  const ref = useRef<SwipeableMethods>(null);
+  const eylemler = () => (
+    <View style={s.eylemler}>
+      {onDuzenle && (
+        <Pressable
+          onPress={() => {
+            ref.current?.close();
+            onDuzenle();
+          }}
+          style={[s.eylem, { backgroundColor: renk.blueSoft }]}
+        >
+          <Ionicons name="create-outline" size={20} color={renk.text} />
+          <Text style={[s.eylemYazi, { color: renk.text }]}>Düzenle</Text>
+        </Pressable>
+      )}
+      <Pressable
+        onPress={() => {
+          ref.current?.close();
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+          onSil();
+        }}
+        style={[s.eylem, { backgroundColor: renk.danger }]}
+      >
+        <Ionicons name="trash-outline" size={20} color="#fff" />
+        <Text style={[s.eylemYazi, { color: "#fff" }]}>Sil</Text>
+      </Pressable>
+    </View>
+  );
+  return (
+    <ReanimatedSwipeable
+      ref={ref}
+      friction={1.6}
+      rightThreshold={EYLEM_GENISLIK / 2}
+      overshootRight={false}
+      renderRightActions={eylemler}
+      containerStyle={{ backgroundColor: renk.bg }}
+    >
+      <View style={{ backgroundColor: renk.bg }}>{children}</View>
+    </ReanimatedSwipeable>
+  );
+}
+
+function SatirIcerik({ islem, onPress }: { islem: Islem; onPress?: () => void }) {
   const renk = useRenkler();
   const katRenk = useKategoriRenk();
   const gelir = islem.direction === "gelir";
@@ -70,4 +146,13 @@ const s = StyleSheet.create({
   tutar: { textAlign: "right", fontSize: 14, fontWeight: "700" },
   tutarAlt: { textAlign: "right", fontSize: 10.5, fontWeight: "600", marginTop: 1 },
   _r: { borderRadius: R.sm },
+  eylemler: { flexDirection: "row", alignItems: "stretch", paddingVertical: 6, gap: 6, paddingLeft: 6 },
+  eylem: {
+    width: EYLEM_GENISLIK,
+    borderRadius: R.md,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  eylemYazi: { fontSize: 12, fontWeight: "700" },
 });

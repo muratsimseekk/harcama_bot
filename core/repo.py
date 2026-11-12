@@ -146,6 +146,30 @@ async def soft_delete(tx_id: str) -> bool:
     return await _call(_run)
 
 
+async def get_silinen_dahil(tx_id: str) -> tuple[Transaction, bool] | None:
+    """Kayıt + silinmiş mi (geri al için)."""
+    def _run() -> dict | None:
+        res = _db().table("transactions").select("*").eq("id", tx_id).limit(1).execute()
+        return res.data[0] if res.data else None
+
+    r = await _call(_run)
+    return (Transaction.from_row(r), r.get("deleted_at") is not None) if r else None
+
+
+async def geri_al(tx_id: str) -> Transaction | None:
+    """Yumuşak silmeyi geri alır."""
+    def _run() -> dict | None:
+        res = (
+            _db().table("transactions")
+            .update({"deleted_at": None, "updated_at": now().isoformat()})
+            .eq("id", tx_id).execute()
+        )
+        return res.data[0] if res.data else None
+
+    r = await _call(_run)
+    return Transaction.from_row(r) if r else None
+
+
 def _kullanici_filtresi(q, user_id: str | list[str]):
     """Tek kullanıcı → .eq; birden çok (hane) → .in_."""
     if isinstance(user_id, str):
@@ -174,6 +198,9 @@ async def list_recent(user_id: str | list[str], n: int = 5) -> list[Transaction]
     return [Transaction.from_row(r) for r in await _call(_run)]
 
 
+_SAYFA = 1000
+
+
 async def list_period(
     user_id: str | list[str],
     baslangic: date,
@@ -183,7 +210,7 @@ async def list_period(
     tip: str | None = None,
     kategoriler: list[str] | None = None,
 ) -> list[Transaction]:
-    def _run() -> list[dict]:
+    def _sorgu():
         q = _db().table("transactions").select("*")
         q = _kullanici_filtresi(q, user_id)
         q = (
@@ -197,7 +224,20 @@ async def list_period(
             q = q.eq("type", tip)
         if kategoriler:
             q = q.in_("category", kategoriler)
-        return q.order("occurred_on", desc=False).execute().data
+        return q.order("occurred_on", desc=False).order("id", desc=False)
+
+    def _run() -> list[dict]:
+        # Sayfalı: PostgREST tek yanıtta en çok 1000 satır döner; yıllık/dışa aktarmada
+        # yoğun kullanıcıda kayıtlar sessizce eksik kalıyordu. id ikincil sıra → sayfalar kaymaz.
+        # Her sayfa yeni sorgu: builder değişken, aynı nesneye tekrar range/order eklenmesin.
+        satirlar: list[dict] = []
+        bas = 0
+        while True:
+            parca = _sorgu().range(bas, bas + _SAYFA - 1).execute().data
+            satirlar.extend(parca)
+            if len(parca) < _SAYFA:
+                return satirlar
+            bas += _SAYFA
 
     return [Transaction.from_row(r) for r in await _call(_run)]
 
@@ -905,3 +945,68 @@ async def kurlar_yaz(kurlar: list) -> None:
         _db().table("kurlar").upsert(satirlar, on_conflict="tarih").execute()
 
     await _call(_run)
+
+
+# --------------------------------------------------------------------------- #
+# tekrarlayan kayıtlar (kira, fatura, abonelik, maaş …)
+# --------------------------------------------------------------------------- #
+def _tekrar_satir(r: dict) -> dict:
+    return {
+        "id": r["id"], "aciklama": r["description"], "tutar": float(r["amount"]),
+        "kategori": r.get("category") or "", "tip": r.get("type") or "kisisel",
+        "direction": r.get("direction") or "gider", "gun": int(r["day_of_month"]),
+        "aktif": bool(r.get("is_active", True)),
+        "son_eklenen": date.fromisoformat(r["last_added_on"]) if r.get("last_added_on") else None,
+        "baslangic": date.fromisoformat(r["start_on"]),
+    }
+
+
+async def tekrar_listesi(user_id: str, *, yalniz_aktif: bool = False) -> list[dict]:
+    def _run() -> list[dict]:
+        q = _db().table("recurring").select("*").eq("user_id", user_id)
+        if yalniz_aktif:
+            q = q.eq("is_active", True)
+        return q.order("day_of_month").order("created_at").execute().data
+
+    return [_tekrar_satir(r) for r in await _call(_run)]
+
+
+async def tekrar_olustur(user_id: str, alanlar: dict) -> dict:
+    row = {"user_id": user_id, **alanlar}
+
+    def _run() -> dict:
+        return _db().table("recurring").insert(row).execute().data[0]
+
+    return _tekrar_satir(await _call(_run))
+
+
+async def tekrar_guncelle(user_id: str, kid: str, alanlar: dict) -> dict | None:
+    def _run() -> dict | None:
+        res = (
+            _db().table("recurring").update({**alanlar, "updated_at": now().isoformat()})
+            .eq("id", kid).eq("user_id", user_id).execute()
+        )
+        return res.data[0] if res.data else None
+
+    r = await _call(_run)
+    return _tekrar_satir(r) if r else None
+
+
+async def tekrar_sil(user_id: str, kid: str) -> bool:
+    def _run() -> bool:
+        return bool(_db().table("recurring").delete().eq("id", kid).eq("user_id", user_id).execute().data)
+
+    return await _call(_run)
+
+
+async def tekrar_talep(kid: str, eski: date | None, yeni: date | None) -> bool:
+    """`last_added_on`'u yalnız hâlâ `eski` ise `yeni` yapar (iyimser kilit): uygulama aynı
+    anda iki kez açılıp /isle iki kez gelirse aynı ayın kaydı iki kez eklenmesin."""
+    def _run() -> bool:
+        deger = yeni.isoformat() if yeni else None
+        q = _db().table("recurring").update({"last_added_on": deger, "updated_at": now().isoformat()})
+        q = q.eq("id", kid)
+        q = q.is_("last_added_on", "null") if eski is None else q.eq("last_added_on", eski.isoformat())
+        return bool(q.execute().data)
+
+    return await _call(_run)

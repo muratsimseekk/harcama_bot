@@ -42,6 +42,7 @@ export default function Profil() {
     { ikon: "star-outline", ad: "Üyelik", git: "/uyelik" },
     { ikon: "people-outline", ad: "Hane", git: "/hane" },
     { ikon: "pricetags-outline", ad: "Kategoriler", git: "/kategori-yonet" },
+    { ikon: "repeat-outline", ad: "Tekrarlayan kayıtlar", git: "/tekrarlayan" },
     { ikon: "shield-checkmark-outline", ad: "Güvenlik", git: "/ayarlar/guvenlik" },
     { ikon: "settings-outline", ad: "Ayarlar", git: "/ayarlar" },
     ...(DEV_NOAUTH ? [] : [{ ikon: "log-out-outline" as const, ad: "Çıkış", tehlike: true, onPress: cikis }]),

@@ -92,13 +92,18 @@ async def kategori_kiyas(
     bas: date = Query(...),
     bit: date = Query(...),
     para: Para = Query(default="TRY"),
+    obas: date | None = Query(default=None),
+    obit: date | None = Query(default=None),
 ) -> KategoriKiyasYanit:
-    """Seçilen aralıkta her kategorinin toplamı ve önceki eşdeğer döneme göre % değişimi."""
+    """Seçilen aralıkta her kategorinin toplamı ve önceki eşdeğer döneme göre % değişimi.
+    Kıyas dönemi verilmezse otomatik (`onceki_aralik`); ana sayfa içgörüsü "bu ayın ilk N
+    günü ↔ geçen ayın ilk N günü" kıyası için `obas`/`obit` gönderir."""
     if bit < bas:
         raise HTTPException(422, "Bitiş tarihi başlangıçtan önce olamaz")
     if (bit - bas).days + 1 > ARALIK_EN_COK_GUN:
         raise HTTPException(422, "Tarih aralığı en çok 2 yıl olabilir")
-    obas, obit = onceki_aralik(bas, bit)
+    if obas is None or obit is None or obit < obas or (obit - obas).days + 1 > ARALIK_EN_COK_GUN:
+        obas, obit = onceki_aralik(bas, bit)
     ids = await deps.kapsam(user_id)
     bu, onceki = await asyncio.gather(repo.list_period(ids, bas, bit), repo.list_period(ids, obas, obit))
     bu, onceki = await asyncio.gather(_cevrilmis(bu, para, bas, bit), _cevrilmis(onceki, para, obas, obit))

@@ -13,7 +13,11 @@ import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { turkceTutar } from "@/lib/format";
-import { useKategoriKiyas, useSummary, useTransactions } from "@/lib/queries";
+import { useUyari } from "@/components/Uyari";
+import { type Bicim, disaAktar } from "@/lib/disaAktar";
+import { hataMesaji } from "@/lib/hata";
+import { useIslemSil } from "@/lib/islemSil";
+import { useKategoriKiyas, useMe, useSummary, useTransactions } from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 import type { Granularity, Islem, Yon } from "@/lib/types";
 
@@ -60,6 +64,10 @@ function gunAraligi(bas?: string, bit?: string): string[] {
 export default function Analiz() {
   const renk = useRenkler();
   const router = useRouter();
+  const islemSil = useIslemSil();
+  const uyari = useUyari();
+  const me = useMe();
+  const [aktariliyor, setAktariliyor] = useState(false);
   const [sekme, setSekme] = useState<Sekme>("month");
   const [aralik, setAralik] = useState<Aralik>(varsayilanAralik);
   const [katYon, setKatYon] = useState<Yon>("gider");
@@ -161,6 +169,44 @@ export default function Analiz() {
   const genelHedef = ozet.data?.hedefler.find((h) => h.kapsam === "genel");
   const katHedefler = (ozet.data?.hedefler ?? []).filter((h) => h.kapsam !== "genel");
 
+  async function aktar(bicim: Bicim) {
+    if (!bas || !bit) return;
+    setAktariliyor(true);
+    try {
+      await disaAktar(bicim, bas, bit);
+    } catch (e) {
+      uyari("Dışa aktarılamadı", hataMesaji(e, undefined, { ekran: "analiz-disa-aktar" }));
+    } finally {
+      setAktariliyor(false);
+    }
+  }
+
+  function disaAktarSor() {
+    const aralikYazi = bas && bit ? `${kisaTarih(bas)} – ${kisaTarih(bit)}` : "";
+    if (me.data?.plan !== "pro") {
+      uyari(
+        "Excel ve PDF dökümü Pro'da",
+        "Seçtiğin tarih aralığındaki tüm kayıtları Excel ya da PDF olarak indirip paylaşabilirsin — muhasebe ve arşiv için.",
+        [
+          { yazi: "Vazgeç", stil: "vazgec" },
+          { yazi: "Pro'ya bak", onPress: () => router.push("/uyelik") },
+        ],
+        { ikon: "document-text-outline" },
+      );
+      return;
+    }
+    uyari(
+      "Dışa aktar",
+      `${aralikYazi} arasındaki tüm kayıtlar`,
+      [
+        { yazi: "Excel (.xlsx)", onPress: () => aktar("xlsx") },
+        { yazi: "PDF", onPress: () => aktar("pdf") },
+        { yazi: "Vazgeç", stil: "vazgec" },
+      ],
+      { ikon: "download-outline" },
+    );
+  }
+
   const islemAc = (t: Islem) =>
     router.push({ pathname: "/islem-form", params: { islem: JSON.stringify(t) } });
 
@@ -208,12 +254,26 @@ export default function Analiz() {
             <Text style={[T.heading, { color: renk.text }]}>Gelir & Gider</Text>
             {(ozetYenileniyor || (ozel && txYenileniyor)) && <ActivityIndicator size="small" color={renk.aksan} />}
           </View>
-          <Pressable
-            onPress={() => router.navigate("/ara")}
-            style={[s.yesilBtn, { backgroundColor: renk.aksan }]}
-          >
-            <Ionicons name="search" size={16} color={renk.aksanUstu} />
-          </Pressable>
+          <View style={s.baslikSol}>
+            <Pressable
+              onPress={disaAktarSor}
+              disabled={aktariliyor}
+              style={[s.yesilBtn, { backgroundColor: renk.cardAlt }]}
+              accessibilityLabel="Dışa aktar"
+            >
+              {aktariliyor ? (
+                <ActivityIndicator size="small" color={renk.aksan} />
+              ) : (
+                <Ionicons name="download-outline" size={17} color={renk.text} />
+              )}
+            </Pressable>
+            <Pressable
+              onPress={() => router.navigate("/ara")}
+              style={[s.yesilBtn, { backgroundColor: renk.aksan }]}
+            >
+              <Ionicons name="search" size={16} color={renk.aksanUstu} />
+            </Pressable>
+          </View>
         </View>
         <IkiliCubukGrafik etiketler={grafik.etiketler} gelir={grafik.gelir} gider={grafik.gider} />
       </Kart>
@@ -338,7 +398,7 @@ export default function Analiz() {
             <View key={tarih}>
               <Text style={[s.gunBaslik, { color: renk.textMuted }]}>{tarihUzun(tarih)}</Text>
               {list.map((t) => (
-                <IslemSatiri key={t.id} islem={t} onPress={() => islemAc(t)} />
+                <IslemSatiri key={t.id} islem={t} onPress={() => islemAc(t)} onSil={() => islemSil(t, "analiz")} />
               ))}
             </View>
           ))}

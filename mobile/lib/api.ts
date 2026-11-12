@@ -21,6 +21,8 @@ import type {
   Tip,
   KategoriKiyasYanit,
   KategoriTrend,
+  Tekrarlayan,
+  TekrarlayanIstek,
 } from "./types";
 
 export interface IslemFiltre {
@@ -166,6 +168,46 @@ export const api = {
     return jsonReq(`/v1/transactions/${id}`, "DELETE");
   },
 
+  /** Silinen kaydı geri getirir ("Kayıt silindi · Geri al"). */
+  geriAl(id: string): Promise<Islem> {
+    return jsonReq<Islem>(`/v1/transactions/${id}/geri-al`, "POST");
+  },
+
+  tekrarlayanlar(): Promise<Tekrarlayan[]> {
+    return jsonReq<Tekrarlayan[]>("/v1/tekrarlayan", "GET");
+  },
+
+  tekrarlayanEkle(body: TekrarlayanIstek): Promise<Tekrarlayan> {
+    return jsonReq<Tekrarlayan>("/v1/tekrarlayan", "POST", body);
+  },
+
+  tekrarlayanGuncelle(id: string, alanlar: Partial<TekrarlayanIstek> & { aktif?: boolean }): Promise<Tekrarlayan> {
+    return jsonReq<Tekrarlayan>(`/v1/tekrarlayan/${id}`, "PATCH", alanlar);
+  },
+
+  tekrarlayanSil(id: string): Promise<{ silindi: boolean }> {
+    return jsonReq(`/v1/tekrarlayan/${id}`, "DELETE");
+  },
+
+  /** Günü gelmiş tekrarlayan kayıtları ekler (uygulama açılınca / öne gelince). */
+  tekrarlayanIsle(): Promise<{ eklenen: number; aciklamalar: string[] }> {
+    return jsonReq("/v1/tekrarlayan/isle", "POST");
+  },
+
+  /** Dışa aktarma adresi + yetki başlığı (Excel indirme `File.downloadFileAsync` ile). */
+  async disaAktarIstek(bas: string, bit: string, bicim: "xlsx" | "html") {
+    const q = new URLSearchParams({ bas, bit, bicim });
+    return { url: `${BASE}/v1/disa-aktar?${q.toString()}`, headers: await authHeader() };
+  },
+
+  /** PDF için yazdırılabilir HTML (cihazda expo-print ile PDF'e çevrilir). */
+  async disaAktarHtml(bas: string, bit: string): Promise<string> {
+    const yol = `/v1/disa-aktar?${new URLSearchParams({ bas, bit, bicim: "html" }).toString()}`;
+    const res = await istek(yol, { method: "GET", headers: await authHeader() });
+    if (!res.ok) await handle(res, yol, "GET"); // ApiError fırlatır (402 → Pro gerekli)
+    return res.text();
+  },
+
   me(): Promise<Ben> {
     return jsonReq<Ben>("/v1/me", "GET");
   },
@@ -221,9 +263,18 @@ export const api = {
   },
 
   /** Tarih aralığında kategori toplamları + önceki eşdeğer döneme göre % değişim. */
-  kategoriKiyas(bas: string, bit: string, para: Para = "TRY"): Promise<KategoriKiyasYanit> {
+  kategoriKiyas(
+    bas: string,
+    bit: string,
+    para: Para = "TRY",
+    kiyas?: { obas: string; obit: string },
+  ): Promise<KategoriKiyasYanit> {
     const q = new URLSearchParams({ bas, bit });
     if (para !== "TRY") q.set("para", para);
+    if (kiyas) {
+      q.set("obas", kiyas.obas);
+      q.set("obit", kiyas.obit);
+    }
     return jsonReq<KategoriKiyasYanit>(`/v1/summary/kategoriler?${q.toString()}`, "GET");
   },
 

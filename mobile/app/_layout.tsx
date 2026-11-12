@@ -23,6 +23,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Giris } from "@/components/Giris";
 import { GuncellemePenceresi } from "@/components/GuncellemePenceresi";
 import { HataSiniri } from "@/components/HataSiniri";
+import { AltBildirim } from "@/components/AltBildirim";
+import { TekrarlayanIsleyici } from "@/components/TekrarlayanIsleyici";
 import { UyariProvider, useUyari } from "@/components/Uyari";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
@@ -202,6 +204,7 @@ function Kapi() {
       <Stack.Screen name="ara" options={{ ...baslik, title: "Ara" }} />
       <Stack.Screen name="kategori-yonet" options={{ ...baslik, title: "Kategoriler" }} />
       <Stack.Screen name="kategori-detay" options={{ ...baslik, title: "Kategori" }} />
+      <Stack.Screen name="tekrarlayan" options={{ ...baslik, title: "Tekrarlayan kayıtlar" }} />
       <Stack.Screen name="hane/index" options={{ ...baslik, title: "Hane" }} />
       <Stack.Screen name="yasal" options={{ ...baslik, title: "Yasal" }} />
       <Stack.Screen name="uyelik" options={{ ...baslik, title: "Üyelik" }} />
@@ -257,6 +260,8 @@ function RootLayout() {
                     <Kapi />
                   </View>
                   <GuncellemePenceresi />
+                  <TekrarlayanIsleyici />
+                  <AltBildirim />
                 </UyariProvider>
               </AuthProvider>
             </QueryClientProvider>

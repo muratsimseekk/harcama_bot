@@ -29,11 +29,11 @@ export function useSummary(period: Granularity, ref?: string, paraZorla?: Para) 
 }
 
 /** "summary" altında: işlem değişince tazelenir. */
-export function useKategoriKiyas(bas?: string, bit?: string) {
+export function useKategoriKiyas(bas?: string, bit?: string, kiyas?: { obas: string; obit: string }) {
   const para = usePara();
   return useQuery({
-    queryKey: ["summary", "kategoriler", bas, bit, para],
-    queryFn: () => api.kategoriKiyas(bas!, bit!, para),
+    queryKey: ["summary", "kategoriler", bas, bit, para, kiyas?.obas, kiyas?.obit],
+    queryFn: () => api.kategoriKiyas(bas!, bit!, para, kiyas),
     enabled: !!bas && !!bit && bas <= bit,
     placeholderData: keepPreviousData,
   });
@@ -68,7 +68,7 @@ export function useCategories() {
   return useQuery({ queryKey: ["categories"], queryFn: () => api.listCategories() });
 }
 
-function invalidateHepsi(qc: ReturnType<typeof useQueryClient>) {
+export function invalidateHepsi(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["transactions"] });
   qc.invalidateQueries({ queryKey: ["summary"] });
   qc.invalidateQueries({ queryKey: ["me"] });
@@ -179,6 +179,27 @@ export function useDeleteTransaction() {
   return useMutation({
     mutationFn: (id: string) => api.deleteTransaction(id),
     onSuccess: () => invalidateHepsi(qc),
+  });
+}
+
+/** Silinen kaydı geri getir; liste/özet tazelenir. */
+export function useGeriAl() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.geriAl(id),
+    onSuccess: () => invalidateHepsi(qc),
+  });
+}
+
+export function useTekrarlayanlar() {
+  return useQuery({ queryKey: ["tekrarlayan"], queryFn: () => api.tekrarlayanlar() });
+}
+
+export function useTekrarlayanMutasyon<T>(fn: (arg: T) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tekrarlayan"] }),
   });
 }
 

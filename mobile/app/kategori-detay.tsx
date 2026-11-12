@@ -1,3 +1,4 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
@@ -6,10 +7,22 @@ import { IslemSatiri } from "@/components/IslemSatiri";
 import { DegisimRozeti } from "@/components/KategoriKiyas";
 import { Metin as Text } from "@/components/Metin";
 import { type Aralik, kisaTarih, TarihAraligi, varsayilanAralik } from "@/components/TarihAraligi";
+import { TutarDialog } from "@/components/TutarDialog";
+import { useUyari } from "@/components/Uyari";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
-import { tarihEtiket, tutarKisa } from "@/lib/format";
+import { hataMesaji } from "@/lib/hata";
+import { tarihEtiket, turkceTutar, tutarKisa } from "@/lib/format";
 import { islemTutari, paraMetni, usePara } from "@/lib/paraBirimi";
-import { useKategoriKiyas, useKategoriTrend, useSummary, useTransactions } from "@/lib/queries";
+import { useIslemSil } from "@/lib/islemSil";
+import {
+  useBudgets,
+  useDeleteBudget,
+  useKategoriKiyas,
+  useKategoriTrend,
+  useSetBudget,
+  useSummary,
+  useTransactions,
+} from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 import { MASKE, useGizli } from "@/lib/tutarGizle";
 import type { Granularity, Islem, Yon } from "@/lib/types";
@@ -28,6 +41,7 @@ const AYLAR = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", 
 export default function KategoriDetay() {
   const renk = useRenkler();
   const router = useRouter();
+  const islemSil = useIslemSil();
   const p = useLocalSearchParams<{
     ad: string;
     kategoriler: string;
@@ -43,6 +57,17 @@ export default function KategoriDetay() {
     p.bas && p.bit ? { bas: String(p.bas), bit: String(p.bit) } : varsayilanAralik(),
   );
   const ozel = sekme === "ozel";
+
+  // Aylık limit kartı: yalnız tek bir gider kategorisinde (katlanmış "Diğer" grubunda değil)
+  const limitGoster = yon === "gider" && kategoriler.length === 1;
+  const uyari = useUyari();
+  const butceler = useBudgets();
+  const ayOzet = useSummary("month", undefined, "TRY"); // limitler TL
+  const setBudget = useSetBudget();
+  const delBudget = useDeleteBudget();
+  const [limitAcik, setLimitAcik] = useState(false);
+  const limit = butceler.data?.find((b) => b.kapsam === "kategori" && b.kapsam_deger === kategoriler[0]);
+  const limitIlerleme = ayOzet.data?.hedefler.find((h) => h.kapsam === "kategori" && h.kapsam_deger === kategoriler[0]);
 
   const ozet = useSummary(ozel ? "month" : sekme);
   const bas = ozel ? aralik.bas : ozet.data?.baslangic;
@@ -98,6 +123,10 @@ export default function KategoriDetay() {
   const yukleniyor = (!ozel && ozet.isLoading) || liste.isLoading || listeYenileniyor;
   const aylar = trend.data?.aylar ?? [];
   const enBuyuk = Math.max(1, ...aylar.map((a) => a.tutar));
+  // Limit önerisi: içinde bulunulan ay hariç son 3 tam ayın ortalaması (TL'de — limitler TL)
+  const tamAylar = aylar.slice(-4, -1);
+  const ortalama3 =
+    para === "TRY" && tamAylar.length ? tamAylar.reduce((t, a) => t + a.tutar, 0) / tamAylar.length : 0;
   const vurgu = yon === "gelir" ? renk.success : renk.aksan;
 
   return (
@@ -148,6 +177,101 @@ export default function KategoriDetay() {
           </View>
         )}
       </Kart>
+
+      {limitGoster && !butceler.isLoading && (
+        <Kart>
+          {limit ? (
+            <View style={{ gap: SP.sm }}>
+              <View style={s.limitUst}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: renk.textMuted, fontSize: 12.5, fontWeight: "600" }}>Aylık limit</Text>
+                  <Text style={{ color: renk.text, fontSize: 16, fontWeight: "800", marginTop: 1 }}>
+                    {turkceTutar(limitIlerleme?.harcanan ?? 0)} / {turkceTutar(limit.limit_amount)} ₺
+                  </Text>
+                </View>
+                <Pressable onPress={() => setLimitAcik(true)} hitSlop={8} style={[s.miniBtn, { backgroundColor: renk.cardAlt }]}>
+                  <Text style={{ color: renk.text, fontSize: 12.5, fontWeight: "700" }}>Değiştir</Text>
+                </Pressable>
+                <Pressable
+                  hitSlop={8}
+                  disabled={delBudget.isPending}
+                  onPress={() =>
+                    uyari(`${kategoriler[0]} limiti`, "Aylık limit kaldırılsın mı?", [
+                      { yazi: "Vazgeç", stil: "vazgec" },
+                      {
+                        yazi: "Kaldır",
+                        stil: "tehlike",
+                        onPress: () =>
+                          delBudget.mutate(limit.id, {
+                            onError: (e) => uyari("Kaldırılamadı", hataMesaji(e, undefined, { ekran: "kategori-detay" })),
+                          }),
+                      },
+                    ])
+                  }
+                >
+                  {delBudget.isPending ? (
+                    <ActivityIndicator size="small" color={renk.textFaint} />
+                  ) : (
+                    <Ionicons name="close-circle" size={22} color={renk.textFaint} />
+                  )}
+                </Pressable>
+              </View>
+              <View style={[s.limitRay, { backgroundColor: renk.hairline }]}>
+                <View
+                  style={{
+                    width: `${Math.min(100, Math.max(2, limitIlerleme?.oran ?? 0))}%`,
+                    height: "100%",
+                    borderRadius: R.pill,
+                    backgroundColor:
+                      limitIlerleme?.durum === "asti"
+                        ? renk.danger
+                        : limitIlerleme?.durum === "yaklasti"
+                          ? renk.warn
+                          : renk.aksan,
+                  }}
+                />
+              </View>
+              <Text style={{ color: renk.textFaint, fontSize: 12 }}>
+                Bu ay %{Math.round(limitIlerleme?.oran ?? 0)} kullanıldı
+                {limitIlerleme && limitIlerleme.limit > limitIlerleme.harcanan
+                  ? ` · ${turkceTutar(limitIlerleme.limit - limitIlerleme.harcanan)} ₺ kaldı`
+                  : ""}
+              </Text>
+            </View>
+          ) : (
+            <Pressable onPress={() => setLimitAcik(true)} style={s.limitYok}>
+              <View style={[s.limitIkon, { backgroundColor: renk.aksanSoft }]}>
+                <Ionicons name="flag-outline" size={18} color={renk.aksan} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: renk.text, fontSize: 15, fontWeight: "700" }}>Bu kategoriye aylık limit koy</Text>
+                <Text style={{ color: renk.textMuted, fontSize: 12.5, marginTop: 2 }}>
+                  {ortalama3 > 0
+                    ? `Son 3 ay ortalaman ${turkceTutar(ortalama3)} ₺ · aşınca haber veririz`
+                    : "Limite yaklaşınca ve aşınca haber veririz"}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />
+            </Pressable>
+          )}
+        </Kart>
+      )}
+
+      <TutarDialog
+        acik={limitAcik}
+        baslik={`${String(p.ad)} — aylık limit`}
+        aciklama={ortalama3 > 0 ? `Son 3 ayın ortalaması: ${turkceTutar(ortalama3)} ₺` : undefined}
+        baslangic={limit?.limit_amount ?? (ortalama3 > 0 ? Math.round(ortalama3) : undefined)}
+        onKapat={() => setLimitAcik(false)}
+        kaydet={(n) =>
+          setBudget
+            .mutateAsync({ kapsam: "kategori", kapsam_deger: kategoriler[0], limit_amount: n })
+            .then(
+              () => {},
+              (e) => uyari("Kaydedilemedi", hataMesaji(e, undefined, { ekran: "kategori-detay" })),
+            )
+        }
+      />
 
       <Kart>
         <Text style={[T.heading, { color: renk.text }]}>Son 6 ay</Text>
@@ -215,6 +339,7 @@ export default function KategoriDetay() {
                   key={t.id}
                   islem={t}
                   onPress={() => router.push({ pathname: "/islem-form", params: { islem: JSON.stringify(t) } })}
+                  onSil={() => islemSil(t, "kategori-detay")}
                 />
               ))}
             </View>
@@ -258,6 +383,11 @@ const s = StyleSheet.create({
   trendTutar: { fontSize: 10.5, fontWeight: "700" },
   trendAlan: { height: 110, width: "100%", justifyContent: "flex-end", alignItems: "center", borderRadius: R.sm },
   gunBaslik: { fontSize: 13, fontWeight: "700", marginTop: SP.md, marginBottom: 2 },
+  limitUst: { flexDirection: "row", alignItems: "center", gap: SP.md },
+  limitRay: { height: 8, borderRadius: R.pill, overflow: "hidden" },
+  limitYok: { flexDirection: "row", alignItems: "center", gap: SP.md },
+  limitIkon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  miniBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: R.pill },
   koseSpinner: { position: "absolute", top: SP.md, right: SP.md },
   dahaFazla: { marginTop: SP.md, borderWidth: 1, borderRadius: R.pill, paddingVertical: 11, alignItems: "center" },
 });
