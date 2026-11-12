@@ -213,6 +213,28 @@ def test_disa_aktar_xlsx(client, monkeypatch):
     assert oz["B3"].value == 45000 and oz["B4"].value == 250
 
 
+def test_disa_aktar_kategori_filtresi(client, monkeypatch):
+    _plan(monkeypatch, True)
+    alinan = {}
+
+    async def kapsam(uid):
+        return ["u1"]
+
+    async def list_period(ids, bas, bit, **kw):
+        alinan.update(kw)
+        return [_tx(1200, date(2026, 7, 3), "Kafe/Restoran")]
+
+    monkeypatch.setattr(rota_dis.deps, "kapsam", kapsam)
+    monkeypatch.setattr(rota_dis.repo, "list_period", list_period)
+    r = client.get("/v1/disa-aktar?bas=2026-06-01&bit=2026-08-31&kategori=Kafe/Restoran&yon=gider")
+    assert r.status_code == 200
+    assert alinan == {"direction": "gider", "kategoriler": ["Kafe/Restoran"]}
+    assert "parazi_kafe-restoran_2026-06-01_2026-08-31.xlsx" in r.headers["content-disposition"]
+    h = client.get("/v1/disa-aktar?bas=2026-06-01&bit=2026-08-31&kategori=Diğer&bicim=html")
+    assert alinan["kategoriler"] == ["Diğer", ""]  # kategorisizler de "Diğer"de
+    assert "Paraİzi dökümü · Diğer" in h.text
+
+
 def test_disa_aktar_html(client, monkeypatch):
     _disa_hazirla(monkeypatch)
     r = client.get("/v1/disa-aktar?bas=2026-11-01&bit=2026-11-30&bicim=html")

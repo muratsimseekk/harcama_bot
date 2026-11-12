@@ -25,6 +25,19 @@ import type {
   TekrarlayanIstek,
 } from "./types";
 
+/** Dışa aktarmayı tek kategori(ler)e / yöne daraltır. */
+export interface DisaAktarFiltre {
+  kategoriler?: string[];
+  yon?: "gider" | "gelir";
+}
+
+function disaAktarSorgu(bas: string, bit: string, bicim: "xlsx" | "html", f?: DisaAktarFiltre): string {
+  const q = new URLSearchParams({ bas, bit, bicim });
+  for (const k of f?.kategoriler ?? []) q.append("kategori", k);
+  if (f?.yon) q.set("yon", f.yon);
+  return `/v1/disa-aktar?${q.toString()}`;
+}
+
 export interface IslemFiltre {
   from?: string;
   to?: string;
@@ -195,14 +208,13 @@ export const api = {
   },
 
   /** Dışa aktarma adresi + yetki başlığı (Excel indirme `File.downloadFileAsync` ile). */
-  async disaAktarIstek(bas: string, bit: string, bicim: "xlsx" | "html") {
-    const q = new URLSearchParams({ bas, bit, bicim });
-    return { url: `${BASE}/v1/disa-aktar?${q.toString()}`, headers: await authHeader() };
+  async disaAktarIstek(bas: string, bit: string, bicim: "xlsx" | "html", filtre?: DisaAktarFiltre) {
+    return { url: `${BASE}${disaAktarSorgu(bas, bit, bicim, filtre)}`, headers: await authHeader() };
   },
 
   /** PDF için yazdırılabilir HTML (cihazda expo-print ile PDF'e çevrilir). */
-  async disaAktarHtml(bas: string, bit: string): Promise<string> {
-    const yol = `/v1/disa-aktar?${new URLSearchParams({ bas, bit, bicim: "html" }).toString()}`;
+  async disaAktarHtml(bas: string, bit: string, filtre?: DisaAktarFiltre): Promise<string> {
+    const yol = disaAktarSorgu(bas, bit, "html", filtre);
     const res = await istek(yol, { method: "GET", headers: await authHeader() });
     if (!res.ok) await handle(res, yol, "GET"); // ApiError fırlatır (402 → Pro gerekli)
     return res.text();

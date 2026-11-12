@@ -13,11 +13,9 @@ import { IslemSatiri } from "@/components/IslemSatiri";
 import { Metin as Text } from "@/components/Metin";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { turkceTutar } from "@/lib/format";
-import { useUyari } from "@/components/Uyari";
-import { type Bicim, disaAktar } from "@/lib/disaAktar";
-import { hataMesaji } from "@/lib/hata";
+import { useDisaAktar } from "@/lib/disaAktar";
 import { useIslemSil } from "@/lib/islemSil";
-import { useKategoriKiyas, useMe, useSummary, useTransactions } from "@/lib/queries";
+import { useKategoriKiyas, useSummary, useTransactions } from "@/lib/queries";
 import { R, SP, T, useRenkler } from "@/lib/theme";
 import type { Granularity, Islem, Yon } from "@/lib/types";
 
@@ -65,9 +63,7 @@ export default function Analiz() {
   const renk = useRenkler();
   const router = useRouter();
   const islemSil = useIslemSil();
-  const uyari = useUyari();
-  const me = useMe();
-  const [aktariliyor, setAktariliyor] = useState(false);
+  const { aktariliyor, sor: disaAktarSor } = useDisaAktar("analiz");
   const [sekme, setSekme] = useState<Sekme>("month");
   const [aralik, setAralik] = useState<Aralik>(varsayilanAralik);
   const [katYon, setKatYon] = useState<Yon>("gider");
@@ -169,43 +165,16 @@ export default function Analiz() {
   const genelHedef = ozet.data?.hedefler.find((h) => h.kapsam === "genel");
   const katHedefler = (ozet.data?.hedefler ?? []).filter((h) => h.kapsam !== "genel");
 
-  async function aktar(bicim: Bicim) {
-    if (!bas || !bit) return;
-    setAktariliyor(true);
-    try {
-      await disaAktar(bicim, bas, bit);
-    } catch (e) {
-      uyari("Dışa aktarılamadı", hataMesaji(e, undefined, { ekran: "analiz-disa-aktar" }));
-    } finally {
-      setAktariliyor(false);
-    }
-  }
-
-  function disaAktarSor() {
-    const aralikYazi = bas && bit ? `${kisaTarih(bas)} – ${kisaTarih(bit)}` : "";
-    if (me.data?.plan !== "pro") {
-      uyari(
-        "Excel ve PDF dökümü Pro'da",
-        "Seçtiğin tarih aralığındaki tüm kayıtları Excel ya da PDF olarak indirip paylaşabilirsin — muhasebe ve arşiv için.",
-        [
-          { yazi: "Vazgeç", stil: "vazgec" },
-          { yazi: "Pro'ya bak", onPress: () => router.push("/uyelik") },
-        ],
-        { ikon: "document-text-outline" },
-      );
-      return;
-    }
-    uyari(
-      "Dışa aktar",
-      `${aralikYazi} arasındaki tüm kayıtlar`,
-      [
-        { yazi: "Excel (.xlsx)", onPress: () => aktar("xlsx") },
-        { yazi: "PDF", onPress: () => aktar("pdf") },
-        { yazi: "Vazgeç", stil: "vazgec" },
-      ],
-      { ikon: "download-outline" },
-    );
-  }
+  // Tümünün dökümü; tek kategori için kategori detayındaki indirme ikonu
+  const disaAktarAc = () =>
+    disaAktarSor(bas, bit, {
+      araligiDegistir: ozel
+        ? undefined
+        : () => {
+            if (bas && bit) setAralik({ bas, bit }); // aynı aralıktan başlasın, kullanıcı daraltsın
+            setSekme("ozel");
+          },
+    });
 
   const islemAc = (t: Islem) =>
     router.push({ pathname: "/islem-form", params: { islem: JSON.stringify(t) } });
@@ -256,7 +225,7 @@ export default function Analiz() {
           </View>
           <View style={s.baslikSol}>
             <Pressable
-              onPress={disaAktarSor}
+              onPress={disaAktarAc}
               disabled={aktariliyor}
               style={[s.yesilBtn, { backgroundColor: renk.cardAlt }]}
               accessibilityLabel="Dışa aktar"

@@ -10,6 +10,7 @@ import { type Aralik, kisaTarih, TarihAraligi, varsayilanAralik } from "@/compon
 import { TutarDialog } from "@/components/TutarDialog";
 import { useUyari } from "@/components/Uyari";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
+import { useDisaAktar } from "@/lib/disaAktar";
 import { hataMesaji } from "@/lib/hata";
 import { tarihEtiket, turkceTutar, tutarKisa } from "@/lib/format";
 import { islemTutari, paraMetni, usePara } from "@/lib/paraBirimi";
@@ -42,6 +43,7 @@ export default function KategoriDetay() {
   const renk = useRenkler();
   const router = useRouter();
   const islemSil = useIslemSil();
+  const { aktariliyor, sor: disaAktarSor } = useDisaAktar("kategori-detay");
   const p = useLocalSearchParams<{
     ad: string;
     kategoriler: string;
@@ -141,7 +143,24 @@ export default function KategoriDetay() {
         />
       }
     >
-      <Stack.Screen options={{ title: String(p.ad) }} />
+      <Stack.Screen
+        options={{
+          title: String(p.ad),
+          // Yalnız bu kategorinin, seçili aralıktaki dökümü (Haftalık/Aylık/Yıllık/Özel)
+          headerRight: () =>
+            aktariliyor ? (
+              <ActivityIndicator size="small" color={renk.aksan} />
+            ) : (
+              <Pressable
+                hitSlop={12}
+                accessibilityLabel="Bu kategoriyi dışa aktar"
+                onPress={() => disaAktarSor(bas, bit, { filtre: { kategoriler, yon }, baslik: String(p.ad) })}
+              >
+                <Ionicons name="download-outline" size={22} color={renk.text} />
+              </Pressable>
+            ),
+        }}
+      />
       <Sekmeli secenekler={SEKMELER} etiket={(x) => ETIKET[x]} secili={sekme} onSec={setSekme} kucuk />
 
       {ozel && (

@@ -44,7 +44,9 @@ def _sirali(txs: list[Transaction]) -> list[Transaction]:
     return sorted(txs, key=lambda t: (t.tarih, t.direction, t.kategori), reverse=True)
 
 
-def xlsx(txs: list[Transaction], bas: date, bit: date, ekleyen: dict[str, str] | None = None) -> bytes:
+def xlsx(
+    txs: list[Transaction], bas: date, bit: date, ekleyen: dict[str, str] | None = None, filtre: str = "",
+) -> bytes:
     wb = Workbook()
     kalin = Font(bold=True)
     baslik_dolgu = PatternFill("solid", fgColor="E4EEE5")
@@ -76,7 +78,7 @@ def xlsx(txs: list[Transaction], bas: date, bit: date, ekleyen: dict[str, str] |
 
     o = ozet(txs)
     oz = wb.create_sheet("Özet")
-    oz.append(["Paraİzi dökümü", f"{tarih_yazi(bas)} – {tarih_yazi(bit)}"])
+    oz.append([f"Paraİzi dökümü{' · ' + filtre if filtre else ''}", f"{tarih_yazi(bas)} – {tarih_yazi(bit)}"])
     oz["A1"].font = Font(bold=True, size=13)
     oz.append([])
     for ad, deger in (("Toplam gelir", o["gelir"]), ("Toplam gider", o["gider"]), ("Net", o["net"])):
@@ -99,7 +101,9 @@ def xlsx(txs: list[Transaction], bas: date, bit: date, ekleyen: dict[str, str] |
     return tampon.getvalue()
 
 
-def yazdirilabilir_html(txs: list[Transaction], bas: date, bit: date, ekleyen: dict[str, str] | None = None) -> str:
+def yazdirilabilir_html(
+    txs: list[Transaction], bas: date, bit: date, ekleyen: dict[str, str] | None = None, filtre: str = "",
+) -> str:
     """expo-print ile PDF'e çevrilecek A4 HTML."""
     e = html.escape
     o = ozet(txs)
@@ -134,7 +138,7 @@ def yazdirilabilir_html(txs: list[Transaction], bas: date, bit: date, ekleyen: d
   .g {{ color: #2f7d4f; }}
   tr {{ page-break-inside: avoid; }}
 </style></head><body>
-<h1>Paraİzi dökümü</h1>
+<h1>Paraİzi dökümü{' · ' + e(filtre) if filtre else ''}</h1>
 <div class="alt">{tarih_yazi(bas)} – {tarih_yazi(bit)} · {len(txs)} kayıt</div>
 <div class="kartlar">
   <div class="kart">Toplam gelir<b class="g">{_tl(o['gelir'])}</b></div>

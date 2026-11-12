@@ -190,6 +190,10 @@ async def list_recent(user_id: str | list[str], n: int = 5) -> list[Transaction]
             .order("occurred_on", desc=True)
             .order("occurred_at", desc=True, nullsfirst=False)
             .order("created_at", desc=True)
+            # Son eşitlik kırıcı: aynı gün + aynı created_at'li kayıtlar (toplu ekleme) Postgres'te
+            # fiziksel sıraya göre dizilir; UPDATE (ör. geri al) satırı sona taşıdığı için geri
+            # getirilen kayıt listeden düşüyordu. id ile sıra her sorguda aynı.
+            .order("id", desc=True)
             .limit(n)
             .execute()
             .data
