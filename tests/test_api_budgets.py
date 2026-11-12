@@ -17,7 +17,7 @@ def client():
 def test_butce_ayarla_ve_listele(client, monkeypatch):
     kayit = {}
 
-    async def upsert(uid, kapsam, deger, limit):
+    async def upsert(uid, kapsam, deger, limit, tur="limit"):
         kayit.update(kapsam=kapsam, deger=deger, limit=limit)
         return Budget(id="b1", user_id=uid, kapsam=kapsam, kapsam_deger=deger, limit_amount=limit)
 
@@ -41,7 +41,7 @@ def test_butce_kapsam_deger_zorunlu(client):
 
 
 def test_genel_butce_deger_null(client, monkeypatch):
-    async def upsert(uid, kapsam, deger, limit):
+    async def upsert(uid, kapsam, deger, limit, tur="limit"):
         assert deger is None
         return Budget(id="b", user_id=uid, kapsam=kapsam, kapsam_deger=None, limit_amount=limit)
 

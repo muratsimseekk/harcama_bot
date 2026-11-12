@@ -127,7 +127,8 @@ class HedefIlerleme:
     harcanan: float
     oran: float            # 0–100+
     kalan: float
-    durum: str             # 'iyi' | 'yaklasti' (>=80) | 'asti' (>=100)
+    durum: str             # limit: 'iyi' | 'yaklasti' (>=80) | 'asti' (>=100); hedef: 'devam' | 'ulasti'
+    tur: str = "limit"     # 'limit' | 'hedef'
 
 
 def _bucket_durum(oran: float) -> str:
@@ -139,14 +140,21 @@ def _bucket_durum(oran: float) -> str:
 
 
 def hedef_ilerleme(txs, budgets) -> list[HedefIlerleme]:
-    """Dönem giderlerini bütçe kapsamlarına böler (budgets: list[core.models.Budget])."""
+    """Dönem kayıtlarını bütçe kapsamlarına böler (budgets: list[core.models.Budget]).
+
+    Limitler yalnız giderleri sayar. Kategori hedefi o kategorinin her yöndeki toplamını
+    sayar (ör. "Ek gelir" gelir kategorisine hedef).
+    """
     giderler = [t for t in txs if t.direction == "gider"]
     toplam_gider = sum(t.tutar for t in giderler)
     kat_top: dict[str, float] = {}
+    kat_hepsi: dict[str, float] = {}
     tip_top: dict[str, float] = {}
     for t in giderler:
         kat_top[t.kategori] = kat_top.get(t.kategori, 0.0) + t.tutar
         tip_top[t.tip] = tip_top.get(t.tip, 0.0) + t.tutar
+    for t in txs:
+        kat_hepsi[t.kategori] = kat_hepsi.get(t.kategori, 0.0) + t.tutar
 
     out: list[HedefIlerleme] = []
     for b in budgets:
@@ -154,17 +162,22 @@ def hedef_ilerleme(txs, budgets) -> list[HedefIlerleme]:
             harcanan = toplam_gider
             etiket = "Toplam"
         elif b.kapsam == "kategori":
-            harcanan = kat_top.get(b.kapsam_deger or "", 0.0)
+            kaynak = kat_hepsi if b.tur == "hedef" else kat_top
+            harcanan = kaynak.get(b.kapsam_deger or "", 0.0)
             etiket = b.kapsam_deger or "?"
         else:  # tip
             harcanan = tip_top.get(b.kapsam_deger or "", 0.0)
             etiket = TIP_ETIKETI.get(b.kapsam_deger or "", b.kapsam_deger or "?")
         harcanan = round(harcanan, 2)
         oran = round(harcanan / b.limit_amount * 100, 1) if b.limit_amount else 0.0
+        if b.tur == "hedef":
+            durum = "ulasti" if oran >= 100 else "devam"
+        else:
+            durum = _bucket_durum(oran)
         out.append(HedefIlerleme(
             kapsam=b.kapsam, kapsam_deger=b.kapsam_deger, etiket=etiket,
             limit=b.limit_amount, harcanan=harcanan, oran=oran,
-            kalan=round(b.limit_amount - harcanan, 2), durum=_bucket_durum(oran),
+            kalan=round(b.limit_amount - harcanan, 2), durum=durum, tur=b.tur,
         ))
     # genel önce, sonra tutara göre
     out.sort(key=lambda h: (h.kapsam != "genel", -h.harcanan))

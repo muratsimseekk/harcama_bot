@@ -46,3 +46,19 @@ def test_yatirim_ilerleme():
     assert y["birikmis"] == 12000.0
     assert y["kalan"] == 18000.0
     assert y["oran"] == 40.0
+
+
+def test_kategori_hedefi_ulasilinca_ulasti_ve_gelir_de_sayilir():
+    txs = [
+        _tx(1500, kategori="Kitap"), _tx(700, kategori="Kitap"),
+        _tx(4000, kategori="Ek gelir", direction="gelir", tip="gelir"),
+    ]
+    kitap_h = Budget(id="b", user_id="u", kapsam="kategori", kapsam_deger="Kitap", limit_amount=2000, tur="hedef")
+    gelir_h = Budget(id="c", user_id="u", kapsam="kategori", kapsam_deger="Ek gelir", limit_amount=5000, tur="hedef")
+    hedefler = {h.kapsam_deger: h for h in hedef_ilerleme(txs, [kitap_h, gelir_h, _b("genel", None, 1000)])}
+    assert hedefler["Kitap"].tur == "hedef"
+    assert hedefler["Kitap"].durum == "ulasti"  # limit olsaydı "asti"
+    assert hedefler["Ek gelir"].harcanan == 4000.0  # gelir kategorisinin hedefi gelirleri sayar
+    assert hedefler["Ek gelir"].durum == "devam"
+    assert hedefler[None].durum == "asti" and hedefler[None].tur == "limit"
+    assert hedefler[None].harcanan == 2200.0  # genel limit gelirleri saymaz

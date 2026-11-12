@@ -302,6 +302,7 @@ class HedefIlerlemeModel(BaseModel):
     oran: float
     kalan: float
     durum: str
+    tur: str = "limit"
 
     @classmethod
     def from_h(cls, h: HedefIlerleme) -> HedefIlerlemeModel:
@@ -392,12 +393,13 @@ class ButceModel(BaseModel):
     kapsam_deger: str | None = None
     limit_amount: float
     period: str = "month"
+    tur: str = "limit"
 
     @classmethod
     def from_b(cls, b: Budget) -> ButceModel:
         return cls(
             id=b.id, kapsam=b.kapsam, kapsam_deger=b.kapsam_deger,
-            limit_amount=b.limit_amount, period=b.period,
+            limit_amount=b.limit_amount, period=b.period, tur=b.tur,
         )
 
 
@@ -405,6 +407,8 @@ class ButceIstek(BaseModel):
     kapsam: Literal["genel", "kategori", "tip"]
     kapsam_deger: str | None = None
     limit_amount: float = Field(gt=0)
+    # limit: üst sınır (aşınca uyarı) · hedef: ulaşmak istenen tutar (yalnız kategori)
+    tur: Literal["limit", "hedef"] = "limit"
 
 
 class HedefModel(BaseModel):

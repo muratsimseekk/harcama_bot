@@ -60,6 +60,14 @@ async def notifications(user_id: CurrentUser) -> BildirimYanit:
     out: list[Bildirim] = []
 
     for h in hedef_ilerleme(txs, butceler):
+        if h.tur == "hedef":
+            if h.durum == "ulasti":
+                out.append(Bildirim(
+                    tur="motivasyon", grup="Bugün", ikon="trophy",
+                    baslik=f"{h.etiket} hedefine ulaştın! 🎉",
+                    metin=f"Bu ay {turkce_tutar(h.harcanan)} ₺ · hedefin {turkce_tutar(h.limit)} ₺.",
+                ))
+            continue
         if h.durum == "asti":
             out.append(Bildirim(
                 tur="uyari", grup="Bugün", ikon="alert",

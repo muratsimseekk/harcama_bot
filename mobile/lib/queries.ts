@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type IslemFiltre } from "./api";
 import { type Para, usePara } from "./paraBirimi";
-import type { Aday, Granularity, HaneRol, Kapsam, Kategori, KategoriTip } from "./types";
+import type { Aday, Granularity, HaneRol, Kapsam, Kategori, KategoriTip, LimitTur } from "./types";
 
 export function useTransactions(filtre: IslemFiltre = { limit: 20 }, secenek?: { enabled?: boolean }) {
   const para = usePara();
@@ -123,7 +123,7 @@ export function useNotifications() {
 export function useSetBudget() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { kapsam: Kapsam; kapsam_deger?: string | null; limit_amount: number }) =>
+    mutationFn: (body: { kapsam: Kapsam; kapsam_deger?: string | null; limit_amount: number; tur?: LimitTur }) =>
       api.setBudget(body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["budgets"] });

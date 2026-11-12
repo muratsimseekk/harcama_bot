@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Sekmeli } from "@/components/base";
 import { Metin as Text } from "@/components/Metin";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
+import type { LimitTur } from "@/lib/types";
+
+const TUR_ACIKLAMA: Record<LimitTur, string> = {
+  limit: "Harcama üst sınırı — yaklaşınca ve aşınca haber veririz.",
+  hedef: "Ulaşmak istediğin tutar — ulaşınca kutlarız 🎉",
+};
 
 /**
  * Tutar soran pencere (limit/hedef). Alert.prompt Android'de yok, iOS'ta temaya uymuyor —
@@ -12,6 +19,8 @@ export function TutarDialog({
   baslik,
   aciklama,
   baslangic,
+  tur,
+  onTur,
   onKapat,
   kaydet,
 }: {
@@ -19,6 +28,9 @@ export function TutarDialog({
   baslik: string;
   aciklama?: string;
   baslangic?: number;
+  /** Verilirse üstte Limit / Hedef seçimi çıkar. */
+  tur?: LimitTur;
+  onTur?: (t: LimitTur) => void;
   onKapat: () => void;
   kaydet: (n: number) => Promise<void>;
 }) {
@@ -38,6 +50,18 @@ export function TutarDialog({
       <Pressable style={s.arka} onPress={kapat}>
         <Pressable style={[s.kutu, { backgroundColor: renk.card }]} onPress={() => {}}>
           <Text style={[T.heading, { color: renk.text }]}>{baslik}</Text>
+          {tur && onTur ? (
+            <View style={{ gap: 6 }}>
+              <Sekmeli
+                secenekler={["limit", "hedef"] as const}
+                etiket={(x) => (x === "limit" ? "Limit" : "Hedef")}
+                secili={tur}
+                onSec={onTur}
+                kucuk
+              />
+              <Text style={{ color: renk.textMuted, fontSize: 12.5, lineHeight: 17 }}>{TUR_ACIKLAMA[tur]}</Text>
+            </View>
+          ) : null}
           {aciklama ? <Text style={{ color: renk.textMuted, fontSize: 13, lineHeight: 18 }}>{aciklama}</Text> : null}
           <TextInput
             style={[s.girdi, { color: renk.text, backgroundColor: renk.aksanSoft }]}

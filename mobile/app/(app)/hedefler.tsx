@@ -6,22 +6,23 @@ import { Kart, Sekmeli } from "@/components/base";
 import { EkranBasligi } from "@/components/EkranBasligi";
 import { HedefHalkasi } from "@/components/HedefHalkasi";
 import { Metin as Text } from "@/components/Metin";
+import { TutarDialog } from "@/components/TutarDialog";
 import { useUyari } from "@/components/Uyari";
 import { YatirimAltHedefler } from "@/components/YatirimAltHedefler";
 import { YuklemeHalkasi } from "@/components/YuklemeHalkasi";
 import { kategoriIkon } from "@/lib/kategoriIkon";
 import { useKategoriRenk } from "@/lib/kategoriRenk";
 import { turkceTutar } from "@/lib/format";
+import { useLimitHedef } from "@/lib/limitHedef";
 import {
   useBudgets,
   useCategories,
-  useDeleteBudget,
   useSetBudget,
   useSetGoal,
   useSummary,
 } from "@/lib/queries";
 import { FONT, R, SP, T, useRenkler } from "@/lib/theme";
-import { TIP_ETIKET, type Tip } from "@/lib/types";
+import { type LimitTur, TIP_ETIKET, type Tip } from "@/lib/types";
 import { hataMesaji } from "@/lib/hata";
 
 // Yatırım kategorileri üst sınır (limit) değil hedef alır → "Yatırım hedeflerin" kartında.
@@ -30,13 +31,11 @@ const TIPLER: Tip[] = ["kisisel", "isletme"];
 export default function Hedefler() {
   const renk = useRenkler();
   const uyari = useUyari();
-  const katRenk = useKategoriRenk();
   const router = useRouter();
   const ozet = useSummary("month", undefined, "TRY"); // limitler/hedefler TL
   const butceler = useBudgets();
   const kategoriler = useCategories();
   const setBudget = useSetBudget();
-  const delBudget = useDeleteBudget();
   const setGoal = useSetGoal();
 
   const hataGoster = {
@@ -51,16 +50,9 @@ export default function Hedefler() {
   // üçü de gelmeden satırlar "Limit yok" gösterip yanıltıyordu.
   const katYukleniyor = kategoriler.isLoading || butceler.isLoading || ozet.isLoading;
 
-  const g = ozet.data?.bu_donem;
   const yatirim = ozet.data?.yatirim;
   const genel = butceler.data?.find((b) => b.kapsam === "genel");
   const genelH = ozet.data?.hedefler.find((h) => h.kapsam === "genel");
-  const katLimit = (ad: string) =>
-    butceler.data?.find((b) => b.kapsam === "kategori" && b.kapsam_deger === ad);
-  const katHedef = (ad: string) =>
-    ozet.data?.hedefler.find((h) => h.kapsam === "kategori" && h.kapsam_deger === ad);
-  const katHarcama = (ad: string) =>
-    (g?.kategori_kirilim ?? []).filter((x) => x.kategori === ad).reduce((s, x) => s + x.tutar, 0);
 
   function tutarSor(baslik: string, mevcut: number | undefined, kaydet: (n: number) => Promise<void>) {
     // Her platformda kendi dialog'umuz: Alert.prompt Android'de hiç çalışmıyor,
@@ -146,7 +138,7 @@ export default function Hedefler() {
 
       {/* Kategori limitleri */}
       <View style={s.katBaslikSatir}>
-        <Text style={[T.heading, { color: renk.text }]}>Kategori limitleri</Text>
+        <Text style={[T.heading, { color: renk.text }]}>Kategori limit ve hedefleri</Text>
         <Pressable onPress={() => router.navigate("/kategori-yonet")}>
           <Text style={{ color: renk.aksan, fontWeight: "700", fontSize: 13 }}>Kategorileri düzenle</Text>
         </Pressable>
@@ -168,78 +160,10 @@ export default function Hedefler() {
               Bu türde kategori yok.
             </Text>
           )}
-        {(kategoriler.data ?? []).filter((k) => k.tip === katTip).map((k) => {
-          const b = katLimit(k.name);
-          const h = katHedef(k.name);
-          const limit = b?.limit_amount ?? 0;
-          const harcanan = h?.harcanan ?? katHarcama(k.name);
-          const oran = h?.oran ?? (limit ? (harcanan / limit) * 100 : 0);
-          const kalan = limit - harcanan;
-          const barRenk = oran >= 100 ? renk.danger : oran >= 80 ? renk.warn : renk.aksan;
-          return (
-            <Pressable
-              key={k.id}
-              onPress={() =>
-                tutarSor(`${k.name} — aylık limit`, b?.limit_amount, (n) =>
-                  bekle(setBudget.mutateAsync({ kapsam: "kategori", kapsam_deger: k.name, limit_amount: n })),
-                )
-              }
-              style={[s.katSatir, { backgroundColor: renk.card }]}
-            >
-              <View style={[s.katIkon, { backgroundColor: katRenk(k.name) + "26" }]}>
-                <Ionicons name={kategoriIkon(k.name)} size={18} color={katRenk(k.name)} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={s.katUst}>
-                  <Text style={{ color: renk.text, fontWeight: "600", fontSize: 14.5 }}>{k.name}</Text>
-                  {b && (
-                    <Text style={{ color: barRenk, fontSize: 13, fontWeight: "800" }}>%{Math.round(oran)}</Text>
-                  )}
-                </View>
-                {b ? (
-                  <>
-                    <View style={[s.katRay, { backgroundColor: renk.hairline }]}>
-                      <View
-                        style={{
-                          width: `${Math.min(100, Math.max(2, oran))}%`,
-                          height: "100%",
-                          borderRadius: R.pill,
-                          backgroundColor: barRenk,
-                        }}
-                      />
-                    </View>
-                    <Text style={{ color: renk.textMuted, fontSize: 11.5, marginTop: 3 }}>
-                      {turkceTutar(harcanan)} / {turkceTutar(limit)} ₺
-                      <Text style={{ color: kalan >= 0 ? renk.textMuted : renk.danger }}>
-                        {"  ·  "}
-                        {kalan >= 0
-                          ? `${turkceTutar(kalan)} ₺ kaldı`
-                          : `${turkceTutar(-kalan)} ₺ aşıldı`}
-                      </Text>
-                    </Text>
-                  </>
-                ) : (
-                  <Text style={{ color: renk.textFaint, fontSize: 12, marginTop: 2 }}>
-                    Limit yok — dokunup ekle
-                  </Text>
-                )}
-              </View>
-              {b && (
-                <Pressable
-                  onPress={() => delBudget.mutate(b.id, hataGoster)}
-                  disabled={delBudget.isPending}
-                  hitSlop={10}
-                >
-                  {delBudget.isPending && delBudget.variables === b.id ? (
-                    <ActivityIndicator size={20} color={renk.textFaint} />
-                  ) : (
-                    <Ionicons name="close-circle" size={20} color={renk.textFaint} />
-                  )}
-                </Pressable>
-              )}
-            </Pressable>
-          );
-        })}
+        {!katYukleniyor &&
+          (kategoriler.data ?? [])
+            .filter((k) => k.tip === katTip)
+            .map((k) => <KategoriKuralSatiri key={k.id} ad={k.name} />)}
       </View>
 
       <Modal visible={!!dialog} transparent animationType="fade" onRequestClose={dialogKapat}>
@@ -286,7 +210,120 @@ export default function Hedefler() {
   );
 }
 
+/** Kategori satırı: limit ya da hedef (dokununca seçerek koy/değiştir). */
+function KategoriKuralSatiri({ ad }: { ad: string }) {
+  const renk = useRenkler();
+  const uyari = useUyari();
+  const katRenk = useKategoriRenk();
+  const lh = useLimitHedef(ad, "gider");
+  const [acik, setAcik] = useState(false);
+  const [tur, setTur] = useState<LimitTur>("limit");
+  const [siliniyor, setSiliniyor] = useState(false);
+  const m = lh.mevcut;
+  const hedefMi = m?.tur === "hedef";
+  const oran = m?.oran ?? 0;
+  const kalan = m ? m.tutar - m.harcanan : 0;
+  const barRenk = hedefMi ? renk.success : oran >= 100 ? renk.danger : oran >= 80 ? renk.warn : renk.aksan;
+  const hata = (e: unknown) => uyari("Kaydedilemedi", hataMesaji(e, undefined, { ekran: "hedefler" }));
+
+  return (
+    <>
+      <Pressable
+        onPress={() => {
+          setTur(lh.varsayilanTur);
+          setAcik(true);
+        }}
+        style={[s.katSatir, { backgroundColor: renk.card }]}
+      >
+        <View style={[s.katIkon, { backgroundColor: katRenk(ad) + "26" }]}>
+          <Ionicons name={kategoriIkon(ad)} size={18} color={katRenk(ad)} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={s.katUst}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 }}>
+              <Text style={{ color: renk.text, fontWeight: "600", fontSize: 14.5 }} numberOfLines={1}>
+                {ad}
+              </Text>
+              {m && (
+                <View style={[s.turEtiket, { backgroundColor: hedefMi ? renk.success + "22" : renk.cardAlt }]}>
+                  <Text style={{ color: hedefMi ? renk.success : renk.textMuted, fontSize: 10.5, fontWeight: "800" }}>
+                    {hedefMi ? "HEDEF" : "LİMİT"}
+                  </Text>
+                </View>
+              )}
+            </View>
+            {m && <Text style={{ color: barRenk, fontSize: 13, fontWeight: "800" }}>%{Math.round(oran)}</Text>}
+          </View>
+          {m ? (
+            <>
+              <View style={[s.katRay, { backgroundColor: renk.hairline }]}>
+                <View
+                  style={{
+                    width: `${Math.min(100, Math.max(2, oran))}%`,
+                    height: "100%",
+                    borderRadius: R.pill,
+                    backgroundColor: barRenk,
+                  }}
+                />
+              </View>
+              <Text style={{ color: renk.textMuted, fontSize: 11.5, marginTop: 3 }}>
+                {turkceTutar(m.harcanan)} / {turkceTutar(m.tutar)} ₺
+                <Text style={{ color: !hedefMi && kalan < 0 ? renk.danger : hedefMi && kalan <= 0 ? renk.success : renk.textMuted }}>
+                  {"  ·  "}
+                  {hedefMi
+                    ? kalan > 0
+                      ? `hedefe ${turkceTutar(kalan)} ₺ kaldı`
+                      : "hedefe ulaştın 🎉"
+                    : kalan >= 0
+                      ? `${turkceTutar(kalan)} ₺ kaldı`
+                      : `${turkceTutar(-kalan)} ₺ aşıldı`}
+                </Text>
+              </Text>
+            </>
+          ) : (
+            <Text style={{ color: renk.textFaint, fontSize: 12, marginTop: 2 }}>
+              Limit ya da hedef yok — dokunup ekle
+            </Text>
+          )}
+        </View>
+        {m && (
+          <Pressable
+            onPress={async () => {
+              setSiliniyor(true);
+              try {
+                await lh.kaldir();
+              } catch (e) {
+                hata(e);
+              } finally {
+                setSiliniyor(false);
+              }
+            }}
+            disabled={siliniyor}
+            hitSlop={10}
+          >
+            {siliniyor ? (
+              <ActivityIndicator size={20} color={renk.textFaint} />
+            ) : (
+              <Ionicons name="close-circle" size={20} color={renk.textFaint} />
+            )}
+          </Pressable>
+        )}
+      </Pressable>
+      <TutarDialog
+        acik={acik}
+        baslik={`${ad} — aylık ${tur === "hedef" ? "hedef" : "limit"}`}
+        baslangic={m?.tutar}
+        tur={tur}
+        onTur={setTur}
+        onKapat={() => setAcik(false)}
+        kaydet={(n) => lh.kaydet(n, tur).catch(hata)}
+      />
+    </>
+  );
+}
+
 const s = StyleSheet.create({
+  turEtiket: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: R.pill },
   yatirimSatir: { flexDirection: "row", alignItems: "center", gap: SP.lg },
   kEtiket: { fontSize: 12.5, fontWeight: "600" },
   kDeger: { fontSize: 18, fontWeight: "800" },

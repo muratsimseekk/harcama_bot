@@ -14,6 +14,7 @@ import type {
   Hedef,
   Islem,
   Kapsam,
+  LimitTur,
   Kategori,
   KategoriTip,
   Mevcut,
@@ -332,7 +333,7 @@ export const api = {
     return jsonReq<Butce[]>("/v1/budgets", "GET");
   },
 
-  setBudget(body: { kapsam: Kapsam; kapsam_deger?: string | null; limit_amount: number }): Promise<Butce> {
+  setBudget(body: { kapsam: Kapsam; kapsam_deger?: string | null; limit_amount: number; tur?: LimitTur }): Promise<Butce> {
     return jsonReq<Butce>("/v1/budgets", "PUT", body);
   },
 

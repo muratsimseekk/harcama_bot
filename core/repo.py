@@ -537,7 +537,9 @@ async def budget_get(bid: str) -> Budget | None:
     return Budget.from_row(r) if r else None
 
 
-async def budget_upsert(user_id: str, kapsam: str, kapsam_deger: str | None, limit_amount: float) -> Budget:
+async def budget_upsert(
+    user_id: str, kapsam: str, kapsam_deger: str | None, limit_amount: float, tur: str = "limit",
+) -> Budget:
     """Kapsam başına tek satır: varsa güncelle, yoksa ekle.
 
     (budgets tablosundaki benzersizlik `coalesce(kapsam_deger,'')` ifade indeksi
@@ -547,13 +549,16 @@ async def budget_upsert(user_id: str, kapsam: str, kapsam_deger: str | None, lim
 
     def _run() -> dict:
         db = _db()
-        q = db.table("budgets").select("id").eq("user_id", user_id).eq("kapsam", kapsam)
+        q = db.table("budgets").select("*").eq("user_id", user_id).eq("kapsam", kapsam)
         q = q.is_("kapsam_deger", "null") if kapsam_deger is None else q.eq("kapsam_deger", kapsam_deger)
         mevcut = q.limit(1).execute().data
+        # `tur` sütunu (schema_budgets_tur.sql) yoksa limitler yine yazılabilsin: yalnız hedefte
+        # ya da sütun zaten varsa gönder.
+        tur_alani = {"tur": tur} if tur != "limit" or (mevcut and "tur" in mevcut[0]) else {}
         if mevcut:
             return (
                 db.table("budgets")
-                .update({"limit_amount": tutar, "updated_at": now().isoformat()})
+                .update({"limit_amount": tutar, "updated_at": now().isoformat(), **tur_alani})
                 .eq("id", mevcut[0]["id"])
                 .execute().data[0]
             )
@@ -561,7 +566,7 @@ async def budget_upsert(user_id: str, kapsam: str, kapsam_deger: str | None, lim
             db.table("budgets")
             .insert({
                 "user_id": user_id, "kapsam": kapsam,
-                "kapsam_deger": kapsam_deger, "limit_amount": tutar,
+                "kapsam_deger": kapsam_deger, "limit_amount": tutar, **tur_alani,
             })
             .execute().data[0]
         )

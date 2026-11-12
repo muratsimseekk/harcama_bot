@@ -179,13 +179,17 @@ Kapsam = Literal["genel", "kategori", "tip"]
 
 @dataclass
 class Budget:
-    """Aylık harcama limiti (genel / kategori / tür)."""
+    """Aylık harcama limiti ya da hedefi (genel / kategori / tür).
+
+    tur='limit' → üst sınır (aşınca uyarı); tur='hedef' → ulaşılmak istenen tutar.
+    """
     id: str
     user_id: str
     kapsam: Kapsam
     kapsam_deger: str | None
     limit_amount: float
     period: str = "month"
+    tur: str = "limit"
 
     @classmethod
     def from_row(cls, r: dict) -> Budget:
@@ -196,6 +200,7 @@ class Budget:
             kapsam_deger=r.get("kapsam_deger"),
             limit_amount=float(r.get("limit_amount", 0) or 0),
             period=r.get("period", "month"),
+            tur=r.get("tur") or "limit",
         )
 
 

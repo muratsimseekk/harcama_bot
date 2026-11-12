@@ -95,12 +95,15 @@ async def _butce_uyarilari(uid: str, tokens: list[str], b: date) -> int:
     donem = f"{b.year}-{b.month:02d}"
     n = 0
     for h in hedef_ilerleme(txs, butceler):
-        if h.durum not in ("yaklasti", "asti"):
+        if h.durum not in ("yaklasti", "asti", "ulasti"):
             continue
         anahtar = f"butce_{h.durum}:{h.kapsam_deger or 'genel'}:{donem}"
         if await repo.bildirim_gonderildi_mi(uid, anahtar):
             continue
-        if h.durum == "asti":
+        if h.durum == "ulasti":
+            baslik = f"{h.etiket} hedefine ulaştın 🎉"
+            govde = f"{turkce_tutar(h.harcanan)} / {turkce_tutar(h.limit)} ₺ · %{round(h.oran)}"
+        elif h.durum == "asti":
             baslik = f"{h.etiket} limitini aştın"
             govde = f"{turkce_tutar(h.harcanan)} / {turkce_tutar(h.limit)} ₺ · %{round(h.oran)}"
         else:

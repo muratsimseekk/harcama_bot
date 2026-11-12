@@ -1,5 +1,7 @@
 export type Tip = "kisisel" | "isletme" | "yatirim";
 export type Yon = "gider" | "gelir";
+/** Kategori kuralı: üst sınır (aşınca uyarı) ya da ulaşılacak tutar. */
+export type LimitTur = "limit" | "hedef";
 /** Kategoriler işlemlerden bir tür fazlasına sahip: gelir kategorileri bölümden bağımsızdır. */
 export type KategoriTip = Tip | "gelir";
 
@@ -151,7 +153,9 @@ export interface HedefIlerleme {
   harcanan: number;
   oran: number;
   kalan: number;
-  durum: "iyi" | "yaklasti" | "asti";
+  /** limit: iyi | yaklasti | asti · hedef: devam | ulasti */
+  durum: "iyi" | "yaklasti" | "asti" | "devam" | "ulasti";
+  tur?: LimitTur; // eski sunucuda yok → limit
 }
 
 export interface YatirimKategori {
@@ -201,6 +205,7 @@ export interface Butce {
   kapsam_deger: string | null;
   limit_amount: number;
   period: string;
+  tur?: LimitTur; // eski sunucuda yok → limit
 }
 
 export interface Hedef {

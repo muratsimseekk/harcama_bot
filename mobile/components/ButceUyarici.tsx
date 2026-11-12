@@ -36,7 +36,7 @@ export function ButceUyarici() {
     const veri = ozet.data;
     if (!uid || !veri || calisiyor.current) return;
     const donem = veri.baslangic.slice(0, 7); // "2026-10"
-    const aktif = veri.hedefler.filter((h) => h.durum !== "iyi");
+    const aktif = veri.hedefler.filter((h) => (h.tur ?? "limit") === "limit" && h.durum !== "iyi");
     if (!aktif.length) return;
 
     calisiyor.current = true;
