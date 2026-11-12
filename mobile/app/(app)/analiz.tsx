@@ -164,7 +164,6 @@ export default function Analiz() {
   }, [tumIslemler, gosterilen]);
 
   const genelHedef = ozet.data?.hedefler.find((h) => h.kapsam === "genel");
-  const katHedefler = (ozet.data?.hedefler ?? []).filter((h) => h.kapsam !== "genel");
 
   // Tümünün dökümü; tek kategori için kategori detayındaki indirme ikonu
   const disaAktarAc = () =>
@@ -217,6 +216,13 @@ export default function Analiz() {
           <TarihAraligi deger={aralik} onChange={setAralik} />
         </Kart>
       )}
+
+      <DisaAktarButonu
+        yazi="Excel / PDF olarak dışa aktar"
+        aralik={bas && bit ? `${kisaTarih(bas)} – ${kisaTarih(bit)} · tüm kayıtlar` : ""}
+        aktariliyor={aktariliyor}
+        onPress={disaAktarAc}
+      />
 
       <Kart style={{ backgroundColor: renk.aksanSoft }}>
         <View style={s.grafikBaslik}>
@@ -300,57 +306,6 @@ export default function Analiz() {
         )}
       </Kart>
 
-      <DisaAktarButonu
-        yazi="Excel / PDF olarak dışa aktar"
-        aralik={bas && bit ? `${kisaTarih(bas)} – ${kisaTarih(bit)} · tüm kayıtlar` : ""}
-        aktariliyor={aktariliyor}
-        onPress={disaAktarAc}
-      />
-
-      {katHedefler.length > 0 ? (
-        <Kart onPress={() => router.navigate("/(app)/hedefler")}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: SP.md }}>
-            <Text style={[T.heading, { color: renk.text }]}>Hedeflerim</Text>
-            <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />
-          </View>
-          <View style={{ gap: SP.md }}>
-            {katHedefler.map((h) => (
-              <View key={`${h.kapsam}-${h.kapsam_deger}`} style={{ gap: 6 }}>
-                <View style={s.hedefUst}>
-                  <Text style={{ color: renk.text, fontWeight: "600", fontSize: 14 }}>{h.etiket}</Text>
-                  <Text style={{ color: renk.textMuted, fontSize: 12.5 }}>
-                    {turkceTutar(h.harcanan)} / {turkceTutar(h.limit)} ₺
-                  </Text>
-                </View>
-                <View style={[s.hedefRay, { backgroundColor: renk.hairline }]}>
-                  <View
-                    style={{
-                      width: `${Math.min(100, Math.max(3, h.oran))}%`,
-                      height: "100%",
-                      borderRadius: R.pill,
-                      backgroundColor:
-                        h.durum === "asti" ? renk.danger : h.durum === "yaklasti" ? renk.warn : renk.aksan,
-                    }}
-                  />
-                </View>
-              </View>
-            ))}
-          </View>
-        </Kart>
-      ) : (
-        <Kart onPress={() => router.navigate("/(app)/hedefler")}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View style={{ flex: 1 }}>
-              <Text style={[T.heading, { color: renk.text }]}>Hedeflerim</Text>
-              <Text style={{ color: renk.textFaint, fontSize: 13, marginTop: 2 }}>
-                Aylık bütçe ve kategori limitleri koy
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={renk.textFaint} />
-          </View>
-        </Kart>
-      )}
-
       {islemlerYukleniyor ? (
         <Kart>
           <YuklemeHalkasi boyut={48} yukseklik={120} yazi="İşlemler yükleniyor" />
@@ -400,8 +355,6 @@ const s = StyleSheet.create({
     marginBottom: SP.md,
   },
   yesilBtn: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  hedefUst: { flexDirection: "row", justifyContent: "space-between" },
-  hedefRay: { height: 8, borderRadius: R.pill, overflow: "hidden" },
   baslikSol: { flexDirection: "row", alignItems: "center", gap: SP.sm },
   dahaFazla: {
     marginTop: SP.md,
