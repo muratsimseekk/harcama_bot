@@ -136,16 +136,19 @@ Excel ve PDF dökümü (Pro)
 
 ### 1.6 Görsel planı (8 ekran — build 11 sonrası, test-ekran hesabıyla)
 
-| Sıra | Başlık önerisi | Ekran | Durum |
+| Sıra | Başlık | Ekran | Durum |
 |---|---|---|---|
-| 1 | Söyle, yapay zeka kaydetsin. | Sesli kayıt + 3 kayıt bulundu | Var, kalsın |
-| 2 | Paran nereye gidiyor? Tek bakışta. | **Analiz: kategori kıyası (% artış/azalış)** | Yenile |
-| 3 | Limit mi, hedef mi? Sen seç. | **Hedefler: LİMİT/HEDEF etiketli satırlar, gerçek ilerleme** | Yeni |
-| 4 | Kontrol her zaman sende. | Onay ekranı | Var |
-| 5 | Kira, fatura, abonelik otomatik. | Tekrarlayan kayıtlar | Yeni |
-| 6 | Sınıra yaklaşınca haber verir. | Bildirimler (gerçek veriyle) | Yenile |
-| 7 | Excel ve PDF dökümün hazır. | Dışa aktar butonu + paylaşım | Yeni |
-| 8 | Bankana bağlanmaz. Verin sende kalır. | Gizlilik | Var |
+| 1 | Söyle, yapay zeka kaydetsin. | Sesli kayıt + **2 kayıt** bulundu (3 hakkın hepsini bitirmez) | ✅ ekran-1 |
+| 2 | Paran nereye gidiyor? Tek bakışta. | Analiz: kategori kıyası (% artış/azalış) | ✅ ekran-2 |
+| 3 | Limit mi, hedef mi? Sen seç. | Hedefler: LİMİT/HEDEF satırları, gerçek ilerleme | ✅ ekran-3 |
+| 4 | Kontrol her zaman sende. | Onay ekranı | ✅ ekran-4 |
+| 5 | Kira, fatura, maaş kendiliğinden. | Tekrarlayan kayıtlar | ✅ ekran-5 |
+| 6 | Sınıra yaklaşınca haber verir. | Bildirimler | ✅ ekran-6 |
+| 7 | Excel ve PDF dökümün hazır. | Dışa aktar butonu + biçim seçimi | ✅ ekran-7 |
+| 8 | Bankana bağlanmaz. Verin sende kalır. | Gizlilik | ✅ ekran-8 |
+
+Üretim (2026-11-12): `python scripts/magaza_ekran_goruntuleri.py` (ham: test-ekran@ hesabı, emülatör).
+Build 11 yayına girmeden Play'e yükleme (ekran 3, 5 ve 7'deki özellikler build 10'da yok/eksik).
 
 İlk 3 ekran en önemlisi (çoğu kullanıcı 3.'den sonra kaydırmaz): ses → analiz → limit/hedef.
 
