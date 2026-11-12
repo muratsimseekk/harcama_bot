@@ -6,13 +6,31 @@ import { kategoriIkon } from "@/lib/kategoriIkon";
 import { useDagilimRenkleri } from "@/lib/kategoriRenk";
 import { type Para, SEMBOL } from "@/lib/paraBirimi";
 import { R, SP, useRenkler } from "@/lib/theme";
-import type { KategoriKiyas, Yon, YonKiyas } from "@/lib/types";
+import type { KategoriKiyas, Tip, Yon, YonKiyas } from "@/lib/types";
 
 /**
- * Önceki döneme göre % değişim rozeti. Giderde artış kötü (kırmızı), azalış iyi (yeşil);
- * gelirde tersi. `null` → önceki dönemde hiç yoktu ("Yeni").
+ * Artış olumlu mu? Gelir ve yatırım artınca iyi (yeşil); harcama artınca kötü (kırmızı).
+ * Yatırım kayıtları "gider" yönünde tutulur ama birikimdir — tipine bakılır.
  */
-export function DegisimRozeti({ degisim, yon, buyuk = false }: { degisim: number | null; yon: Yon; buyuk?: boolean }) {
+export function artisOlumlu(yon: Yon, tip?: Tip | string): boolean {
+  return yon === "gelir" || tip === "yatirim";
+}
+
+/**
+ * Önceki döneme göre % değişim rozeti. Olumlu değişim yeşil, olumsuz kırmızı
+ * (bkz artisOlumlu). `null` → önceki dönemde hiç yoktu ("Yeni").
+ */
+export function DegisimRozeti({
+  degisim,
+  yon,
+  tip,
+  buyuk = false,
+}: {
+  degisim: number | null;
+  yon: Yon;
+  tip?: Tip | string;
+  buyuk?: boolean;
+}) {
   const renk = useRenkler();
   const boyut = buyuk ? 13.5 : 12;
   if (degisim == null) {
@@ -31,7 +49,7 @@ export function DegisimRozeti({ degisim, yon, buyuk = false }: { degisim: number
     );
   }
   const artis = degisim > 0;
-  const iyi = yon === "gider" ? !artis : artis;
+  const iyi = artisOlumlu(yon, tip) ? artis : !artis;
   const r = iyi ? renk.success : renk.danger;
   return (
     <View style={[s.rozet, { backgroundColor: iyi ? renk.successSoft : renk.dangerSoft }]}>
@@ -96,7 +114,7 @@ export function KategoriKiyasListesi({
               <Text style={{ color: renk.textFaint, fontSize: 12 }} numberOfLines={1}>
                 {k.adet} kayıt · %{Math.round(k.oran)} pay · önceki {turkceTutar(k.onceki_tutar)} {SEMBOL[para]}
               </Text>
-              <DegisimRozeti degisim={k.degisim} yon={yon} />
+              <DegisimRozeti degisim={k.degisim} yon={yon} tip={k.tip} />
             </View>
           </View>
           <Ionicons name="chevron-forward" size={16} color={renk.textFaint} />

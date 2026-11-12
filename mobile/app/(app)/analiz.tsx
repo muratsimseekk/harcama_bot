@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { IkiliCubukGrafik } from "@/components/charts";
+import { DisaAktarButonu } from "@/components/DisaAktarButonu";
 import { DegisimRozeti, KategoriKiyasListesi } from "@/components/KategoriKiyas";
 import { type Aralik, kisaTarih, TarihAraligi, varsayilanAralik } from "@/components/TarihAraligi";
 import { islemTutari, SEMBOL, usePara } from "@/lib/paraBirimi";
@@ -223,26 +224,12 @@ export default function Analiz() {
             <Text style={[T.heading, { color: renk.text }]}>Gelir & Gider</Text>
             {(ozetYenileniyor || (ozel && txYenileniyor)) && <ActivityIndicator size="small" color={renk.aksan} />}
           </View>
-          <View style={s.baslikSol}>
-            <Pressable
-              onPress={disaAktarAc}
-              disabled={aktariliyor}
-              style={[s.yesilBtn, { backgroundColor: renk.cardAlt }]}
-              accessibilityLabel="Dışa aktar"
-            >
-              {aktariliyor ? (
-                <ActivityIndicator size="small" color={renk.aksan} />
-              ) : (
-                <Ionicons name="download-outline" size={17} color={renk.text} />
-              )}
-            </Pressable>
-            <Pressable
-              onPress={() => router.navigate("/ara")}
-              style={[s.yesilBtn, { backgroundColor: renk.aksan }]}
-            >
-              <Ionicons name="search" size={16} color={renk.aksanUstu} />
-            </Pressable>
-          </View>
+          <Pressable
+            onPress={() => router.navigate("/ara")}
+            style={[s.yesilBtn, { backgroundColor: renk.aksan }]}
+          >
+            <Ionicons name="search" size={16} color={renk.aksanUstu} />
+          </Pressable>
         </View>
         <IkiliCubukGrafik etiketler={grafik.etiketler} gelir={grafik.gelir} gider={grafik.gider} />
       </Kart>
@@ -312,6 +299,13 @@ export default function Analiz() {
           </View>
         )}
       </Kart>
+
+      <DisaAktarButonu
+        yazi="Excel / PDF olarak dışa aktar"
+        aralik={bas && bit ? `${kisaTarih(bas)} – ${kisaTarih(bit)} · tüm kayıtlar` : ""}
+        aktariliyor={aktariliyor}
+        onPress={disaAktarAc}
+      />
 
       {katHedefler.length > 0 ? (
         <Kart onPress={() => router.navigate("/(app)/hedefler")}>

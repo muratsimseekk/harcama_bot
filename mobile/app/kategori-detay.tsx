@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Kart, Sekmeli } from "@/components/base";
 import { IslemSatiri } from "@/components/IslemSatiri";
-import { DegisimRozeti } from "@/components/KategoriKiyas";
+import { artisOlumlu, DegisimRozeti } from "@/components/KategoriKiyas";
+import { DisaAktarButonu } from "@/components/DisaAktarButonu";
 import { Metin as Text } from "@/components/Metin";
 import { type Aralik, kisaTarih, TarihAraligi, varsayilanAralik } from "@/components/TarihAraligi";
 import { TutarDialog } from "@/components/TutarDialog";
@@ -95,7 +96,9 @@ export default function KategoriDetay() {
     const onceki = satirlar.reduce((t, k) => t + k.onceki_tutar, 0);
     const adet = satirlar.reduce((t, k) => t + k.adet, 0);
     const degisim = onceki > 0 ? ((tutar - onceki) / onceki) * 100 : null;
-    return { tutar, onceki, adet, degisim, obas: d.onceki_baslangic, obit: d.onceki_bitis };
+    // Hepsi yatırım kategorisiyse artış olumlu sayılır (renk)
+    const tip = satirlar.length > 0 && satirlar.every((k) => k.tip === "yatirim") ? "yatirim" : undefined;
+    return { tutar, onceki, adet, degisim, tip, obas: d.onceki_baslangic, obit: d.onceki_bitis };
   }, [kiyas.data, kategoriler, yon]);
 
   // Kıyas gelmeden: listedeki kayıtlardan (döviz modunda çevrilemeyen varsa TL)
@@ -143,24 +146,7 @@ export default function KategoriDetay() {
         />
       }
     >
-      <Stack.Screen
-        options={{
-          title: String(p.ad),
-          // Yalnız bu kategorinin, seçili aralıktaki dökümü (Haftalık/Aylık/Yıllık/Özel)
-          headerRight: () =>
-            aktariliyor ? (
-              <ActivityIndicator size="small" color={renk.aksan} />
-            ) : (
-              <Pressable
-                hitSlop={12}
-                accessibilityLabel="Bu kategoriyi dışa aktar"
-                onPress={() => disaAktarSor(bas, bit, { filtre: { kategoriler, yon }, baslik: String(p.ad) })}
-              >
-                <Ionicons name="download-outline" size={22} color={renk.text} />
-              </Pressable>
-            ),
-        }}
-      />
+      <Stack.Screen options={{ title: String(p.ad) }} />
       <Sekmeli secenekler={SEKMELER} etiket={(x) => ETIKET[x]} secili={sekme} onSec={setSekme} kucuk />
 
       {ozel && (
@@ -192,10 +178,18 @@ export default function KategoriDetay() {
                 {paraMetni(kiyasOzet.onceki, para)}
               </Text>
             </View>
-            <DegisimRozeti degisim={kiyasOzet.degisim} yon={yon} buyuk />
+            <DegisimRozeti degisim={kiyasOzet.degisim} yon={yon} tip={kiyasOzet.tip} buyuk />
           </View>
         )}
       </Kart>
+
+      {/* Yalnız bu kategorinin, seçili aralıktaki dökümü (Haftalık/Aylık/Yıllık/Özel) */}
+      <DisaAktarButonu
+        yazi={`${String(p.ad)} dökümünü indir`}
+        aralik={bas && bit ? `${kisaTarih(bas)} – ${kisaTarih(bit)}` : ""}
+        aktariliyor={aktariliyor}
+        onPress={() => disaAktarSor(bas, bit, { filtre: { kategoriler, yon }, baslik: String(p.ad) })}
+      />
 
       {limitGoster && !butceler.isLoading && (
         <Kart>
@@ -305,7 +299,7 @@ export default function KategoriDetay() {
               const son = i === aylar.length - 1;
               const ay = Number(a.ay.slice(5, 7)) - 1;
               const artis = a.degisim != null && a.degisim > 0;
-              const iyi = yon === "gider" ? !artis : artis;
+              const iyi = artisOlumlu(yon, kiyasOzet?.tip) ? artis : !artis;
               return (
                 <View key={a.ay} style={s.trendSutun}>
                   <Text style={[s.trendTutar, { color: son ? renk.text : renk.textMuted }]} numberOfLines={1}>

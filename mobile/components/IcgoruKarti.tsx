@@ -31,7 +31,8 @@ function araliklar(bugun = new Date()) {
 function enBelirgin(kategoriler: KategoriKiyas[], oncekiToplam: number, yon: "artan" | "azalan") {
   const esik = Math.max(100, oncekiToplam * 0.05);
   return kategoriler
-    .filter((k) => k.onceki_tutar > 0)
+    // Yatırım birikimdir: artışı "en çok artan harcama" diye kırmızıyla gösterilmesin
+    .filter((k) => k.onceki_tutar > 0 && k.tip !== "yatirim")
     .map((k) => ({ k, fark: k.tutar - k.onceki_tutar }))
     .filter(({ fark }) => (yon === "artan" ? fark >= esik : -fark >= esik))
     .sort((a, b) => (yon === "artan" ? b.fark - a.fark : a.fark - b.fark))[0];
