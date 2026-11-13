@@ -104,7 +104,6 @@ _GLIF = json.loads((_IKON / "glyphmaps/Ionicons.json").read_text())
 ETIKETLER = [
     ("phone-portrait-outline", "Mobil uygulamalar"),
     ("sparkles-outline", "Yapay zekâ"),
-    ("leaf-outline", "Sade tasarım"),
 ]
 
 
