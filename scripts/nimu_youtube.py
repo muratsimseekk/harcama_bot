@@ -167,7 +167,7 @@ def kapak() -> Image.Image:
     d.text((tx, taban), "nimu", font=f_nimu, fill=KOYU, anchor="ls")
     d.text((tx + w_nimu + 6, taban), "studio", font=f_studio, fill=VURGU, anchor="ls")
     # alt yazı
-    d.text((tx + 4, taban + 34), "Bağımsız mobil uygulama stüdyosu", font=f_alt, fill=SOLUK, anchor="lt")
+    d.text((tx + 4, taban + 34), "Modern mobil uygulama stüdyosu", font=f_alt, fill=SOLUK, anchor="lt")
     # ince ayraç
     d.line([(tx + 4, taban + 108), (tx + 4 + 120, taban + 108)], fill=VURGU, width=4)
     # stüdyo etiketleri (tek uygulamaya bağlı değil)
