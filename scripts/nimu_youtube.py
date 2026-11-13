@@ -58,7 +58,7 @@ def parilti(w: int, h: int, merkez, yaricap: float, renk, guc: float) -> Image.I
 
 
 def monogram(boyut: int, sekil: str = "kare") -> Image.Image:
-    """Turuncu zemin + serif "n" + krem nokta. sekil: kare (yuvarlak köşe) | daire. RGBA."""
+    """Turuncu zemin + serif "ni/mu" (i noktası krem). sekil: kare (yuvarlak köşe) | daire. RGBA."""
     s = boyut * 4  # süper örnekleme
     zemin = degrade(s, s, (236, 128, 92), TURUNCU_KOYU, 135).convert("RGBA")
     # üstte hafif ışık
@@ -70,18 +70,17 @@ def monogram(boyut: int, sekil: str = "kare") -> Image.Image:
     else:
         md.rounded_rectangle([0, 0, s - 1, s - 1], radius=int(s * 0.24), fill=255)
     d = ImageDraw.Draw(zemin)
-    f = font("serif", "700Bold", int(s * 0.78))
-    # "n"yi görsel merkeze al (x-yüksekliği için biraz yukarıda değil, tam ortada)
-    kutu = d.textbbox((0, 0), "n", font=f)
-    gw, gh = kutu[2] - kutu[0], kutu[3] - kutu[1]
-    nokta = s * 0.075
-    x = (s - gw - nokta * 2.2) / 2 - kutu[0]
-    y = (s - gh) / 2 - kutu[1] + s * 0.01
-    d.text((x, y), "n", font=f, fill=(255, 255, 255))
-    # nokta: "n."nin taban çizgisinde
-    nx = x + kutu[2] + nokta * 0.9
-    ny = y + kutu[3] - nokta * 2
-    d.ellipse([nx, ny, nx + nokta * 2, ny + nokta * 2], fill=(255, 228, 214))
+    # "ni" / "mu" iki satır serif; i'nin noktası krem (markanın imzası)
+    f = font("serif", "700Bold", int(s * 0.36))
+    satir_ara = s * 0.235
+    for j, (a, b) in enumerate((("n", "ı"), ("m", "u"))):
+        x = (s - d.textlength(a + b, font=f)) / 2
+        y = s * 0.5 - satir_ara * 0.5 + j * satir_ara + s * 0.10
+        d.text((x, y), a + b, font=f, fill=(255, 255, 255), anchor="ls")
+        if b == "ı":
+            kut = d.textbbox((x + d.textlength(a, font=f), y), "ı", font=f, anchor="ls")
+            ix, iy, nr = (kut[0] + kut[2]) / 2 - s * 0.004, kut[1] - s * 0.055, s * 0.032
+            d.ellipse([ix - nr, iy - nr, ix + nr, iy + nr], fill=(255, 228, 214))
     zemin.putalpha(maske)
     return zemin.resize((boyut, boyut), Image.LANCZOS)
 
