@@ -5,8 +5,14 @@ Genel kurallar: `docs/YAYIN-KONTROL-LISTESI.md`. Bu liste yalnız build 11'e öz
 
 ## A. Build almadan ÖNCE
 
-- [ ] **Build 10 production'da yayında mı?** Değilse dur — push ve build 11 bekler.
-- [ ] Render'da `ANDROID_SON_SURUM=10` ayarlı mı? (build 10 onaylanınca yapılacaktı)
+- [x] **Build 10 production'da yayında** (2026-11-13: Play'de herkese açık, yalnız Türkiye, 12 yükleme)
+- [x] Render'da `ANDROID_SON_SURUM=10` (2026-11-13 `/v1/surum` → `{"android":10}`)
+- [ ] **Play uyarısı — DEX optimizasyonu / kod karartma %1** (son tarih Şub 2027): R8 kapalı. Karar ver:
+      build 11'e mi build 12'ye mi? Açmak için `expo-build-properties` → `android.enableMinifyInReleaseBuilds`
+      + `enableShrinkResourcesInReleaseBuilds`; önce **preview build**'de tüm akışlar denenmeli (giriş, ses,
+      reklam, satın alma, dışa aktar) — R8 eksik keep kuralıyla release'te çökme yapabilir.
+- [ ] Play uyarısı — uçtan uca ekran (edge-to-edge) eski API: kütüphanelerden gelen bilgi amaçlı uyarı,
+      engelleyici değil; Play Console'da hangi API'ler listelendiğine bak, SDK yükseltmesinde tekrar kontrol et
 - [ ] **PostHog:** posthog.com → **EU Cloud** proje aç → Project API key'i kopyala
   - EAS → Environment variables (production + preview): `EXPO_PUBLIC_POSTHOG_KEY=<key>`
   - (Host varsayılan `https://eu.i.posthog.com`; değiştirme)
