@@ -13,7 +13,8 @@ Genel kurallar: `docs/YAYIN-KONTROL-LISTESI.md`. Bu liste yalnız build 11'e öz
       reklam, satın alma, dışa aktar) — R8 eksik keep kuralıyla release'te çökme yapabilir.
 - [ ] Play uyarısı — uçtan uca ekran (edge-to-edge) eski API: kütüphanelerden gelen bilgi amaçlı uyarı,
       engelleyici değil; Play Console'da hangi API'ler listelendiğine bak, SDK yükseltmesinde tekrar kontrol et
-- [ ] **PostHog:** posthog.com → **EU Cloud** proje aç → Project API key'i kopyala
+- [x] **PostHog:** posthog.com → **EU Cloud** proje aç → Project API key'i kopyala
+      (2026-11-14: anahtar EAS production + preview'a eklendi, `eas env:list` ile doğrulandı)
   - EAS → Environment variables (production + preview): `EXPO_PUBLIC_POSTHOG_KEY=<key>`
   - (Host varsayılan `https://eu.i.posthog.com`; değiştirme)
   - Proje ayarlarında: "Discard client IP" aç, Session replay kapalı, Autocapture kapalı
