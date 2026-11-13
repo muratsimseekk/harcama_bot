@@ -1,0 +1,45 @@
+{
+ "imza": "3d6b43040c3c40a0b6ae3b47dfc027ebbe8af023",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 2.22,
+  "text": " Ne harcadım da bu para bitti?",
+  "words": [
+   {
+    "word": "Ne",
+    "start": 0.24,
+    "end": 0.38
+   },
+   {
+    "word": "harcadım",
+    "start": 0.38,
+    "end": 0.9
+   },
+   {
+    "word": "da",
+    "start": 0.9,
+    "end": 1.02
+   },
+   {
+    "word": "bu",
+    "start": 1.02,
+    "end": 1.16
+   },
+   {
+    "word": "para",
+    "start": 1.16,
+    "end": 1.42
+   },
+   {
+    "word": "bitti?",
+    "start": 1.42,
+    "end": 2.22
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2e3t2e9v9xwe3mn2wztkh"
+  }
+ }
+}

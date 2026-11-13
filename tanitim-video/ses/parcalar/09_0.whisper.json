@@ -1,0 +1,55 @@
+{
+ "imza": "05af098193770dce41070a625eb44c7613ce68f0",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 3.249999872,
+  "text": " Excel ya da PDF dökümün tek dokunuşla hazır.",
+  "words": [
+   {
+    "word": "Excel",
+    "start": 0,
+    "end": 0.34
+   },
+   {
+    "word": "ya",
+    "start": 0.34,
+    "end": 0.48
+   },
+   {
+    "word": "da",
+    "start": 0.48,
+    "end": 0.64
+   },
+   {
+    "word": "PDF",
+    "start": 0.64,
+    "end": 1.08
+   },
+   {
+    "word": "dökümün",
+    "start": 1.08,
+    "end": 1.54
+   },
+   {
+    "word": "tek",
+    "start": 1.54,
+    "end": 1.96
+   },
+   {
+    "word": "dokunuşla",
+    "start": 1.96,
+    "end": 2.48
+   },
+   {
+    "word": "hazır.",
+    "start": 2.48,
+    "end": 3.16
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2ebqte7kbjhamqzbbfcqt"
+  }
+ }
+}

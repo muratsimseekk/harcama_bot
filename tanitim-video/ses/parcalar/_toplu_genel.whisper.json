@@ -1,0 +1,455 @@
+{
+ "imza": "d42cf9ede1d7ae48dc6504b754cdadb2bba2cff4",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 48.599998464,
+  "text": " O zaman tanış. Para izi. Harcamalarını takip etmenin en kolay yolu. Harcamanı söylemen yeter. Market 850, dün benzin 1200, gerisini o halleder. Kategoriyi yapay zeka bulur. Sen sadece onayla. Gelir, gider, kalan, hepsi tek yerde. Paranın nereye gittiğini tek bakışta gör. Limit koy, sınıra yaklaşınca haber versin. Her yatırımına bir hedef koy. İlerlemeni izle. Kira, fatura, maaş her ay kendiliğinden eklensin. Excel ya da PDF dökümün tek dokunuşla hazır. Haneni kur, evin bütçesini birlikte yönet. Bankana bağlanmaz, verin sende kalır. Para izi, söyle, kaydet, gör. Google Play'de ücretsiz.",
+  "words": [
+   {
+    "word": "O",
+    "start": 0,
+    "end": 0.22
+   },
+   {
+    "word": "zaman",
+    "start": 0.22,
+    "end": 0.54
+   },
+   {
+    "word": "tanış.",
+    "start": 0.54,
+    "end": 1.5
+   },
+   {
+    "word": "Para",
+    "start": 1.5,
+    "end": 1.68
+   },
+   {
+    "word": "izi.",
+    "start": 1.68,
+    "end": 2.62
+   },
+   {
+    "word": "Harcamalarını",
+    "start": 2.62,
+    "end": 3.2
+   },
+   {
+    "word": "takip",
+    "start": 3.2,
+    "end": 3.6
+   },
+   {
+    "word": "etmenin",
+    "start": 3.6,
+    "end": 4
+   },
+   {
+    "word": "en",
+    "start": 4,
+    "end": 4.34
+   },
+   {
+    "word": "kolay",
+    "start": 4.34,
+    "end": 4.72
+   },
+   {
+    "word": "yolu.",
+    "start": 4.72,
+    "end": 5.52
+   },
+   {
+    "word": "Harcamanı",
+    "start": 5.64,
+    "end": 6.08
+   },
+   {
+    "word": "söylemen",
+    "start": 6.08,
+    "end": 6.48
+   },
+   {
+    "word": "yeter.",
+    "start": 6.48,
+    "end": 7.34
+   },
+   {
+    "word": "Market",
+    "start": 7.34,
+    "end": 7.68
+   },
+   {
+    "word": "850,",
+    "start": 7.68,
+    "end": 8.92
+   },
+   {
+    "word": "dün",
+    "start": 8.92,
+    "end": 9.12
+   },
+   {
+    "word": "benzin",
+    "start": 9.12,
+    "end": 9.6
+   },
+   {
+    "word": "1200,",
+    "start": 9.6,
+    "end": 10.82
+   },
+   {
+    "word": "gerisini",
+    "start": 10.82,
+    "end": 11.12
+   },
+   {
+    "word": "o",
+    "start": 11.12,
+    "end": 11.26
+   },
+   {
+    "word": "halleder.",
+    "start": 11.26,
+    "end": 11.74
+   },
+   {
+    "word": "Kategoriyi",
+    "start": 12.46,
+    "end": 12.9
+   },
+   {
+    "word": "yapay",
+    "start": 12.9,
+    "end": 13.28
+   },
+   {
+    "word": "zeka",
+    "start": 13.28,
+    "end": 13.52
+   },
+   {
+    "word": "bulur.",
+    "start": 13.52,
+    "end": 14.28
+   },
+   {
+    "word": "Sen",
+    "start": 14.28,
+    "end": 14.42
+   },
+   {
+    "word": "sadece",
+    "start": 14.42,
+    "end": 14.88
+   },
+   {
+    "word": "onayla.",
+    "start": 14.88,
+    "end": 15.3
+   },
+   {
+    "word": "Gelir,",
+    "start": 16.06,
+    "end": 16.8
+   },
+   {
+    "word": "gider,",
+    "start": 16.8,
+    "end": 17.7
+   },
+   {
+    "word": "kalan,",
+    "start": 17.7,
+    "end": 18.66
+   },
+   {
+    "word": "hepsi",
+    "start": 18.66,
+    "end": 18.9
+   },
+   {
+    "word": "tek",
+    "start": 18.9,
+    "end": 19.12
+   },
+   {
+    "word": "yerde.",
+    "start": 19.12,
+    "end": 19.86
+   },
+   {
+    "word": "Paranın",
+    "start": 20.3,
+    "end": 20.54
+   },
+   {
+    "word": "nereye",
+    "start": 20.54,
+    "end": 20.92
+   },
+   {
+    "word": "gittiğini",
+    "start": 20.92,
+    "end": 21.36
+   },
+   {
+    "word": "tek",
+    "start": 21.36,
+    "end": 21.7
+   },
+   {
+    "word": "bakışta",
+    "start": 21.7,
+    "end": 22.14
+   },
+   {
+    "word": "gör.",
+    "start": 22.14,
+    "end": 22.82
+   },
+   {
+    "word": "Limit",
+    "start": 23.12,
+    "end": 23.36
+   },
+   {
+    "word": "koy,",
+    "start": 23.36,
+    "end": 24.08
+   },
+   {
+    "word": "sınıra",
+    "start": 24.08,
+    "end": 24.36
+   },
+   {
+    "word": "yaklaşınca",
+    "start": 24.36,
+    "end": 24.88
+   },
+   {
+    "word": "haber",
+    "start": 24.88,
+    "end": 25.18
+   },
+   {
+    "word": "versin.",
+    "start": 25.18,
+    "end": 25.54
+   },
+   {
+    "word": "Her",
+    "start": 26.3,
+    "end": 26.46
+   },
+   {
+    "word": "yatırımına",
+    "start": 26.46,
+    "end": 26.96
+   },
+   {
+    "word": "bir",
+    "start": 26.96,
+    "end": 27.1
+   },
+   {
+    "word": "hedef",
+    "start": 27.1,
+    "end": 27.42
+   },
+   {
+    "word": "koy.",
+    "start": 27.42,
+    "end": 27.98
+   },
+   {
+    "word": "İlerlemeni",
+    "start": 27.98,
+    "end": 28.56
+   },
+   {
+    "word": "izle.",
+    "start": 28.56,
+    "end": 29.32
+   },
+   {
+    "word": "Kira,",
+    "start": 29.54,
+    "end": 30.38
+   },
+   {
+    "word": "fatura,",
+    "start": 30.38,
+    "end": 31.22
+   },
+   {
+    "word": "maaş",
+    "start": 31.22,
+    "end": 31.62
+   },
+   {
+    "word": "her",
+    "start": 31.62,
+    "end": 32.12
+   },
+   {
+    "word": "ay",
+    "start": 32.12,
+    "end": 32.26
+   },
+   {
+    "word": "kendiliğinden",
+    "start": 32.26,
+    "end": 32.86
+   },
+   {
+    "word": "eklensin.",
+    "start": 32.86,
+    "end": 33.84
+   },
+   {
+    "word": "Excel",
+    "start": 34.22,
+    "end": 34.48
+   },
+   {
+    "word": "ya",
+    "start": 34.48,
+    "end": 34.66
+   },
+   {
+    "word": "da",
+    "start": 34.66,
+    "end": 34.78
+   },
+   {
+    "word": "PDF",
+    "start": 34.78,
+    "end": 35.22
+   },
+   {
+    "word": "dökümün",
+    "start": 35.22,
+    "end": 35.7
+   },
+   {
+    "word": "tek",
+    "start": 35.7,
+    "end": 36.14
+   },
+   {
+    "word": "dokunuşla",
+    "start": 36.14,
+    "end": 36.62
+   },
+   {
+    "word": "hazır.",
+    "start": 36.62,
+    "end": 37.36
+   },
+   {
+    "word": "Haneni",
+    "start": 37.7,
+    "end": 38.04
+   },
+   {
+    "word": "kur,",
+    "start": 38.04,
+    "end": 38.86
+   },
+   {
+    "word": "evin",
+    "start": 38.86,
+    "end": 39
+   },
+   {
+    "word": "bütçesini",
+    "start": 39,
+    "end": 39.46
+   },
+   {
+    "word": "birlikte",
+    "start": 39.46,
+    "end": 39.86
+   },
+   {
+    "word": "yönet.",
+    "start": 39.86,
+    "end": 40.22
+   },
+   {
+    "word": "Bankana",
+    "start": 40.9,
+    "end": 41.26
+   },
+   {
+    "word": "bağlanmaz,",
+    "start": 41.26,
+    "end": 42.3
+   },
+   {
+    "word": "verin",
+    "start": 42.3,
+    "end": 42.52
+   },
+   {
+    "word": "sende",
+    "start": 42.52,
+    "end": 42.82
+   },
+   {
+    "word": "kalır.",
+    "start": 42.82,
+    "end": 43.12
+   },
+   {
+    "word": "Para",
+    "start": 43.76,
+    "end": 44
+   },
+   {
+    "word": "izi,",
+    "start": 44,
+    "end": 44.86
+   },
+   {
+    "word": "söyle,",
+    "start": 44.86,
+    "end": 45.62
+   },
+   {
+    "word": "kaydet,",
+    "start": 45.62,
+    "end": 46.3
+   },
+   {
+    "word": "gör.",
+    "start": 46.3,
+    "end": 46.98
+   },
+   {
+    "word": "Google",
+    "start": 47.12,
+    "end": 47.42
+   },
+   {
+    "word": "Play'de",
+    "start": 47.42,
+    "end": 47.72
+   },
+   {
+    "word": "ücretsiz.",
+    "start": 47.72,
+    "end": 48.76
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2dqq7eh29r6wrztakeg7y"
+  }
+ }
+}

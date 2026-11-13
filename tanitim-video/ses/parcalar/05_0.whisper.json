@@ -1,0 +1,45 @@
+{
+ "imza": "6bf8e78396d780307da688ea644791590227a78f",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 2.64,
+  "text": " Paranın nereye gittiğini tek bakışta gör.",
+  "words": [
+   {
+    "word": "Paranın",
+    "start": 0,
+    "end": 0.34
+   },
+   {
+    "word": "nereye",
+    "start": 0.34,
+    "end": 0.68
+   },
+   {
+    "word": "gittiğini",
+    "start": 0.68,
+    "end": 1.16
+   },
+   {
+    "word": "tek",
+    "start": 1.16,
+    "end": 1.48
+   },
+   {
+    "word": "bakışta",
+    "start": 1.48,
+    "end": 1.94
+   },
+   {
+    "word": "gör.",
+    "start": 1.94,
+    "end": 2.62
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2e8wce5vrq8qw2geqzc7y"
+  }
+ }
+}

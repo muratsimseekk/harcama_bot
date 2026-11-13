@@ -1,9 +1,9 @@
 """Tanıtım videosunun ses bandı: özgün müzik (sentez) + seslendirme + efektler → public/ses.wav
 
 Müzik tamamen burada üretilir (örnek/telifli parça yok): 120 BPM, F–C–G–Am, kick/clap/hat, bas, pluck arpej, pad.
-Zamanlama src/zaman.json'dan (Remotion ile aynı) okunur; seslendirme ses/parcalar/NN.mp3 (seslendirme.py).
+Zamanlama src/zaman.json'dan (Remotion ile aynı; zamanla.py yazar) okunur; seslendirme ses/parcalar/*.wav.
 
-Çalıştır:  python tanitim-video/ses/seslendirme.py && python tanitim-video/ses/karistir.py
+Çalıştır:  python tanitim-video/ses/seslendirme.py && python tanitim-video/ses/zamanla.py && python tanitim-video/ses/karistir.py
 Çıktı:     public/ses.wav (karışım, -14 LUFS), ses/muzik.wav (yalnız müzik)
 """
 from __future__ import annotations
@@ -25,11 +25,8 @@ TOPLAM = (sum(SURELER) - GECIS * (len(SURELER) - 1)) / FPS
 N = int(TOPLAM * SR)
 rng = np.random.default_rng(7)
 
-# Sahne içi olay anları (kare) — src/sahneler.tsx ile eşleşir
-SES_KART_KARE = 158      # "2 kayıt bulundu"
-LIMIT_BILDIRIM_KARE = 72  # "%97'si doldu" bildirimi
-KAPANIS_CTA_KARE = 124    # Google Play düğmesi
-SESLENDIRME_GECIKME = [0.15] + [0.4] * (len(SURELER) - 1)
+# Sahne içi olay anları (kare, sahneye göre) — zamanla.py kelime zamanlarından hesaplar; sahneler.tsx de kullanır
+ISARET = ZAMAN["isaret"]
 
 
 # ------------------------------------------------------------------ temel araçlar
@@ -141,6 +138,19 @@ def vuus(sure=0.45, yukari=True) -> np.ndarray:
     return out * np.sin(np.pi * p) ** 2 * 0.8
 
 
+def tik_sesi(yuksek: bool) -> np.ndarray:
+    t = t_dizi(0.05)
+    f = 2400 if yuksek else 1900
+    return (np.sin(2 * np.pi * f * t) * 0.6 + filtre(rng.normal(0, 1, len(t)), "high", 4000) * 0.4) * np.exp(-t / 0.008)
+
+
+def balon_sesi() -> np.ndarray:
+    """Mesaj 'pop'u: hızla yükselen kısa ton."""
+    t = t_dizi(0.12)
+    frek = 520 + 900 * (t / 0.12)
+    return np.sin(2 * np.pi * np.cumsum(frek) / SR) * zarf(len(t), 0.003, 0.035)
+
+
 def yukselen(sure: float) -> np.ndarray:
     t = t_dizi(sure)
     g = filtre(rng.normal(0, 1, len(t)), "band", [1500, 9000])
@@ -184,9 +194,15 @@ def muzik() -> np.ndarray:
     kapanis = BASLAR[-1]
     bitis = TOPLAM - 2.6        # son akor
 
-    # Giriş (kanca): kısık pad + yükselen gürültü
-    ekle(zemin, pad([57, 60, 64], giris + 0.3), 0.0, 0.5)
-    ekle(efekt, yukselen(giris - 0.1), 0.1, 0.35)
+    # Giriş (kanca): kısık, gergin pad + saat tiki (zaman/para akıp gidiyor) + logoya yükselen gürültü
+    ekle(zemin, pad([57, 60, 64], giris + 0.3), 0.0, 0.45)
+    ekle(zemin, pad([45, 52], giris + 0.3), 0.0, 0.35)
+    tik = 0.0
+    while tik < giris - 0.3:
+        ekle(efekt, tik_sesi(yuksek=int(tik / 0.5) % 2 == 0), tik, 0.22)
+        tik += 0.5
+    yuk = min(2.6, giris - 0.2)
+    ekle(efekt, yukselen(yuk), giris - yuk, 0.38)
     ekle(efekt, carpma(), giris, 0.55)
 
     olcu = 0
@@ -259,10 +275,10 @@ def muzik() -> np.ndarray:
 def seslendirme() -> tuple[np.ndarray, list[tuple[float, float]]]:
     v = np.zeros(N)
     araliklar = []
-    for i, bas in enumerate(BASLAR):
-        x = kirp(oku(KOK / f"ses/parcalar/{i:02d}.mp3"))
+    for ses in ZAMAN["sesler"]:
+        x = kirp(oku(KOK / "ses/parcalar" / ses["dosya"]))
         x = filtre(x, "high", 85)
-        b = bas + SESLENDIRME_GECIKME[i]
+        b = BASLAR[ses["sahne"]] + ses["bas"]
         ib = int(b * SR)
         n = min(len(x), N - ib)
         v[ib : ib + n] += x[:n]
@@ -277,9 +293,11 @@ def efektler() -> np.ndarray:
     e = np.zeros((N, 2))
     for i in range(2, len(BASLAR)):  # sahne geçişleri (logo girişinde çarpma zaten var)
         ekle(e, vuus(0.5, yukari=i % 2 == 0), BASLAR[i] - 0.12, 0.22, pan=(0.35 if i % 2 else -0.35))
-    ekle(e, zil([84, 88]), BASLAR[2] + SES_KART_KARE / FPS, 0.28)                 # kayıt bulundu
-    ekle(e, zil([88, 91, 96], 1.2), BASLAR[6] + LIMIT_BILDIRIM_KARE / FPS, 0.3)    # bildirim
-    ekle(e, zil([79, 84, 88, 91], 2.0), BASLAR[-1] + KAPANIS_CTA_KARE / FPS, 0.3)  # CTA
+    for k in ISARET["kanca"][:-1]:  # mesaj balonları
+        ekle(e, balon_sesi(), k / FPS - 0.05, 0.3)
+    ekle(e, zil([84, 88]), BASLAR[2] + ISARET["ses_kart"] / FPS, 0.28)               # kayıt bulundu
+    ekle(e, zil([88, 91, 96], 1.2), BASLAR[6] + ISARET["limit_bildirim"] / FPS, 0.3)  # bildirim
+    ekle(e, zil([79, 84, 88, 91], 2.0), BASLAR[-1] + ISARET["kapanis_cta"] / FPS, 0.3)  # CTA
     return e
 
 

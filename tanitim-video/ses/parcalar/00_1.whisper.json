@@ -1,0 +1,35 @@
+{
+ "imza": "808de5e588734525353b7fb4f2fc6c8ea6e146e1",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 2.7199999999999998,
+  "text": " Ay sonunu yine getiremedim.",
+  "words": [
+   {
+    "word": "Ay",
+    "start": 0.62,
+    "end": 0.78
+   },
+   {
+    "word": "sonunu",
+    "start": 0.78,
+    "end": 1.2
+   },
+   {
+    "word": "yine",
+    "start": 1.2,
+    "end": 1.56
+   },
+   {
+    "word": "getiremedim.",
+    "start": 1.56,
+    "end": 2.7
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2e34vewe8b63x1yd1x1t0"
+  }
+ }
+}

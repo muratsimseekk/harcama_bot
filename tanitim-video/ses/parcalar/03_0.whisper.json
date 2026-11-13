@@ -1,0 +1,50 @@
+{
+ "imza": "868a1336ef1e0dc52aa4ca5bf73531b469f59649",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 3.349999872,
+  "text": " Kategoriyi yapay zeka bulur. Sen sadece onayla.",
+  "words": [
+   {
+    "word": "Kategoriyi",
+    "start": 0.4,
+    "end": 0.86
+   },
+   {
+    "word": "yapay",
+    "start": 0.86,
+    "end": 1.24
+   },
+   {
+    "word": "zeka",
+    "start": 1.24,
+    "end": 1.48
+   },
+   {
+    "word": "bulur.",
+    "start": 1.48,
+    "end": 2.22
+   },
+   {
+    "word": "Sen",
+    "start": 2.22,
+    "end": 2.38
+   },
+   {
+    "word": "sadece",
+    "start": 2.38,
+    "end": 2.84
+   },
+   {
+    "word": "onayla.",
+    "start": 2.84,
+    "end": 3.26
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2e7c5ehtbstb8aecwz9t7"
+  }
+ }
+}

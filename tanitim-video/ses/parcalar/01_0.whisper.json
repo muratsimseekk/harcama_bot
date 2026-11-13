@@ -1,0 +1,70 @@
+{
+ "imza": "aa7f1173b1b4f2ca3621beb3c44cbf170212ee55",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 5.550000128,
+  "text": " O zaman tanış. Para izi. Harcamalarını takip etmenin en kolay yolu.",
+  "words": [
+   {
+    "word": "O",
+    "start": 0.08,
+    "end": 0.22
+   },
+   {
+    "word": "zaman",
+    "start": 0.22,
+    "end": 0.52
+   },
+   {
+    "word": "tanış.",
+    "start": 0.52,
+    "end": 1.52
+   },
+   {
+    "word": "Para",
+    "start": 1.52,
+    "end": 1.68
+   },
+   {
+    "word": "izi.",
+    "start": 1.68,
+    "end": 2.54
+   },
+   {
+    "word": "Harcamalarını",
+    "start": 2.62,
+    "end": 3.22
+   },
+   {
+    "word": "takip",
+    "start": 3.22,
+    "end": 3.58
+   },
+   {
+    "word": "etmenin",
+    "start": 3.58,
+    "end": 4
+   },
+   {
+    "word": "en",
+    "start": 4,
+    "end": 4.32
+   },
+   {
+    "word": "kolay",
+    "start": 4.32,
+    "end": 4.68
+   },
+   {
+    "word": "yolu.",
+    "start": 4.68,
+    "end": 5.04
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2e54jeh1tzcsj2kw1z0dc"
+  }
+ }
+}

@@ -24,16 +24,21 @@ def oku(yol: Path, kanal: int = 1) -> np.ndarray:
 
 def kirp(x: np.ndarray, esik_db: float = -42.0, pay: float = 0.03) -> np.ndarray:
     """Baştaki ve sondaki sessizliği atar (pay sn kadar nefes bırakır)."""
+    return kirp_ofsetli(x, esik_db, pay)[0]
+
+
+def kirp_ofsetli(x: np.ndarray, esik_db: float = -42.0, pay: float = 0.03) -> tuple[np.ndarray, float]:
+    """kirp() + kırpılan baş kısmın süresi (sn)."""
     pencere = int(0.01 * SR)
     n = len(x) // pencere
     rms = np.sqrt(np.mean(x[: n * pencere].reshape(n, pencere) ** 2, axis=1) + 1e-12)
     db = 20 * np.log10(rms)
     dolu = np.where(db > esik_db)[0]
     if len(dolu) == 0:
-        return x
+        return x, 0.0
     bas = max(0, dolu[0] * pencere - int(pay * SR))
     son = min(len(x), (dolu[-1] + 1) * pencere + int(pay * SR))
-    return x[bas:son]
+    return x[bas:son], bas / SR
 
 
 def yaz(yol: Path, x: np.ndarray) -> None:

@@ -1,0 +1,45 @@
+{
+ "imza": "73ec9690196d096a0e18c7d67f8418100f01f4cf",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 3.130000128,
+  "text": " Haneni kur, evin bütçesini birlikte yönet.",
+  "words": [
+   {
+    "word": "Haneni",
+    "start": 0.24,
+    "end": 0.64
+   },
+   {
+    "word": "kur,",
+    "start": 0.64,
+    "end": 1.44
+   },
+   {
+    "word": "evin",
+    "start": 1.44,
+    "end": 1.6
+   },
+   {
+    "word": "bütçesini",
+    "start": 1.6,
+    "end": 2.06
+   },
+   {
+    "word": "birlikte",
+    "start": 2.06,
+    "end": 2.46
+   },
+   {
+    "word": "yönet.",
+    "start": 2.46,
+    "end": 2.8
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2eccdengs9p3neqt7w7bq"
+  }
+ }
+}

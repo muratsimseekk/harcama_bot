@@ -1,0 +1,45 @@
+{
+ "imza": "2a32b05bd38ad09d7eec6bc454a8f21877cf386e",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 4.8,
+  "text": " Gelir, gider, kalan hepsi tek yerde.",
+  "words": [
+   {
+    "word": "Gelir,",
+    "start": 0.56,
+    "end": 1.4
+   },
+   {
+    "word": "gider,",
+    "start": 1.4,
+    "end": 2.3
+   },
+   {
+    "word": "kalan",
+    "start": 2.3,
+    "end": 2.74
+   },
+   {
+    "word": "hepsi",
+    "start": 2.74,
+    "end": 3.52
+   },
+   {
+    "word": "tek",
+    "start": 3.52,
+    "end": 3.72
+   },
+   {
+    "word": "yerde.",
+    "start": 3.72,
+    "end": 4.82
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2e87ceqftsbs64t35a767"
+  }
+ }
+}

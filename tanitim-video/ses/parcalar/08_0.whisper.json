@@ -1,0 +1,50 @@
+{
+ "imza": "335082648ee15a2da356154b621bc6cab9150aa0",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 4.780000256,
+  "text": " Kira, fatura, maaş her ay kendiliğinden eklensin.",
+  "words": [
+   {
+    "word": "Kira,",
+    "start": 0.16,
+    "end": 0.96
+   },
+   {
+    "word": "fatura,",
+    "start": 0.96,
+    "end": 1.94
+   },
+   {
+    "word": "maaş",
+    "start": 1.94,
+    "end": 2.26
+   },
+   {
+    "word": "her",
+    "start": 2.26,
+    "end": 2.76
+   },
+   {
+    "word": "ay",
+    "start": 2.76,
+    "end": 2.9
+   },
+   {
+    "word": "kendiliğinden",
+    "start": 2.9,
+    "end": 3.48
+   },
+   {
+    "word": "eklensin.",
+    "start": 3.48,
+    "end": 4.04
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2eb1vecc93g92y3y9jcd0"
+  }
+ }
+}

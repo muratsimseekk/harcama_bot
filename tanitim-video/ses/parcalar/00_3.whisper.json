@@ -1,0 +1,35 @@
+{
+ "imza": "9337bb50c157cb822dc4a67e6cccb767b028f6e2",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 2.58,
+  "text": " Bunları sen de diyorsan…",
+  "words": [
+   {
+    "word": "Bunları",
+    "start": 0.96,
+    "end": 1.32
+   },
+   {
+    "word": "sen",
+    "start": 1.32,
+    "end": 1.66
+   },
+   {
+    "word": "de",
+    "start": 1.66,
+    "end": 1.8
+   },
+   {
+    "word": "diyorsan…",
+    "start": 1.8,
+    "end": 2.48
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2e4dmec99ev1q08brar85"
+  }
+ }
+}

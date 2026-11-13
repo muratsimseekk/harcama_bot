@@ -1,0 +1,55 @@
+{
+ "imza": "307bdd55c046fdba242a495aa7557197cf4ae37c",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 5.270000128,
+  "text": " Para izi. Söyle, kaydet, gör. Google Play'de ücretsiz.",
+  "words": [
+   {
+    "word": "Para",
+    "start": 0.4,
+    "end": 0.66
+   },
+   {
+    "word": "izi.",
+    "start": 0.66,
+    "end": 1.54
+   },
+   {
+    "word": "Söyle,",
+    "start": 1.54,
+    "end": 2.2
+   },
+   {
+    "word": "kaydet,",
+    "start": 2.2,
+    "end": 2.98
+   },
+   {
+    "word": "gör.",
+    "start": 2.98,
+    "end": 3.78
+   },
+   {
+    "word": "Google",
+    "start": 3.78,
+    "end": 4.02
+   },
+   {
+    "word": "Play'de",
+    "start": 4.02,
+    "end": 4.38
+   },
+   {
+    "word": "ücretsiz.",
+    "start": 4.38,
+    "end": 4.96
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2edreetq8brhyahxgs65e"
+  }
+ }
+}

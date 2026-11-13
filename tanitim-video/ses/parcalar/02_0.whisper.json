@@ -1,0 +1,70 @@
+{
+ "imza": "19a4e05271807d94e8da0ee8af52d3f6453f78a7",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 6.499999744,
+  "text": " Harcamanı söylemen yeter. Market 850, dün benzin 1200, gerisini o halleder.",
+  "words": [
+   {
+    "word": "Harcamanı",
+    "start": 0,
+    "end": 0.54
+   },
+   {
+    "word": "söylemen",
+    "start": 0.54,
+    "end": 0.92
+   },
+   {
+    "word": "yeter.",
+    "start": 0.92,
+    "end": 1.96
+   },
+   {
+    "word": "Market",
+    "start": 1.96,
+    "end": 2.08
+   },
+   {
+    "word": "850,",
+    "start": 2.08,
+    "end": 3.36
+   },
+   {
+    "word": "dün",
+    "start": 3.36,
+    "end": 3.56
+   },
+   {
+    "word": "benzin",
+    "start": 3.56,
+    "end": 4.04
+   },
+   {
+    "word": "1200,",
+    "start": 4.04,
+    "end": 5.32
+   },
+   {
+    "word": "gerisini",
+    "start": 5.32,
+    "end": 5.58
+   },
+   {
+    "word": "o",
+    "start": 5.58,
+    "end": 5.72
+   },
+   {
+    "word": "halleder.",
+    "start": 5.72,
+    "end": 6.26
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2e6ntee4bs4849045gn0q"
+  }
+ }
+}

@@ -1,5 +1,116 @@
 {
-  "fps": 30,
-  "gecis": 16,
-  "sureler": [131, 72, 225, 140, 125, 120, 125, 130, 125, 115, 125, 128, 210]
+ "fps": 30,
+ "gecis": 16,
+ "sureler": [
+  250,
+  172,
+  211,
+  120,
+  150,
+  105,
+  110,
+  115,
+  158,
+  109,
+  110,
+  100,
+  192
+ ],
+ "isaret": {
+  "kanca": [
+   8,
+   67,
+   133,
+   196
+  ],
+  "ses_yazi_bas": 69,
+  "ses_yazi_son": 170,
+  "ses_kart": 176,
+  "limit_bildirim": 63,
+  "kapanis_soyle": 42,
+  "kapanis_cta": 107,
+  "marka_ad": 49
+ },
+ "sesler": [
+  {
+   "sahne": 0,
+   "dosya": "00_0.wav",
+   "bas": 0.25
+  },
+  {
+   "sahne": 0,
+   "dosya": "00_1.wav",
+   "bas": 2.23
+  },
+  {
+   "sahne": 0,
+   "dosya": "00_2.wav",
+   "bas": 4.42
+  },
+  {
+   "sahne": 0,
+   "dosya": "00_3.wav",
+   "bas": 6.54
+  },
+  {
+   "sahne": 1,
+   "dosya": "01_0.wav",
+   "bas": 0.35
+  },
+  {
+   "sahne": 2,
+   "dosya": "02_0.wav",
+   "bas": 0.35
+  },
+  {
+   "sahne": 3,
+   "dosya": "03_0.wav",
+   "bas": 0.35
+  },
+  {
+   "sahne": 4,
+   "dosya": "04_0.wav",
+   "bas": 0.35
+  },
+  {
+   "sahne": 5,
+   "dosya": "05_0.wav",
+   "bas": 0.35
+  },
+  {
+   "sahne": 6,
+   "dosya": "06_0.wav",
+   "bas": 0.35
+  },
+  {
+   "sahne": 7,
+   "dosya": "07_0.wav",
+   "bas": 0.35
+  },
+  {
+   "sahne": 8,
+   "dosya": "08_0.wav",
+   "bas": 0.35
+  },
+  {
+   "sahne": 9,
+   "dosya": "09_0.wav",
+   "bas": 0.35
+  },
+  {
+   "sahne": 10,
+   "dosya": "10_0.wav",
+   "bas": 0.35
+  },
+  {
+   "sahne": 11,
+   "dosya": "11_0.wav",
+   "bas": 0.35
+  },
+  {
+   "sahne": 12,
+   "dosya": "12_0.wav",
+   "bas": 0.35
+  }
+ ]
 }

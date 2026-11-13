@@ -1,0 +1,100 @@
+{
+ "imza": "6e40191564f62ce9d6a60120c66b65c0a64bcd5d",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 9.560000512,
+  "text": " Param nereye gidiyor? Ay sonunu yine getiremedim. Ne harcadım da bu para bitti? Bunları sen de diyorsan,",
+  "words": [
+   {
+    "word": "Param",
+    "start": 0.24,
+    "end": 0.5
+   },
+   {
+    "word": "nereye",
+    "start": 0.5,
+    "end": 1.06
+   },
+   {
+    "word": "gidiyor?",
+    "start": 1.06,
+    "end": 2.04
+   },
+   {
+    "word": "Ay",
+    "start": 2.66,
+    "end": 2.84
+   },
+   {
+    "word": "sonunu",
+    "start": 2.84,
+    "end": 3.24
+   },
+   {
+    "word": "yine",
+    "start": 3.24,
+    "end": 3.6
+   },
+   {
+    "word": "getiremedim.",
+    "start": 3.6,
+    "end": 4.76
+   },
+   {
+    "word": "Ne",
+    "start": 5.04,
+    "end": 5.14
+   },
+   {
+    "word": "harcadım",
+    "start": 5.14,
+    "end": 5.66
+   },
+   {
+    "word": "da",
+    "start": 5.66,
+    "end": 5.78
+   },
+   {
+    "word": "bu",
+    "start": 5.78,
+    "end": 5.9
+   },
+   {
+    "word": "para",
+    "start": 5.9,
+    "end": 6.14
+   },
+   {
+    "word": "bitti?",
+    "start": 6.14,
+    "end": 6.98
+   },
+   {
+    "word": "Bunları",
+    "start": 7.96,
+    "end": 8.28
+   },
+   {
+    "word": "sen",
+    "start": 8.28,
+    "end": 8.62
+   },
+   {
+    "word": "de",
+    "start": 8.62,
+    "end": 8.78
+   },
+   {
+    "word": "diyorsan,",
+    "start": 8.78,
+    "end": 9.26
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2d64eehzrh67b7ed2ce08"
+  }
+ }
+}

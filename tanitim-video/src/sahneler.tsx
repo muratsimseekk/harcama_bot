@@ -18,6 +18,9 @@ import {
   useAra,
   useYay,
 } from "./tema";
+import zaman from "./zaman.json";
+
+const ISARET = zaman.isaret;
 
 const yazi = (boyut: number, agirlik = 700, renk = R.yazi) => ({
   fontFamily: SANS,
@@ -27,55 +30,162 @@ const yazi = (boyut: number, agirlik = 700, renk = R.yazi) => ({
 });
 
 // ================================================================== 1. Kanca
-const UCAN = [
-  { t: "−850 ₺", x: 70, y: 1500, h: 1.5, g: 0 },
-  { t: "−1.200 ₺", x: 760, y: 1620, h: 1.9, g: 8 },
-  { t: "−349 ₺", x: 110, y: 1760, h: 1.7, g: 16 },
-  { t: "−2.290 ₺", x: 740, y: 1380, h: 1.3, g: 22 },
-  { t: "−95 ₺", x: 820, y: 1820, h: 1.6, g: 30 },
-  { t: "−18.000 ₺", x: 60, y: 1300, h: 1.2, g: 36 },
+// Bakiye eriyor, harcamalar saçılıyor; iç ses mesaj balonları seslendirmeyle aynı anda düşer.
+const KANCA_MESAJ = ["Param nereye gidiyor?", "Ay sonunu yine getiremedim…", "Ne harcadım da bu para bitti?"];
+const HARCAMALAR = [
+  { t: "Market", v: "−850 ₺", ik: "cart" },
+  { t: "Kahve", v: "−95 ₺", ik: "cafe" },
+  { t: "Benzin", v: "−1.200 ₺", ik: "car" },
+  { t: "Fatura", v: "−2.290 ₺", ik: "flash" },
+  { t: "Online alışveriş", v: "−1.349 ₺", ik: "bag-handle" },
+  { t: "Kira", v: "−18.000 ₺", ik: "home" },
+  { t: "Yemek siparişi", v: "−420 ₺", ik: "fast-food" },
+  { t: "Abonelik", v: "−199 ₺", ik: "tv" },
+  { t: "Giyim", v: "−2.499 ₺", ik: "shirt" },
 ];
 
 export const Kanca: React.FC = () => {
   const f = useCurrentFrame();
+  const [m0, m1, m2, m3] = ISARET.kanca;
+  // bakiye: maaş yattı → sıfır (giderek hızlanan erime)
+  const p = interpolate(f, [6, m2 + 24], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const kalan = 1 - p ** 1.7;
+  const kirmizilik = Math.round(interpolate(p, [0.55, 1], [0, 100], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
+  const bitti = f - (m2 + 24);
+  const sallan = bitti > 0 ? Math.sin(bitti * 1.6) * Math.max(0, 8 - bitti * 0.5) : 0;
+  const son = interpolate(f, [m3 - 4, m3 + 10], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   return (
     <AbsoluteFill>
       <Arkaplan tur="krem" />
-      {UCAN.map((u, i) => {
-        const yerel = f - u.g;
-        const o = interpolate(yerel, [0, 10, 70, 95], [0, 0.85, 0.85, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: u.x,
-              top: u.y - Math.max(0, yerel) * u.h * 3.2,
-              opacity: o,
-              transform: `rotate(${(i % 2 ? 1 : -1) * 6}deg)`,
-              ...yazi(40, 800, R.kirmizi),
-              background: R.beyaz,
-              padding: "14px 26px",
-              borderRadius: 999,
-              boxShadow: "0 12px 30px rgba(40,20,10,0.12)",
-            }}
-          >
-            {u.t}
-          </div>
-        );
-      })}
-      <Baslik satirlar={["Maaş yattı…"]} boyut={118} top={560} gecikme={2} />
-      <Baslik satirlar={["ve yine bitti?"]} vurgu={["bitti"]} boyut={118} top={700} gecikme={28} />
-      <AltMetin top={900} gecikme={80} boyut={44}>
-        Peki nereye gitti?
-      </AltMetin>
+      <div style={{ position: "absolute", inset: 0, opacity: 1 - 0.8 * son, filter: `blur(${son * 7}px)` }}>
+        {/* bakiye kartı */}
+        <Giris gecikme={0} kay={40} style={{ position: "absolute", top: 260, left: 90, width: 900 }}>
+          <Kart style={{ padding: "34px 42px", transform: `translateX(${sallan}px)` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <Ikon ad="wallet-outline" boyut={34} renk={R.soluk} />
+              <span style={{ ...yazi(30, 600, R.soluk), flex: 1 }}>Hesabındaki para</span>
+              <span style={yazi(26, 600, R.soluk)}>Maaş günü · 1 Kasım</span>
+            </div>
+            <div
+              style={{
+                fontFamily: SERIF,
+                fontWeight: 700,
+                fontSize: 128,
+                lineHeight: 1.15,
+                color: `color-mix(in srgb, ${R.kirmizi} ${kirmizilik}%, ${R.yazi})`,
+              }}
+            >
+              {tl(45000 * kalan)}
+            </div>
+            <Cubuk oran={kalan} renk={`color-mix(in srgb, ${R.kirmizi} ${kirmizilik}%, ${R.turuncu})`} yukseklik={16} />
+          </Kart>
+        </Giris>
+        {/* karttan saçılan harcamalar */}
+        {HARCAMALAR.map((h, i) => {
+          const dogus = 10 + i * ((m2 + 10) / HARCAMALAR.length);
+          const y = f - dogus;
+          if (y < 0 || y > 40) return null;
+          const yon = i % 2 ? 1 : -1;
+          const q = y / 40;
+          return (
+            <div
+              key={h.t}
+              style={{
+                position: "absolute",
+                left: 540 + yon * (120 + q * 330) - 200,
+                top: 590 + q * 60 - Math.sin(q * Math.PI) * 110,
+                width: 400,
+                opacity: interpolate(y, [0, 6, 28, 40], [0, 1, 1, 0]),
+                transform: `rotate(${yon * q * 14}deg) scale(${0.8 + 0.2 * Math.min(1, y / 6)})`,
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  background: R.beyaz,
+                  borderRadius: 999,
+                  padding: "12px 22px",
+                  boxShadow: "0 12px 26px rgba(40,20,10,0.14)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <Ikon ad={h.ik} boyut={28} renk={R.soluk} />
+                <span style={yazi(26, 600, R.yazi)}>{h.t}</span>
+                <span style={yazi(28, 800, R.kirmizi)}>{h.v}</span>
+              </div>
+            </div>
+          );
+        })}
+        {/* iç ses balonları */}
+        {KANCA_MESAJ.map((m, i) => {
+          const g = [m0, m1, m2][i] - 3;
+          const yaziyor = f >= g - 9 && f < g;
+          return (
+            <div key={m} style={{ position: "absolute", top: 820 + i * 215, right: 80 + (i % 2) * 70 }}>
+              {yaziyor && (
+                <div style={{ display: "flex", gap: 10, background: "#EFE6DF", borderRadius: 40, padding: "30px 34px" }}>
+                  {[0, 1, 2].map((d) => (
+                    <div
+                      key={d}
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: 8,
+                        background: R.soluk,
+                        opacity: 0.35 + 0.65 * Math.abs(Math.sin((f + d * 4) / 4)),
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+              <Giris gecikme={g} kay={30} kayX={40} olcek0={0.7}>
+                <div
+                  style={{
+                    background: `linear-gradient(135deg, ${R.turuncu}, ${R.turuncuKoyu})`,
+                    borderRadius: 44,
+                    borderBottomRightRadius: 12,
+                    padding: "30px 40px",
+                    boxShadow: "0 18px 40px rgba(196,84,56,0.3)",
+                    whiteSpace: "nowrap",
+                    ...yazi(46, 700, R.beyaz),
+                  }}
+                >
+                  {m}
+                </div>
+              </Giris>
+            </div>
+          );
+        })}
+      </div>
+      {/* "Bunları sen de diyorsan…" */}
+      <div
+        style={{
+          position: "absolute",
+          top: 780,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          opacity: son,
+          transform: `scale(${0.9 + 0.1 * son})`,
+        }}
+      >
+        <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 112, color: R.yazi, lineHeight: 1.1 }}>
+          Bunları <span style={{ color: R.turuncu }}>sen de</span>
+          <br />
+          diyorsan…
+        </div>
+      </div>
     </AbsoluteFill>
   );
 };
 
 // ================================================================== 2. Marka
 export const Marka: React.FC = () => {
-  const s = useYay(2, { damping: 11 });
+  const s = useYay(ISARET.marka_ad - 14, { damping: 11 });
   const f = useCurrentFrame();
   const ad = "Paraİzi";
   return (
@@ -88,7 +198,7 @@ export const Marka: React.FC = () => {
       </div>
       <div style={{ position: "absolute", top: 870, left: 0, right: 0, display: "flex", justifyContent: "center" }}>
         {ad.split("").map((h, i) => {
-          const o = interpolate(f - 12 - i * 2, [0, 8], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+          const o = interpolate(f - ISARET.marka_ad - i * 2, [0, 8], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
           return (
             <span
               key={i}
@@ -107,8 +217,10 @@ export const Marka: React.FC = () => {
           );
         })}
       </div>
-      <AltMetin top={1080} gecikme={26} renk={R.seftaliAcik} boyut={48}>
-        Sesli harcama takibi
+      <AltMetin top={1080} gecikme={ISARET.marka_ad + 26} renk={R.seftaliAcik} boyut={46}>
+        Harcamalarını takip etmenin
+        <br />
+        en kolay yolu.
       </AltMetin>
     </AbsoluteFill>
   );
@@ -119,8 +231,8 @@ const CUMLE = "“Market 850, dün benzin 1200”";
 
 export const Ses: React.FC = () => {
   const f = useCurrentFrame();
-  const n = Math.round(CUMLE.length * interpolate(f, [58, 136], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
-  const dinliyor = f > 14 && f < 140;
+  const n = Math.round(CUMLE.length * interpolate(f, [ISARET.ses_yazi_bas, ISARET.ses_yazi_son], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
+  const dinliyor = f > 14 && f < ISARET.ses_yazi_son + 4;
   // mikrofon düğmesi: telefon top 600, genişlik 600 → ekran ölçeği 600/1080
   const my = 600 + 20 + (990 * 600) / 1080;
   return (
@@ -169,7 +281,7 @@ export const Ses: React.FC = () => {
             <div style={yazi(26, 600, R.soluk)}>Söylediğin</div>
             <div style={{ ...yazi(33, 700), minHeight: 42 }}>
               {CUMLE.slice(0, n)}
-              {f < 140 && Math.floor(f / 8) % 2 === 0 && (
+              {f < ISARET.ses_yazi_son + 4 && Math.floor(f / 8) % 2 === 0 && (
                 <span style={{ display: "inline-block", width: 3, height: 34, background: R.turuncu, marginLeft: 3 }} />
               )}
             </div>
@@ -191,7 +303,7 @@ export const Ses: React.FC = () => {
           )}
         </Kart>
       </Giris>
-      <Giris gecikme={158} kay={80} olcek0={0.8} style={{ position: "absolute", top: 1250, left: 130, width: 820 }}>
+      <Giris gecikme={ISARET.ses_kart} kay={80} olcek0={0.8} style={{ position: "absolute", top: 1250, left: 130, width: 820 }}>
         <Kart style={{ padding: "30px 36px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
             <span style={yazi(32, 700)}>2 kayıt bulundu</span>
@@ -201,7 +313,7 @@ export const Ses: React.FC = () => {
             { ik: "cart", renk: "#E85D8C", ad: "Market", alt: "Market · bugün", tutar: "850 ₺" },
             { ik: "car", renk: "#506EAA", ad: "Benzin", alt: "Ulaşım · dün", tutar: "1.200 ₺" },
           ].map((r, i) => (
-            <Giris key={i} gecikme={166 + i * 7} kay={20} olcek0={1}>
+            <Giris key={i} gecikme={ISARET.ses_kart + 8 + i * 7} kay={20} olcek0={1}>
               <div style={{ display: "flex", alignItems: "center", gap: 22, padding: "12px 0" }}>
                 <IkonKutu ad={r.ik} renk={r.renk} />
                 <div style={{ flex: 1 }}>
@@ -410,7 +522,7 @@ export const Limit: React.FC = () => {
           </div>
         </Kart>
       </Giris>
-      <Giris gecikme={72} kayX={700} kay={0} olcek0={1} style={{ position: "absolute", top: 1240, left: 60, width: 960 }}>
+      <Giris gecikme={ISARET.limit_bildirim} kayX={700} kay={0} olcek0={1} style={{ position: "absolute", top: 1240, left: 60, width: 960 }}>
         <Kart style={{ padding: "26px 30px", display: "flex", gap: 24, alignItems: "flex-start", borderRadius: 32 }}>
           <Simge boyut={72} />
           <div style={{ flex: 1 }}>
@@ -796,8 +908,9 @@ export const Guven: React.FC = () => {
 export const Kapanis: React.FC = () => {
   const f = useCurrentFrame();
   const s = useYay(2, { damping: 11 });
-  const c = useYay(124, { damping: 12 });
-  const nabiz = f > 150 ? 1 + 0.03 * Math.sin(((f - 150) / 30) * 2 * Math.PI * 1.2) : 1;
+  const c = useYay(ISARET.kapanis_cta, { damping: 12 });
+  const n0 = ISARET.kapanis_cta + 26;
+  const nabiz = f > n0 ? 1 + 0.03 * Math.sin(((f - n0) / 30) * 2 * Math.PI * 1.2) : 1;
   return (
     <AbsoluteFill>
       <Arkaplan tur="turuncu" />
@@ -807,10 +920,10 @@ export const Kapanis: React.FC = () => {
         </div>
       </div>
       <Baslik satirlar={["Paraİzi"]} renk={R.beyaz} boyut={140} gecikme={8} top={600} />
-      <Baslik satirlar={["Söyle. Kaydet. Gör."]} renk={R.seftaliAcik} boyut={64} gecikme={56} top={790} />
+      <Baslik satirlar={["Söyle. Kaydet. Gör."]} renk={R.seftaliAcik} boyut={64} gecikme={ISARET.kapanis_soyle} top={790} />
       <div style={{ position: "absolute", top: 950, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 18 }}>
         {["Günde 3 kayıt ücretsiz", "Pro ile sınırsız"].map((t, i) => (
-          <Giris key={t} gecikme={96 + i * 6} kay={20} olcek0={0.8}>
+          <Giris key={t} gecikme={ISARET.kapanis_soyle + 40 + i * 6} kay={20} olcek0={0.8}>
             <div style={{ ...yazi(30, 700, R.beyaz), border: "3px solid rgba(255,255,255,0.6)", borderRadius: 999, padding: "16px 28px" }}>{t}</div>
           </Giris>
         ))}
@@ -842,7 +955,7 @@ export const Kapanis: React.FC = () => {
           <span style={yazi(46, 800)}>Google Play'de ücretsiz</span>
         </div>
       </div>
-      <AltMetin top={1330} renk={R.seftaliAcik} gecikme={140} boyut={34}>
+      <AltMetin top={1330} renk={R.seftaliAcik} gecikme={ISARET.kapanis_cta + 16} boyut={34}>
         Play Store'da “Paraİzi” diye ara
       </AltMetin>
     </AbsoluteFill>

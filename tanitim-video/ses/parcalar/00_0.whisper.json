@@ -1,0 +1,30 @@
+{
+ "imza": "8ed5bc0d5986f6491700a8fec8320f064a312756",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 2.04,
+  "text": " Param nereye gidiyor?",
+  "words": [
+   {
+    "word": "Param",
+    "start": 0.26,
+    "end": 0.54
+   },
+   {
+    "word": "nereye",
+    "start": 0.54,
+    "end": 1.1
+   },
+   {
+    "word": "gidiyor?",
+    "start": 1.1,
+    "end": 1.92
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2e2eteqgtx9hzh5445atq"
+  }
+ }
+}

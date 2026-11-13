@@ -1,0 +1,45 @@
+{
+ "imza": "6e45237e05c41aed9777cb460db1d681d70d057b",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 2.890000128,
+  "text": " Limit koy, sınıra yaklaşınca haber versin.",
+  "words": [
+   {
+    "word": "Limit",
+    "start": 0.24,
+    "end": 0.56
+   },
+   {
+    "word": "koy,",
+    "start": 0.56,
+    "end": 1.28
+   },
+   {
+    "word": "sınıra",
+    "start": 1.28,
+    "end": 1.48
+   },
+   {
+    "word": "yaklaşınca",
+    "start": 1.48,
+    "end": 2.04
+   },
+   {
+    "word": "haber",
+    "start": 2.04,
+    "end": 2.32
+   },
+   {
+    "word": "versin.",
+    "start": 2.32,
+    "end": 2.78
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2e9gee9nr76cf4vx22zdf"
+  }
+ }
+}

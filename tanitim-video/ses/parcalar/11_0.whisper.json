@@ -1,0 +1,40 @@
+{
+ "imza": "aa9233b50b053cbf0777bf43d7140d226c86fb42",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 2.8,
+  "text": " Bankana bağlanmaz, verin sende kalır.",
+  "words": [
+   {
+    "word": "Bankana",
+    "start": 0.36,
+    "end": 0.72
+   },
+   {
+    "word": "bağlanmaz,",
+    "start": 0.72,
+    "end": 1.78
+   },
+   {
+    "word": "verin",
+    "start": 1.78,
+    "end": 2
+   },
+   {
+    "word": "sende",
+    "start": 2,
+    "end": 2.3
+   },
+   {
+    "word": "kalır.",
+    "start": 2.3,
+    "end": 2.58
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2ed1revsrmxt79kqqhn7x"
+  }
+ }
+}

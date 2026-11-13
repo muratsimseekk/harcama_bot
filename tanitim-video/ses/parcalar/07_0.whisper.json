@@ -1,0 +1,50 @@
+{
+ "imza": "25ad87babb0792b34c900346ab0986e6bfb8ee55",
+ "sonuc": {
+  "task": "transcribe",
+  "language": "Turkish",
+  "duration": 3.64,
+  "text": " Her yatırımına bir hedef koy. İlerlemeni izle.",
+  "words": [
+   {
+    "word": "Her",
+    "start": 0.54,
+    "end": 0.74
+   },
+   {
+    "word": "yatırımına",
+    "start": 0.74,
+    "end": 1.22
+   },
+   {
+    "word": "bir",
+    "start": 1.22,
+    "end": 1.38
+   },
+   {
+    "word": "hedef",
+    "start": 1.38,
+    "end": 1.7
+   },
+   {
+    "word": "koy.",
+    "start": 1.7,
+    "end": 2.32
+   },
+   {
+    "word": "İlerlemeni",
+    "start": 2.32,
+    "end": 2.84
+   },
+   {
+    "word": "izle.",
+    "start": 2.84,
+    "end": 3.1
+   }
+  ],
+  "segments": null,
+  "x_groq": {
+   "id": "req_01m7b2ea84e0saw3qjfw9x4ybe"
+  }
+ }
+}
