@@ -7,8 +7,8 @@ Genel kurallar: `docs/YAYIN-KONTROL-LISTESI.md`. Bu liste yalnız build 11'e öz
 
 - [x] **Build 10 production'da yayında** (2026-11-13: Play'de herkese açık, yalnız Türkiye, 12 yükleme)
 - [x] Render'da `ANDROID_SON_SURUM=10` (2026-11-13 `/v1/surum` → `{"android":10}`)
-- [ ] **Play uyarısı — DEX optimizasyonu / kod karartma %1** (son tarih Şub 2027): R8 kapalı. Karar ver:
-      build 11'e mi build 12'ye mi? Açmak için `expo-build-properties` → `android.enableMinifyInReleaseBuilds`
+- [x] **Play uyarısı — DEX optimizasyonu / kod karartma %1** (son tarih Şub 2027): R8 kapalı.
+      **Karar (2026-11-14): build 12'ye bırakıldı.** Açmak için `expo-build-properties` → `android.enableMinifyInReleaseBuilds`
       + `enableShrinkResourcesInReleaseBuilds`; önce **preview build**'de tüm akışlar denenmeli (giriş, ses,
       reklam, satın alma, dışa aktar) — R8 eksik keep kuralıyla release'te çökme yapabilir.
 - [ ] Play uyarısı — uçtan uca ekran (edge-to-edge) eski API: kütüphanelerden gelen bilgi amaçlı uyarı,
@@ -23,7 +23,7 @@ Genel kurallar: `docs/YAYIN-KONTROL-LISTESI.md`. Bu liste yalnız build 11'e öz
   yok. Uygulanan öneriler: kayıt arka plana geçince/sekme değişince atılıyor (`ekle.tsx`), eski depolama
   izinleri `blockedPermissions`'a eklendi. Kod değişirse build'den önce tekrar çalıştır: Claude'a
   "play-policy-insights ile denetle" de (çıktı `.scratch/`, git'e girmez).
-- [ ] Sentry eski token'larının silindiğini teyit et (bkz memory: Sentry token rotasyonu)
+- [x] Sentry eski token'larının silindiğini teyit et (2026-11-14 kullanıcı onayladı) (bkz memory: Sentry token rotasyonu)
 - [ ] **Push:** `git push origin faz-m1-mobil` → Render otomatik deploy
   - Backend'de yeni: kategori bazlı limit/hedef (`budgets.tur` — SQL zaten çalıştırıldı ✅), hedefe ulaşınca bildirim
   - Kontrol: https://harcama-api.onrender.com/health ve uygulamada Hedefler ekranı açılıyor mu
