@@ -10,6 +10,7 @@ fontlar uygulamanınkiler (Newsreader başlık, Inter metin).
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -98,6 +99,29 @@ def golge(im: Image.Image, bulanik: int, kuvvet: float, dy: int) -> Image.Image:
     return out
 
 
+_IKON = KOK / "mobile/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons"
+_GLIF = json.loads((_IKON / "glyphmaps/Ionicons.json").read_text())
+ETIKETLER = [
+    ("phone-portrait-outline", "Mobil uygulamalar"),
+    ("sparkles-outline", "Yapay zekâ"),
+    ("leaf-outline", "Sade tasarım"),
+]
+
+
+def etiket(ik: str, yazi: str) -> Image.Image:
+    """Beyaz hap: turuncu Ionicons simgesi + metin. RGBA."""
+    f = font("sans", "600SemiBold", 31)
+    fi = ImageFont.truetype(str(_IKON / "Fonts/Ionicons.ttf"), 38)
+    olc = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    w = int(28 + 40 + 14 + olc.textlength(yazi, font=f) + 30)
+    im = Image.new("RGBA", (w, 88), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle([0, 0, w - 1, 87], 44, fill=(255, 255, 255, 255), outline=CIZGI + (255,), width=2)
+    d.text((28 + 20, 44), chr(_GLIF[ik]), font=fi, fill=VURGU, anchor="mm")
+    d.text((28 + 40 + 14, 44), yazi, font=f, fill=KOYU, anchor="lm")
+    return im
+
+
 # ------------------------------------------------------------------ kapak
 def kapak() -> Image.Image:
     W, H = 2560, 1440
@@ -128,8 +152,6 @@ def kapak() -> Image.Image:
     f_nimu = font("serif", "700Bold", 168)
     f_studio = font("serif", "700Bold_Italic", 168)
     f_alt = font("sans", "500Medium", 40)
-    f_rozet = font("sans", "600SemiBold", 32)
-    f_rozet_b = font("sans", "700Bold", 32)
 
     mono = golge(monogram(250), 28, 0.35, 16)
     w_nimu = d.textlength("nimu", font=f_nimu)
@@ -139,7 +161,7 @@ def kapak() -> Image.Image:
     grup_w = 250 + bosluk + w_kelime
     x0 = round(1280 - grup_w / 2)
     # dikey: kelime + alt yazı + rozet bloğu ~ 330 px, ortada
-    # blok: kelime üstü (taban-130) … rozet altı (taban+236) = 366 px → güvenli alanın (423) ortasında
+    # blok: kelime üstü (taban-130) … etiket altı (taban+228) = 358 px → güvenli alanın (423) ortasında
     taban = 720 - 183 + 130
     im.alpha_composite(mono, (x0 - mono.info["pay"], 720 - 125 - mono.info["pay"]))
     tx = x0 + 250 + bosluk
@@ -149,22 +171,14 @@ def kapak() -> Image.Image:
     d.text((tx + 4, taban + 34), "Bağımsız mobil uygulama stüdyosu", font=f_alt, fill=SOLUK, anchor="lt")
     # ince ayraç
     d.line([(tx + 4, taban + 108), (tx + 4 + 120, taban + 108)], fill=VURGU, width=4)
-    # Paraİzi rozeti
+    # stüdyo etiketleri (tek uygulamaya bağlı değil)
     ry = taban + 140
-    simge = Image.open(KOK / "docs/magaza-gorselleri/icon-512.png").convert("RGBA").resize((64, 64), Image.LANCZOS)
-    sm = Image.new("L", (64, 64), 0)
-    ImageDraw.Draw(sm).rounded_rectangle([0, 0, 63, 63], 15, fill=255)
-    simge.putalpha(sm)
-    metin1, metin2 = "Paraİzi", " · Sesle harcama takibi · Google Play'de"
-    rw = 64 + 20 + d.textlength(metin1, font=f_rozet_b) + d.textlength(metin2, font=f_rozet) + 56
-    rozet = Image.new("RGBA", (int(rw), 96), (0, 0, 0, 0))
-    rd = ImageDraw.Draw(rozet)
-    rd.rounded_rectangle([0, 0, rozet.width - 1, 95], 48, fill=(255, 255, 255, 255), outline=CIZGI + (255,), width=2)
-    rozet.alpha_composite(simge, (16, 16))
-    rd.text((16 + 64 + 20, 48), metin1, font=f_rozet_b, fill=KOYU, anchor="lm")
-    rd.text((16 + 64 + 20 + d.textlength(metin1, font=f_rozet_b), 48), metin2, font=f_rozet, fill=SOLUK, anchor="lm")
-    rz = golge(rozet, 20, 0.12, 8)
-    im.alpha_composite(rz, (int(tx) - rz.info["pay"], int(ry) - rz.info["pay"]))
+    x = tx
+    for ik, yazi in ETIKETLER:
+        cip = etiket(ik, yazi)
+        cg = golge(cip, 18, 0.10, 6)
+        im.alpha_composite(cg, (int(x) - cg.info["pay"], int(ry) - cg.info["pay"]))
+        x += cip.width + 18
     return im.convert("RGB")
 
 
