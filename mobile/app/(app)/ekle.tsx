@@ -8,9 +8,10 @@ import {
   useAudioRecorderState,
 } from "expo-audio";
 import * as Haptics from "expo-haptics";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AppState,
   Animated,
   Easing,
   Keyboard,
@@ -200,6 +201,26 @@ export default function Ekle() {
       /* yoksay — zaten vazgeçiyoruz, ses atılacak */
     }
   }
+
+  // Kayıt sürerken uygulama arka plana geçerse ya da başka sekmeye geçilirse kaydı at:
+  // mikrofon yalnız kullanıcının gördüğü, süreli bir eylemde açık kalsın (Play ses kaydı
+  // politikası; play-policy-insights denetimi 2026-11-13).
+  const kayitAtRef = useRef(kayitAt);
+  kayitAtRef.current = kayitAt;
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "background") kayitAtRef.current();
+    });
+    return () => sub.remove();
+  }, []);
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        kayitAtRef.current();
+      },
+      [],
+    ),
+  );
 
   /** Klavye açıkken üst soldaki geri oku: klavyeyi kapat, taslağı temizle. */
   function yaziVazgec() {
