@@ -12,7 +12,7 @@ export const Root: React.FC = () => (
     fps={30}
     width={1080}
     height={1920}
-    // Müzik: telifsiz bir parçayı public/muzik.mp3 olarak koy, burada "muzik.mp3" yap.
-    defaultProps={{ muzik: null as string | null }}
+    // Ses: seslendirme + müzik + efekt karışımı (ses/karistir.py → public/ses.wav). null = sessiz.
+    defaultProps={{ ses: "ses.wav" as string | null }}
   />
 );

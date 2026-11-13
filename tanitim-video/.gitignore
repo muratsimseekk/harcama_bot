@@ -1,2 +1,6 @@
 node_modules/
 out/
+public/ses.wav
+ses/muzik.wav
+ses/_karisim.wav
+ses/__pycache__/

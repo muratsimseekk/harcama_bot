@@ -1,6 +1,7 @@
 # Paraİzi tanıtım videosu: metin paketi
 
-Video: `tanitim-video/out/paraizi-tanitim.mp4`. Boyut 1080×1920 (dikey, hikâye/Reels), süre 46,5 sn, 30 fps.
+Video: `docs/tanitim/paraizi-tanitim.mp4`. Boyut 1080×1920 (dikey, hikâye/Reels), süre 52,6 sn, 30 fps.
+Ses bandı videoya gömülü: seslendirme (Microsoft nöral TTS, "Emel"), özgün sentez müzik ve geçiş efektleri, -14 LUFS.
 Kaynak kod: `tanitim-video/` (Remotion). Yeniden üretmek için `tanitim-video/README.md`'ye bak.
 
 > Hane ve Excel/PDF **Pro** özellikleridir. Videoda bu sahnelerde "PRO" rozeti var.
@@ -10,24 +11,24 @@ Kaynak kod: `tanitim-video/` (Remotion). Yeniden üretmek için `tanitim-video/R
 
 ## 1. Sahne akışı ve seslendirme metni
 
-Seslendirme isteğe bağlı. Süreler ekrandaki animasyonla eşleşir; her satır okunduğunda kendi sahnesine sığar
-(yaklaşık 2,5 kelime/sn).
+Sahne süreleri seslendirmeye göre ayarlandı (`tanitim-video/src/zaman.json`). Yazıların bir kısmı kelimeyle
+aynı anda çıkar: "ve yine bitti?", "Market 850…" daktilosu, kayıt kartı ve Google Play düğmesi.
 
 | Sn | Sahne | Ekranda | Seslendirme |
 |---|---|---|---|
 | 0,0 | Kanca | **Maaş yattı… ve yine bitti?** / Peki nereye gitti? | "Maaş yattı… ve yine bitti? Peki nereye gitti?" |
-| 2,5 | Marka | **Paraİzi**, sesli harcama takibi | "Tanış: Paraİzi." |
-| 4,3 | Sesle kayıt | **Söyle, kaydetsin.** "Market 850, dün benzin 1200" → 2 kayıt bulundu | "Harcamanı söylemen yeter: 'Market sekiz yüz elli, dün benzin bin iki yüz.' Gerisini o halleder." |
-| 9,3 | Yapay zeka | **Kategoriyi yapay zeka bulur.** kahve → Kafe, benzin → Ulaşım, maaş → Gelir, altın → Yatırım | "Yapay zeka kategoriyi bulur; sen sadece onayla." |
-| 13,4 | Gelir & gider | **Gelir, gider, hepsi tek yerde.** Kalan tutar; Kişisel / İşletme / Yatırım | "Gelir, gider, kalan: hepsi tek yerde." |
-| 17,1 | Kategoriler | **Paran nereye gidiyor?** Kategori çubukları | "Paranın nereye gittiğini tek bakışta gör." |
-| 20,5 | Limit | **Limit koy, aşmadan haber al.** %89 + "%97'si doldu" bildirimi | "Limit koy; sınıra yaklaşınca haber versin." |
-| 24,2 | Hedef | **Birikimin hedefe bağlı.** Aylık yatırım hedefi, hisse/kripto/altın | "Her yatırımına bir hedef koy, ilerlemeni izle." |
-| 28,0 | Sabit gider | **Kira, fatura, maaş: kendiliğinden.** | "Kira, fatura, maaş… her ay kendiliğinden eklensin." |
-| 31,6 | Excel / PDF | **Excel ve PDF, tek dokunuşla.** (Pro) | "Excel ya da PDF dökümün tek dokunuşla hazır." |
-| 34,9 | Hane | **Evin bütçesi, birlikte.** Katılım kodu, üyeler, ortak toplam (Pro) | "Haneni kur, evin bütçesini birlikte yönet." |
-| 38,5 | Güven | **Bankana bağlanmaz. Verin sende kalır.** | "Bankana bağlanmaz. Verin sende kalır." |
-| 41,5 | Kapanış | **Paraİzi. Söyle. Kaydet. Gör.** Google Play'de ücretsiz | "Paraİzi. Söyle, kaydet, gör. Google Play'de ücretsiz." |
+| 3,8 | Marka | **Paraİzi**, sesli harcama takibi | "Tanış: Paraİzi." |
+| 5,7 | Sesle kayıt | **Söyle, kaydetsin.** "Market 850, dün benzin 1200" → 2 kayıt bulundu | "Harcamanı söylemen yeter: 'Market sekiz yüz elli, dün benzin bin iki yüz.' Gerisini o halleder." |
+| 12,7 | Yapay zeka | **Kategoriyi yapay zeka bulur.** kahve → Kafe, benzin → Ulaşım, maaş → Gelir, altın → Yatırım | "Yapay zeka kategoriyi bulur; sen sadece onayla." |
+| 16,8 | Gelir & gider | **Gelir, gider, hepsi tek yerde.** Kalan tutar; Kişisel / İşletme / Yatırım | "Gelir, gider, kalan: hepsi tek yerde." |
+| 20,4 | Kategoriler | **Paran nereye gidiyor?** Kategori çubukları | "Paranın nereye gittiğini tek bakışta gör." |
+| 23,9 | Limit | **Limit koy, aşmadan haber al.** %89 + "%97'si doldu" bildirimi | "Limit koy; sınıra yaklaşınca haber versin." |
+| 27,5 | Hedef | **Birikimin hedefe bağlı.** Aylık yatırım hedefi, hisse/kripto/altın | "Her yatırımına bir hedef koy, ilerlemeni izle." |
+| 31,3 | Sabit gider | **Kira, fatura, maaş: kendiliğinden.** | "Kira, fatura, maaş… her ay kendiliğinden eklensin." |
+| 35,0 | Excel / PDF | **Excel ve PDF, tek dokunuşla.** (Pro) | "Excel ya da PDF dökümün tek dokunuşla hazır." |
+| 38,3 | Hane | **Evin bütçesi, birlikte.** Katılım kodu, üyeler, ortak toplam (Pro) | "Haneni kur, evin bütçesini birlikte yönet." |
+| 41,9 | Güven | **Bankana bağlanmaz. Verin sende kalır.** | "Bankana bağlanmaz. Verin sende kalır." |
+| 45,6 | Kapanış | **Paraİzi. Söyle. Kaydet. Gör.** Google Play'de ücretsiz | "Paraİzi. Söyle, kaydet, gör. Google Play'de ücretsiz." |
 
 Tek parça seslendirme metni (kopyala-yapıştır):
 
@@ -51,7 +52,8 @@ Paraİzi. Söyle, kaydet, gör. Google Play'de ücretsiz.
 
 ## 2. Yapay zeka seslendirme promptu
 
-ElevenLabs, CapCut "Metinden sese" gibi bir araçta:
+Videodaki ses `tanitim-video/ses/seslendirme.py` ile üretildi (erkek ses için `--ses tr-TR-AhmetNeural`).
+Kendi sesinle ya da ElevenLabs, CapCut "Metinden sese" gibi başka bir araçla yeniden okutmak istersen şu promptu kullan:
 
 ```
 Türkçe, doğal ve sıcak bir ses; 25–35 yaş arası, samimi ve güven veren bir ton.
@@ -62,15 +64,16 @@ Tempo canlı ama anlaşılır (dakikada ~150 kelime). İlk cümlede hafif şakac
 Toplam süre 45 saniyeyi geçmesin.
 ```
 
-Ses dosyasını `tanitim-video/public/ses.mp3` olarak koyarsan videoya gömülür (README'ye bak).
+Yeni seslendirmeyi kullanmak için cümleleri `tanitim-video/ses/parcalar/00..12.mp3` olarak koy ve `karistir.py`'yi çalıştır (README).
 
 ---
 
 ## 3. Müzik
 
-Videonun içinde müzik yok.
-- **En kolayı:** Instagram/Facebook'ta paylaşırken uygulamanın kendi **Müzik** çıkartmasını kullan. Telif sorunu çıkmaz.
-- Videoya gömmek istersen telifsiz bir parça seç (YouTube Ses Kitaplığı, Pixabay Music) ve `tanitim-video/public/muzik.mp3` olarak koy.
+Videodaki müzik `tanitim-video/ses/karistir.py` içinde notalarla sentezlendi: 120 BPM, F–C–G–Am, kick, clap, bas, pluck ve pad.
+Hazır parça ya da örnek kullanılmadı, telif sorunu yok.
+Instagram'da ayrıca Müzik çıkartması ekleme; iki müzik üst üste biner.
+Başka bir parça istersen telifsiz bir şarkı seç (YouTube Ses Kitaplığı, Pixabay Music) ya da aşağıdaki promptla üret.
 - Yapay zekayla üretmek için (Suno, Udio vb.; ticari kullanım hakkını aracın şartlarından kontrol et):
 
 ```

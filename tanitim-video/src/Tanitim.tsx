@@ -20,26 +20,30 @@ import {
   Sabit,
   YapayZeka,
 } from "./sahneler";
+import zaman from "./zaman.json";
 
-export const GECIS = 16;
+export const GECIS = zaman.gecis;
 
 type Gecis = "yukari" | "sola" | "silme" | "solma";
-// Sahne sırası ve süreleri (kare, 30 fps). Geçiş, önceki sahneyle bu sahne arasında.
-export const SAHNELER: { C: React.FC; sure: number; gecis: Gecis }[] = [
-  { C: Kanca, sure: 90, gecis: "solma" },
-  { C: Marka, sure: 72, gecis: "silme" },
-  { C: Ses, sure: 165, gecis: "yukari" },
-  { C: YapayZeka, sure: 140, gecis: "sola" },
-  { C: GelirGider, sure: 125, gecis: "yukari" },
-  { C: Kategoriler, sure: 120, gecis: "sola" },
-  { C: Limit, sure: 125, gecis: "yukari" },
-  { C: Hedef, sure: 130, gecis: "sola" },
-  { C: Sabit, sure: 125, gecis: "yukari" },
-  { C: DisaAktar, sure: 115, gecis: "sola" },
-  { C: Hane, sure: 125, gecis: "yukari" },
-  { C: Guven, sure: 105, gecis: "sola" },
-  { C: Kapanis, sure: 150, gecis: "silme" },
+// Sahne sırası; süreler (kare, 30 fps) src/zaman.json'da — ses karışımı (ses/karistir.py) da aynı dosyayı okur.
+// Geçiş, önceki sahneyle bu sahne arasında.
+const SIRA: { C: React.FC; gecis: Gecis }[] = [
+  { C: Kanca, gecis: "solma" },
+  { C: Marka, gecis: "silme" },
+  { C: Ses, gecis: "yukari" },
+  { C: YapayZeka, gecis: "sola" },
+  { C: GelirGider, gecis: "yukari" },
+  { C: Kategoriler, gecis: "sola" },
+  { C: Limit, gecis: "yukari" },
+  { C: Hedef, gecis: "sola" },
+  { C: Sabit, gecis: "yukari" },
+  { C: DisaAktar, gecis: "sola" },
+  { C: Hane, gecis: "yukari" },
+  { C: Guven, gecis: "sola" },
+  { C: Kapanis, gecis: "silme" },
 ];
+
+export const SAHNELER = SIRA.map((s, i) => ({ ...s, sure: zaman.sureler[i] }));
 
 export const TOPLAM_KARE = SAHNELER.reduce((t, s) => t + s.sure, 0) - GECIS * (SAHNELER.length - 1);
 
@@ -57,7 +61,7 @@ const sunum = (g: Gecis): TransitionPresentation<any> => {
   }
 };
 
-export const Tanitim: React.FC<{ muzik: string | null }> = ({ muzik }) => (
+export const Tanitim: React.FC<{ ses: string | null }> = ({ ses }) => (
   <AbsoluteFill style={{ background: "#C45438" }}>
     <TransitionSeries>
       {SAHNELER.map(({ C, sure, gecis }, i) => (
@@ -78,6 +82,6 @@ export const Tanitim: React.FC<{ muzik: string | null }> = ({ muzik }) => (
         </Fragment>
       ))}
     </TransitionSeries>
-    {muzik && <Audio src={staticFile(muzik)} volume={(f) => Math.min(1, f / 15) * 0.8} />}
+    {ses && <Audio src={staticFile(ses)} />}
   </AbsoluteFill>
 );

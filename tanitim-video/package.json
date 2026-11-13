@@ -5,7 +5,7 @@
   "description": "Paraİzi tanıtım videosu (Remotion)",
   "scripts": {
     "studio": "remotion studio src/index.ts",
-    "render": "remotion render src/index.ts Tanitim out/paraizi-tanitim.mp4 --codec=h264 --crf=18 --pixel-format=yuv420p --concurrency=3",
+    "render": "remotion render src/index.ts Tanitim out/paraizi-tanitim.mp4 --codec=h264 --crf=18 --audio-bitrate=192k --concurrency=3",
     "kare": "remotion still src/index.ts Tanitim out/kare.png",
     "tip": "tsc --noEmit"
   },

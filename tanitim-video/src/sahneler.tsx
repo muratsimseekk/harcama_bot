@@ -43,7 +43,7 @@ export const Kanca: React.FC = () => {
       <Arkaplan tur="krem" />
       {UCAN.map((u, i) => {
         const yerel = f - u.g;
-        const o = interpolate(yerel, [0, 10, 50, 70], [0, 0.85, 0.85, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+        const o = interpolate(yerel, [0, 10, 70, 95], [0, 0.85, 0.85, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
         return (
           <div
             key={i}
@@ -64,9 +64,9 @@ export const Kanca: React.FC = () => {
           </div>
         );
       })}
-      <Baslik satirlar={["Maaş yattı…"]} boyut={118} top={560} gecikme={4} />
-      <Baslik satirlar={["ve yine bitti?"]} vurgu={["bitti"]} boyut={118} top={700} gecikme={22} />
-      <AltMetin top={900} gecikme={40} boyut={44}>
+      <Baslik satirlar={["Maaş yattı…"]} boyut={118} top={560} gecikme={2} />
+      <Baslik satirlar={["ve yine bitti?"]} vurgu={["bitti"]} boyut={118} top={700} gecikme={28} />
+      <AltMetin top={900} gecikme={80} boyut={44}>
         Peki nereye gitti?
       </AltMetin>
     </AbsoluteFill>
@@ -119,8 +119,8 @@ const CUMLE = "“Market 850, dün benzin 1200”";
 
 export const Ses: React.FC = () => {
   const f = useCurrentFrame();
-  const n = Math.round(CUMLE.length * interpolate(f, [32, 78], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
-  const dinliyor = f > 14 && f < 92;
+  const n = Math.round(CUMLE.length * interpolate(f, [58, 136], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
+  const dinliyor = f > 14 && f < 140;
   // mikrofon düğmesi: telefon top 600, genişlik 600 → ekran ölçeği 600/1080
   const my = 600 + 20 + (990 * 600) / 1080;
   return (
@@ -169,7 +169,7 @@ export const Ses: React.FC = () => {
             <div style={yazi(26, 600, R.soluk)}>Söylediğin</div>
             <div style={{ ...yazi(33, 700), minHeight: 42 }}>
               {CUMLE.slice(0, n)}
-              {f < 92 && Math.floor(f / 8) % 2 === 0 && (
+              {f < 140 && Math.floor(f / 8) % 2 === 0 && (
                 <span style={{ display: "inline-block", width: 3, height: 34, background: R.turuncu, marginLeft: 3 }} />
               )}
             </div>
@@ -191,7 +191,7 @@ export const Ses: React.FC = () => {
           )}
         </Kart>
       </Giris>
-      <Giris gecikme={96} kay={80} olcek0={0.8} style={{ position: "absolute", top: 1250, left: 130, width: 820 }}>
+      <Giris gecikme={158} kay={80} olcek0={0.8} style={{ position: "absolute", top: 1250, left: 130, width: 820 }}>
         <Kart style={{ padding: "30px 36px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
             <span style={yazi(32, 700)}>2 kayıt bulundu</span>
@@ -201,7 +201,7 @@ export const Ses: React.FC = () => {
             { ik: "cart", renk: "#E85D8C", ad: "Market", alt: "Market · bugün", tutar: "850 ₺" },
             { ik: "car", renk: "#506EAA", ad: "Benzin", alt: "Ulaşım · dün", tutar: "1.200 ₺" },
           ].map((r, i) => (
-            <Giris key={i} gecikme={104 + i * 7} kay={20} olcek0={1}>
+            <Giris key={i} gecikme={166 + i * 7} kay={20} olcek0={1}>
               <div style={{ display: "flex", alignItems: "center", gap: 22, padding: "12px 0" }}>
                 <IkonKutu ad={r.ik} renk={r.renk} />
                 <div style={{ flex: 1 }}>
@@ -796,8 +796,8 @@ export const Guven: React.FC = () => {
 export const Kapanis: React.FC = () => {
   const f = useCurrentFrame();
   const s = useYay(2, { damping: 11 });
-  const c = useYay(40, { damping: 12 });
-  const nabiz = f > 60 ? 1 + 0.03 * Math.sin(((f - 60) / 30) * 2 * Math.PI * 1.2) : 1;
+  const c = useYay(124, { damping: 12 });
+  const nabiz = f > 150 ? 1 + 0.03 * Math.sin(((f - 150) / 30) * 2 * Math.PI * 1.2) : 1;
   return (
     <AbsoluteFill>
       <Arkaplan tur="turuncu" />
@@ -807,10 +807,10 @@ export const Kapanis: React.FC = () => {
         </div>
       </div>
       <Baslik satirlar={["Paraİzi"]} renk={R.beyaz} boyut={140} gecikme={8} top={600} />
-      <Baslik satirlar={["Söyle. Kaydet. Gör."]} renk={R.seftaliAcik} boyut={64} gecikme={18} top={790} />
+      <Baslik satirlar={["Söyle. Kaydet. Gör."]} renk={R.seftaliAcik} boyut={64} gecikme={56} top={790} />
       <div style={{ position: "absolute", top: 950, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 18 }}>
         {["Günde 3 kayıt ücretsiz", "Pro ile sınırsız"].map((t, i) => (
-          <Giris key={t} gecikme={28 + i * 6} kay={20} olcek0={0.8}>
+          <Giris key={t} gecikme={96 + i * 6} kay={20} olcek0={0.8}>
             <div style={{ ...yazi(30, 700, R.beyaz), border: "3px solid rgba(255,255,255,0.6)", borderRadius: 999, padding: "16px 28px" }}>{t}</div>
           </Giris>
         ))}
@@ -842,7 +842,7 @@ export const Kapanis: React.FC = () => {
           <span style={yazi(46, 800)}>Google Play'de ücretsiz</span>
         </div>
       </div>
-      <AltMetin top={1330} renk={R.seftaliAcik} gecikme={52} boyut={34}>
+      <AltMetin top={1330} renk={R.seftaliAcik} gecikme={140} boyut={34}>
         Play Store'da “Paraİzi” diye ara
       </AltMetin>
     </AbsoluteFill>
